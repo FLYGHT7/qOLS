@@ -112,7 +112,7 @@ print (x4,x5,x6)
 line_start = QgsPoint(pro_coords[0],pro_coords[1])
 line_end = QgsPoint(x4[0],x4[1])
 line = QgsGeometry.fromPolyline([line_start,line_end])
-v_layer = QgsVectorLayer("LineString?crs=EPSG:9377", "Inner Horizontal", "memory")
+v_layer = QgsVectorLayer("Linestring?crs="+map_srid, "Inner Horizontal", "memory")
 pr = v_layer.dataProvider()
 # create a new feature
 seg = QgsFeature()

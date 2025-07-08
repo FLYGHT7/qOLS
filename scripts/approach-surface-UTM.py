@@ -38,17 +38,18 @@ map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 # Select line
 # Gets the runway layer based on name and selected feature
 for layer in QgsProject.instance().mapLayers().values():
-    if "runway" in layer.name():
+    if "xrunway" in layer.name():
         layer = layer
         selection = layer.selectedFeatures()
+        print (selection)
         rwy_geom = selection[0].geometry()
         rwy_length = rwy_geom.length()
         rwy_slope = (Z0-ZE)/rwy_length
-        print (rwy_length)
-        #print (layer.name())
+        # print (rwy_length)
+        # print (layer.name())
 
 ZIHs = ((Z0-((Z0-ZE)/rwy_length)*1800))
-#print (ZIHs)
+print (ZIHs)
 
         
 #Get the azimuth of the line 
