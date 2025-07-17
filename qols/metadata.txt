@@ -1,0 +1,21 @@
+[general]
+name=QOLS
+qgisMinimumVersion=3.0
+description=Obstacle Limitation Surfaces plugin for QGIS
+version=0.1.0
+author=Your Name
+email=your.email@example.com
+
+about=This plugin allows calculation and visualization of various OLS (Obstacle Limitation Surfaces) for aerodrome analysis. Features include navigation between different surface types, parameter customization, and export options.
+
+tracker=http://bugs
+repository=http://repo
+
+hasProcessingProvider=no
+tags=python,aviation,OLS,runway,obstacle,ICAO
+
+homepage=http://homepage
+category=Vector
+icon=icon.png
+experimental=True
+deprecated=False
