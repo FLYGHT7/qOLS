@@ -1,3 +1,10 @@
+'''
+Conical Surface 
+Procedure to be used in Projected Coordinate System Only
+ENHANCED VERSION - Uses dynamic parameters from UI
+'''
+myglobals = set(globals().keys())
+
 from qgis.core import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -5,49 +12,154 @@ from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
 
-#initial true azimuth data
-#azimuth = 67.077524
-#back_azimuth = azimuth+180
-# distance to the Splay End default being 10 NM
-L = 6000
-o1=0 #right
-o2=0  #left
+# Parameters - NOW COME FROM UI INSTEAD OF HARDCODED
+# These parameters will be injected by the plugin
+try:
+    # Try to get parameters from plugin namespace
+    # Conical surface parameters from UI
+    L = globals().get('radius', 6000)  # Distance L / Radius from UI
+    o1 = globals().get('offset_right', 0)  # Offset Right 
+    o2 = globals().get('offset_left', 0)   # Offset Left
+    
+    # Direction parameter
+    s = globals().get('direction', 0)  # 0 for start to end, -1 for end to start
+    
+    # Layer parameters
+    runway_layer = globals().get('runway_layer', None)
+    threshold_layer = globals().get('threshold_layer', None)
+    use_selected_feature = globals().get('use_selected_feature', True)
+    
+    print(f"Conical: Using parameters - radius: {L}m, offset_right: {o1}, offset_left: {o2}")
+    print(f"Conical: Direction parameter s: {s}, Use selected: {use_selected_feature}")
+    
+except Exception as e:
+    print(f"Conical: Error getting parameters, using defaults: {e}")
+    # Fallback to defaults if parameters not provided
+    L = 6000
+    o1 = 0  # right offset
+    o2 = 0  # left offset
+    s = 0
+    runway_layer = None
+    threshold_layer = None
+    use_selected_feature = True
+
+o1=o1 #right offset from UI
+o2=o2  #left offset from UI
 map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
-#print (map_srid)
+print(f"Conical: Final values - radius: {L}m, offset_right: {o1}, offset_left: {o2}, direction: {s}")
+print(f"Conical: Direction interpretation - s={s} means {'End to Start' if s == -1 else 'Start to End'}")
 
 #transformation
 source_crs = QgsCoordinateReferenceSystem(4326)
-#dest_crs = QgsCoordinateReferenceSystem(32616)
 dest_crs = QgsCoordinateReferenceSystem(map_srid)
 #transformto
 trto = QgsCoordinateTransform(source_crs, dest_crs,QgsProject.instance())
 #transformfrom
 trfm = QgsCoordinateTransform(dest_crs,source_crs ,QgsProject.instance())
 
+# ENHANCED LAYER SELECTION - Use layers from UI
+try:
+    if runway_layer is not None:
+        print(f"Conical: Using runway layer from UI: {runway_layer.name()}")
+        
+        if use_selected_feature:
+            # Try to use selected features first
+            selection = runway_layer.selectedFeatures()
+            if not selection:
+                print("Conical: No features selected, using first feature from layer")
+                # If no selection, use first feature
+                selection = list(runway_layer.getFeatures())
+                if not selection:
+                    raise Exception("No features found in runway layer.")
+            else:
+                print(f"Conical: Using {len(selection)} selected features")
+        else:
+            # Use all features (take first one)
+            selection = list(runway_layer.getFeatures())
+            if not selection:
+                raise Exception("No features found in runway layer.")
+            print(f"Conical: Using first feature from layer (selection disabled)")
+        
+        print(f"Conical: Processing {len(selection)} runway features")
+        
+    else:
+        # Fallback to old method (search by name or active layer)
+        print("Conical: No runway layer provided, using active layer...")
+        layer = iface.activeLayer()
+        if layer is None:
+            raise Exception("No active layer found. Please select a runway layer.")
+        
+        selection = layer.selectedFeatures()
+        if not selection:
+            # Use first feature if no selection
+            selection = list(layer.getFeatures())
+            if not selection:
+                raise Exception("No features found in active layer.")
+        
+except Exception as e:
+    print(f"Conical: Error with runway layer: {e}")
+    iface.messageBar().pushMessage("Conical Error", f"Runway layer error: {str(e)}", level=Qgis.Critical)
+    raise
 
-# Select line
-# Gets the active layer 
-layer = iface.activeLayer()
-selection = layer.selectedFeatures()
-# Gets x,y
+# Get the azimuth of the line - CORRECTED LOGIC TO MATCH ORIGINAL
 for feat in selection:
     geom = feat.geometry().asPolyline()
-    start_point = QgsPoint(geom[0])
-    end_point = QgsPoint(geom[-1])
-    angle0=start_point.azimuth(end_point)+180
-    back_angle0 = angle0+180
-print (angle0)
+    print(f"Conical: Geometry points count: {len(geom)}")
+    
+    # Always use the same points regardless of direction
+    # Direction change is handled by azimuth rotation only
+    start_point = QgsPoint(geom[0])   # Always first point
+    end_point = QgsPoint(geom[-1])    # Always last point
+    angle0 = start_point.azimuth(end_point)
+    
+    print(f"Conical: Using consistent points regardless of direction")
+    print(f"Conical: Start point: {start_point.x()}, {start_point.y()}")
+    print(f"Conical: End point: {end_point.x()}, {end_point.y()}")
+    print(f"Conical: Base azimuth (angle0): {angle0}")
+
+# Initial true azimuth data - CORRECTED TO MATCH ORIGINAL SCRIPT
+# Original script always adds +180, so we need to match that behavior
+base_azimuth = angle0 + 180  # This matches the original script behavior
+if base_azimuth >= 360:
+    base_azimuth -= 360
+
+# Now apply direction change on top of the corrected base
+if s == -1:
+    # For reverse direction, add another 180 degrees
+    azimuth = base_azimuth + 180
+    if azimuth >= 360:
+        azimuth -= 360
+    print(f"Conical: REVERSE direction - using (angle0 + 180) + 180 = {angle0} + 360 = {azimuth}")
+else:
+    # For normal direction, use the base azimuth (which already has +180)
+    azimuth = base_azimuth
+    print(f"Conical: NORMAL direction - using angle0 + 180 = {angle0} + 180 = {azimuth}")
+
+print(f"Conical: Final azimuth: {azimuth}")
+
+# For conical surface, we need to add 180 to get the opposite direction center point
+center_azimuth = azimuth + 180
+if center_azimuth >= 360:
+    center_azimuth -= 360
+
+# Also calculate back_angle0 for the opposite end calculations
+back_angle0 = azimuth + 180
+if back_angle0 >= 360:
+    back_angle0 -= 360
+
+print(f"Conical: Center azimuth for conical surface: {center_azimuth}")
+print(f"Conical: Back azimuth: {back_angle0}")
     
 
 
-# routine 1 circling azimuth
-dist = L #Distance in NM
-print (dist)
-bearing =  angle0-90
-angle =     90 - bearing
-print (bearing,angle)
+# routine 1 circling azimuth using corrected azimuth
+dist = L #Distance in meters
+print(f"Conical: Distance: {dist}")
+bearing = center_azimuth - 90
+angle = 90 - bearing
+print(f"Conical: bearing: {bearing}, angle: {angle}")
 bearing = math.radians(bearing)
-angle =   math.radians(angle)
+angle = math.radians(angle)
 dist_x, dist_y = \
     (dist * math.cos(angle), dist * math.sin(angle))
 #print (dist_x, dist_y)
@@ -64,11 +176,11 @@ start_coords = trfm.transform(start_point.x(),start_point.y())
 def coord (angle0,dist1,off):
     dist=dist1
     #print (angle0)
-    bearing =  angle0+off
-    angle =     90 - bearing
+    bearing = angle0+off
+    angle = 90 - bearing
     #print (bearing,angle)
     bearing = math.radians(bearing)
-    angle =   math.radians(angle)
+    angle = math.radians(angle)
     dist_x, dist_y = \
         (dist * math.cos(angle), dist * math.sin(angle))
     #print (dist_x, dist_y)
@@ -79,8 +191,8 @@ def coord (angle0,dist1,off):
     pro_coords = trto.transform(trfm.transform(xfinal,yfinal))
     return pro_coords
     
-x2 = coord(angle0,L,90)
-xc = coord(angle0,L,0)
+x2 = coord(center_azimuth,L,90)
+xc = coord(center_azimuth,L,0)
 print (x2)
 
 def coord2 (angle0,dist1,off):
@@ -180,7 +292,6 @@ v_layer.updateExtents()
 # show the line  
 QgsProject.instance().addMapLayers([v_layer])
 
-
 # Change style of layer 
 v_layer.renderer().symbol().setColor(QColor("orange"))
 v_layer.renderer().symbol().setWidth(0.7)
@@ -192,13 +303,30 @@ canvas = iface.mapCanvas()
 canvas.zoomToSelected(v_layer)
 v_layer.removeSelection()
 
+# Clean up selections only if they weren't originally selected
+if not use_selected_feature:
+    # Only clean up if we're not using selected features
+    if runway_layer:
+        runway_layer.removeSelection()
+else:
+    # Keep selections for next calculation
+    print("Conical: Keeping feature selections for next calculation")
+
 #get canvas scale
 sc = canvas.scale()
-#print (sc)
+print(f"Conical: Canvas scale: {sc}")
 if sc < 30000:
    sc=30000
-else:
-    sc=sc
-#print (sc)
-
 canvas.zoomScale(sc)
+
+print(f"Conical: Conical surface calculation completed successfully")
+print(f"Conical: Radius: {L}m, Offset Right: {o1}, Offset Left: {o2}")
+
+# Success message
+iface.messageBar().pushMessage("QOLS Success", f"Conical Surface (R={L}m, Offsets: R={o1}, L={o2}) calculated successfully", level=Qgis.Success)
+
+# Clean up globals
+set(globals().keys()).difference(myglobals)
+for g in set(globals().keys()).difference(myglobals):
+    if g != 'myglobals':
+        del globals()[g]

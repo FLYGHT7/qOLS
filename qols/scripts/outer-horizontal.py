@@ -29,8 +29,8 @@ trfm = QgsCoordinateTransform(dest_crs,source_crs ,QgsProject.instance())
 
 
 # Get threshold layer from plugin parameters
-threshold_layer = locals().get('threshold_layer')
-use_selected_feature = locals().get('use_selected_feature', True)
+threshold_layer = globals().get('threshold_layer')
+use_selected_feature = globals().get('use_selected_feature', True)
 
 # Get threshold geometry
 if threshold_layer:
