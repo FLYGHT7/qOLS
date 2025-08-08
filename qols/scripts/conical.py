@@ -2,6 +2,7 @@
 Conical Surface 
 Procedure to be used in Projected Coordinate System Only
 ENHANCED VERSION - Uses dynamic parameters from UI
+ROBUST VERSION - No fallbacks, no CRS transformations, uses QgsPoint.project()
 '''
 myglobals = set(globals().keys())
 
@@ -49,13 +50,7 @@ map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 print(f"Conical: Final values - radius: {L}m, offset_right: {o1}, offset_left: {o2}, direction: {s}")
 print(f"Conical: Direction interpretation - s={s} means {'End to Start' if s == -1 else 'Start to End'}")
 
-#transformation
-source_crs = QgsCoordinateReferenceSystem(4326)
-dest_crs = QgsCoordinateReferenceSystem(map_srid)
-#transformto
-trto = QgsCoordinateTransform(source_crs, dest_crs,QgsProject.instance())
-#transformfrom
-trfm = QgsCoordinateTransform(dest_crs,source_crs ,QgsProject.instance())
+# Work exclusively in projected coordinate system - no transformations needed
 
 # ENHANCED LAYER SELECTION - Use layers from UI
 try:
@@ -63,16 +58,11 @@ try:
         print(f"Conical: Using runway layer from UI: {runway_layer.name()}")
         
         if use_selected_feature:
-            # Try to use selected features first
+            # Require explicit feature selection
             selection = runway_layer.selectedFeatures()
             if not selection:
-                print("Conical: No features selected, using first feature from layer")
-                # If no selection, use first feature
-                selection = list(runway_layer.getFeatures())
-                if not selection:
-                    raise Exception("No features found in runway layer.")
-            else:
-                print(f"Conical: Using {len(selection)} selected features")
+                raise Exception("No runway features selected. Please select runway features.")
+            print(f"Conical: Using {len(selection)} selected runway features")
         else:
             # Use all features (take first one)
             selection = list(runway_layer.getFeatures())
@@ -83,18 +73,8 @@ try:
         print(f"Conical: Processing {len(selection)} runway features")
         
     else:
-        # Fallback to old method (search by name or active layer)
-        print("Conical: No runway layer provided, using active layer...")
-        layer = iface.activeLayer()
-        if layer is None:
-            raise Exception("No active layer found. Please select a runway layer.")
-        
-        selection = layer.selectedFeatures()
-        if not selection:
-            # Use first feature if no selection
-            selection = list(layer.getFeatures())
-            if not selection:
-                raise Exception("No features found in active layer.")
+        # No fallback - require explicit runway layer selection
+        raise Exception("No runway layer provided. Please select a runway layer from the UI.")
         
 except Exception as e:
     print(f"Conical: Error with runway layer: {e}")
@@ -152,71 +132,32 @@ print(f"Conical: Back azimuth: {back_angle0}")
     
 
 
-# routine 1 circling azimuth using corrected azimuth
-dist = L #Distance in meters
-print(f"Conical: Distance: {dist}")
-bearing = center_azimuth - 90
-angle = 90 - bearing
-print(f"Conical: bearing: {bearing}, angle: {angle}")
-bearing = math.radians(bearing)
-angle = math.radians(angle)
-dist_x, dist_y = \
-    (dist * math.cos(angle), dist * math.sin(angle))
-#print (dist_x, dist_y)
-xfinal, yfinal = (start_point.x() + dist_x, start_point.y() + dist_y)
-#print (xfinal, yfinal)
+# Modern approach using QgsPoint.project() instead of manual calculations
+print(f"Conical: Using QgsPoint.project() for all geometric calculations")
 
-#pro_coords = trfm.transform(xfinal,yfinal)
-pro_coords = trto.transform(trfm.transform(xfinal,yfinal))
-#print (pro_coords)
+# Calculate points using PyQGIS native methods - no transformations needed
+# Start point projections
+x2_point = start_point.project(L, center_azimuth + 90)  # 90 degrees offset
+xc_point = start_point.project(L, center_azimuth)       # center point
+x1_point = start_point.project(L, center_azimuth - 90)  # -90 degrees offset
 
-start_coords = trfm.transform(start_point.x(),start_point.y())
+# End point projections  
+x4_point = end_point.project(L, back_angle0 + 90)   # 90 degrees offset
+x5_point = end_point.project(L, back_angle0)        # center point
+x6_point = end_point.project(L, back_angle0 - 90)   # -90 degrees offset
 
+print(f"Conical: Start projections - x2: {x2_point.asWkt()}, center: {xc_point.asWkt()}")
+print(f"Conical: End projections - x4: {x4_point.asWkt()}, x5: {x5_point.asWkt()}, x6: {x6_point.asWkt()}")
 
-def coord (angle0,dist1,off):
-    dist=dist1
-    #print (angle0)
-    bearing = angle0+off
-    angle = 90 - bearing
-    #print (bearing,angle)
-    bearing = math.radians(bearing)
-    angle = math.radians(angle)
-    dist_x, dist_y = \
-        (dist * math.cos(angle), dist * math.sin(angle))
-    #print (dist_x, dist_y)
-    xfinal, yfinal = (start_point.x() + dist_x, start_point.y() + dist_y)
-    #print (xfinal, yfinal)
-    
-    #pro_coords = trfm.transform(xfinal,yfinal)
-    pro_coords = trto.transform(trfm.transform(xfinal,yfinal))
-    return pro_coords
-    
-x2 = coord(center_azimuth,L,90)
-xc = coord(center_azimuth,L,0)
-print (x2)
+# Convert to old format for compatibility with existing layer creation code
+pro_coords = [x1_point.x(), x1_point.y()]  # Original first point
+x2 = [x2_point.x(), x2_point.y()]
+xc = [xc_point.x(), xc_point.y()]
+x4 = [x4_point.x(), x4_point.y()]
+x5 = [x5_point.x(), x5_point.y()]
+x6 = [x6_point.x(), x6_point.y()]
 
-def coord2 (angle0,dist1,off):
-    dist=dist1
-    #print (angle0)
-    bearing =  angle0+off
-    angle =     90 - bearing
-    #print (bearing,angle)
-    bearing = math.radians(bearing)
-    angle =   math.radians(angle)
-    dist_x, dist_y = \
-        (dist * math.cos(angle), dist * math.sin(angle))
-    #print (dist_x, dist_y)
-    xfinal, yfinal = (end_point.x() + dist_x, end_point.y() + dist_y)
-    #print (xfinal, yfinal)
-    
-    #pro_coords2 = trfm.transform(xfinal,yfinal)
-    pro_coords2 = trto.transform(trfm.transform(xfinal,yfinal))
-    return pro_coords2
-    
-x4 = coord2(back_angle0,L,90)
-x5 = coord2(back_angle0,L,0)
-x6 = coord2(back_angle0,L,-90)
-print (x4,x5,x6)
+print(f"Conical: Points calculated using QgsPoint.project() - no manual trigonometry needed")
 
 
 #Create memory layer
