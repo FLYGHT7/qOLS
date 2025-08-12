@@ -1,6 +1,8 @@
 '''
-Inner Approach Surface 4 CAT I
+Transitional Surface 
 Procedure to be used in Projected Coordinate System Only
+ENHANCED VERSION - Uses dynamic parameters from UI
+ROBUST VERSION - No fallbacks, explicit layer and feature selection required
 '''
 myglobals = set(globals().keys())
 
@@ -71,14 +73,11 @@ try:
         print(f"TransitionalSurface: Using runway layer from UI: {runway_layer.name()}")
         
         if use_selected_feature:
+            # Require explicit feature selection
             selection = runway_layer.selectedFeatures()
             if not selection:
-                print("TransitionalSurface: No features selected, using first feature from layer")
-                selection = list(runway_layer.getFeatures())
-                if not selection:
-                    raise Exception("No features found in runway layer.")
-            else:
-                print(f"TransitionalSurface: Using {len(selection)} selected features")
+                raise Exception("No runway features selected. Please select runway features.")
+            print(f"TransitionalSurface: Using {len(selection)} selected runway features")
         else:
             selection = list(runway_layer.getFeatures())
             if not selection:
@@ -93,24 +92,8 @@ try:
         print(f"TransitionalSurface: Runway length: {rwy_length}, slope: {rwy_slope}")
         
     else:
-        # Fallback to old method (search by name)
-        print("TransitionalSurface: No runway layer provided, searching by name...")
-        for layer in QgsProject.instance().mapLayers().values():
-            if "xrunway" in layer.name():
-                runway_layer = layer
-                selection = layer.selectedFeatures()
-                if not selection:
-                    selection = list(layer.getFeatures())
-                    if not selection:
-                        raise Exception("No features found in runway layer.")
-                break
-        
-        if not runway_layer:
-            raise Exception("No runway layer found. Please select a runway layer.")
-        
-        rwy_geom = selection[0].geometry()
-        rwy_length = rwy_geom.length()
-        rwy_slope = (Z0-ZE)/rwy_length if rwy_length > 0 else 0
+        # No fallback - require explicit runway layer selection
+        raise Exception("No runway layer provided. Please select a runway layer from the UI.")
 
 except Exception as e:
     print(f"TransitionalSurface: Error with runway layer: {e}")
@@ -160,14 +143,11 @@ try:
         print(f"TransitionalSurface: Using threshold layer from UI: {threshold_layer.name()}")
         
         if use_selected_feature:
+            # Require explicit feature selection
             threshold_selection = threshold_layer.selectedFeatures()
             if not threshold_selection:
-                print("TransitionalSurface: No threshold features selected, using first feature from layer")
-                threshold_selection = list(threshold_layer.getFeatures())
-                if not threshold_selection:
-                    raise Exception("No features found in threshold layer.")
-            else:
-                print(f"TransitionalSurface: Using {len(threshold_selection)} selected threshold features")
+                raise Exception("No threshold features selected. Please select threshold features.")
+            print(f"TransitionalSurface: Using {len(threshold_selection)} selected threshold features")
         else:
             threshold_selection = list(threshold_layer.getFeatures())
             if not threshold_selection:
@@ -177,20 +157,8 @@ try:
         print(f"TransitionalSurface: Processing {len(threshold_selection)} threshold features")
         
     else:
-        # Fallback to active layer
-        print("TransitionalSurface: No threshold layer provided, using active layer...")
-        threshold_layer = iface.activeLayer()
-        if threshold_layer is None:
-            raise Exception("No threshold layer found. Please select a threshold layer.")
-        
-        threshold_selection = threshold_layer.selectedFeatures()
-        if not threshold_selection:
-            threshold_selection = list(threshold_layer.getFeatures())
-            if not threshold_selection:
-                raise Exception("No features found in threshold layer.")
-            print("TransitionalSurface: Using first threshold feature (no selection)")
-        else:
-            print(f"TransitionalSurface: Using {len(threshold_selection)} selected threshold features")
+        # No fallback - require explicit threshold layer selection
+        raise Exception("No threshold layer provided. Please select a threshold layer from the UI.")
 
 except Exception as e:
     print(f"TransitionalSurface: Error with threshold layer: {e}")

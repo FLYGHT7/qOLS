@@ -2,6 +2,7 @@
 Inner Approach Surface 4 CAT I
 Procedure to be used in Projected Coordinate System Only
 ENHANCED VERSION - Uses dynamic parameters from UI
+ROBUST VERSION - No fallbacks, explicit layer and feature selection required
 '''
 myglobals = set(globals().keys())
 
@@ -70,16 +71,11 @@ try:
         print(f"QOLS: Using runway layer from UI: {runway_layer.name()}")
         
         if use_selected_feature:
-            # Try to use selected features first
+            # Require explicit feature selection
             selection = runway_layer.selectedFeatures()
             if not selection:
-                print("QOLS: No features selected, using first feature from layer")
-                # If no selection, use first feature
-                selection = list(runway_layer.getFeatures())
-                if not selection:
-                    raise Exception("No features found in runway layer.")
-            else:
-                print(f"QOLS: Using {len(selection)} selected features")
+                raise Exception("No runway features selected. Please select runway features.")
+            print(f"QOLS: Using {len(selection)} selected runway features")
         else:
             # Use all features (take first one)
             selection = list(runway_layer.getFeatures())
@@ -95,27 +91,8 @@ try:
         print(f"QOLS: Runway length: {rwy_length}, slope: {rwy_slope}")
         
     else:
-        # Fallback to old method (search by name)
-        print("QOLS: No runway layer provided, searching by name...")
-        runway_layer = None
-        for layer in QgsProject.instance().mapLayers().values():
-            if "runway" in layer.name().lower() or "rwy" in layer.name().lower():
-                runway_layer = layer
-                break
-        
-        if runway_layer is None:
-            raise Exception("No runway layer found. Please select a runway layer.")
-        
-        selection = runway_layer.selectedFeatures()
-        if not selection:
-            # Use first feature if no selection
-            selection = list(runway_layer.getFeatures())
-            if not selection:
-                raise Exception("No features found in runway layer.")
-        
-        rwy_geom = selection[0].geometry()
-        rwy_length = rwy_geom.length()
-        rwy_slope = (Z0-ZE)/rwy_length if rwy_length > 0 else 0
+        # No fallback - require explicit runway layer selection
+        raise Exception("No runway layer provided. Please select a runway layer from the UI.")
 
 except Exception as e:
     print(f"QOLS: Error with runway layer: {e}")
@@ -169,16 +146,11 @@ try:
         print(f"QOLS: Using threshold layer from UI: {threshold_layer.name()}")
         
         if use_selected_feature:
-            # Try to use selected features first
+            # Require explicit feature selection
             threshold_selection = threshold_layer.selectedFeatures()
             if not threshold_selection:
-                print("QOLS: No threshold features selected, using first feature from layer")
-                # If no selection, use first feature
-                threshold_selection = list(threshold_layer.getFeatures())
-                if not threshold_selection:
-                    raise Exception("No features found in threshold layer.")
-            else:
-                print(f"QOLS: Using {len(threshold_selection)} selected threshold features")
+                raise Exception("No threshold features selected. Please select threshold features.")
+            print(f"QOLS: Using {len(threshold_selection)} selected threshold features")
         else:
             # Use all features (take first one)
             threshold_selection = list(threshold_layer.getFeatures())
@@ -189,21 +161,8 @@ try:
         print(f"QOLS: Processing {len(threshold_selection)} threshold features")
         
     else:
-        # Fallback to active layer
-        print("QOLS: No threshold layer provided, using active layer...")
-        threshold_layer = iface.activeLayer()
-        if threshold_layer is None:
-            raise Exception("No threshold layer found. Please select a threshold layer.")
-        
-        threshold_selection = threshold_layer.selectedFeatures()
-        if not threshold_selection:
-            # Use first feature if no selection
-            threshold_selection = list(threshold_layer.getFeatures())
-            if not threshold_selection:
-                raise Exception("No features found in threshold layer.")
-            print("QOLS: Using first threshold feature (no selection)")
-        else:
-            print(f"QOLS: Using {len(threshold_selection)} selected threshold features")
+        # No fallback - require explicit threshold layer selection  
+        raise Exception("No threshold layer provided. Please select a threshold layer from the UI.")
 
 except Exception as e:
     print(f"QOLS: Error with threshold layer: {e}")

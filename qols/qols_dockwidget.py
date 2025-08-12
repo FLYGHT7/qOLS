@@ -165,14 +165,15 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 }
             elif surface_type == "Conical":
                 specific_params = {
-                    'slope': self.spin_conical_slope.value() / 100.0,  # Convert to decimal
-                    'height': self.spin_conical_height.value(),
-                    'radius': self.spin_conical_radius.value()
+                    'radius': self.spin_L_conical.value(),  # Distance L is the radius
+                    'offset_right': self.spin_o1_conical.value(),  # Offset Right
+                    'offset_left': self.spin_o2_conical.value()   # Offset Left
                 }
             elif surface_type == "Inner Horizontal":
                 specific_params = {
-                    'height': self.spin_inner_horizontal_height.value(),
-                    'radius': self.spin_inner_horizontal_radius.value()
+                    'radius': self.spin_L_inner.value(),          # Distance L is the radius
+                    'offset_right': self.spin_o1_inner.value(),   # Offset Right
+                    'offset_left': self.spin_o2_inner.value()     # Offset Left
                 }
             elif surface_type == "Outer Horizontal":
                 specific_params = {
@@ -181,9 +182,16 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 }
             elif surface_type == "Take-off Surface":
                 specific_params = {
-                    'width': self.spin_takeoff_width.value(),
-                    'length': self.spin_takeoff_length.value(),
-                    'slope': self.spin_takeoff_slope.value() / 100.0  # Convert to decimal
+                    'code': self.spin_code_takeoff.value(),
+                    'typeAPP': self.combo_typeAPP_takeoff.currentText(),
+                    'widthApp': self.spin_widthApp_takeoff.value(),
+                    'widthDep': self.spin_widthDep_takeoff.value(),
+                    'maxWidthDep': self.spin_maxWidthDep_takeoff.value(),
+                    'CWYLength': self.spin_CWYLength_takeoff.value(),
+                    'Z0': self.spin_Z0_takeoff.value(),
+                    'ZE': self.spin_ZE_takeoff.value(),
+                    'ARPH': self.spin_ARPH_takeoff.value()
+                    # NOTA: IHSlope, L1, L2, LH no se usan en cálculos reales del script
                 }
             elif surface_type == "Transitional Surface":
                 specific_params = {
