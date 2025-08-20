@@ -70,7 +70,7 @@ print(f"TakeOffSurface: Direction interpretation - s={s} means {'End to Start' i
 
 map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 
-# ENHANCED LAYER SELECTION - Use layers from UI
+# ENHANCED LAYER SELECTION - Use layers from UI but with ORIGINAL LOGIC
 try:
     if runway_layer is not None:
         print(f"TakeOffSurface: Using runway layer from UI: {runway_layer.name()}")
@@ -87,7 +87,7 @@ try:
                 raise Exception("No features found in runway layer.")
             print(f"TakeOffSurface: Using first feature from layer (selection disabled)")
         
-        print(f"TakeOffSurface: Processing {len(selection)} runway features")
+        # ORIGINAL CALCULATION LOGIC - Keep exact calculation from working script
         rwy_geom = selection[0].geometry()
         rwy_length = rwy_geom.length()
         rwy_slope = (Z0-ZE)/rwy_length if rwy_length > 0 else 0
@@ -95,49 +95,65 @@ try:
         print(f"TakeOffSurface: Runway length: {rwy_length}, slope: {rwy_slope}")
         
     else:
-        # No fallback - require explicit runway layer selection
-        raise Exception("No runway layer provided. Please select a runway layer from the UI.")
+        # Fallback to original method - search by name pattern
+        print("TakeOffSurface: No runway layer from UI, using original layer search")
+        layer_found = False
+        for layer in QgsProject.instance().mapLayers().values():
+            if "runway" in layer.name().lower():
+                runway_layer = layer
+                selection = layer.selectedFeatures()
+                if selection:
+                    rwy_geom = selection[0].geometry()
+                    rwy_length = rwy_geom.length()
+                    rwy_slope = (Z0-ZE)/rwy_length
+                    print(f"TakeOffSurface: Found runway layer: {layer.name()}")
+                    print(f"TakeOffSurface: Runway length: {rwy_length}")
+                    layer_found = True
+                    break
+        
+        if not layer_found:
+            raise Exception("No runway layer found. Please select a runway layer or ensure a runway layer exists.")
 
 except Exception as e:
     print(f"TakeOffSurface: Error with runway layer: {e}")
     iface.messageBar().pushMessage("TakeOffSurface Error", f"Runway layer error: {str(e)}", level=Qgis.Critical)
     raise
 
-# Calculate ZIHs
+# Calculate ZIHs - EXACTLY as original
 ZIHs = ((Z0-((Z0-ZE)/rwy_length)*1800))
 print(f"TakeOffSurface: ZIHs calculated: {ZIHs}")
 
         
-#Get the azimuth of the line - SIMPLIFIED LOGIC
+#Get the azimuth of the line - EXACTLY as original
 for feat in selection:
     geom = feat.geometry().asPolyline()
     print(f"TakeOffSurface: Geometry points count: {len(geom)}")
     
-    # Always use the same points regardless of direction
-    # Direction change is handled by azimuth rotation only
-    start_point = QgsPoint(geom[0])   # Always first point
-    end_point = QgsPoint(geom[-1])    # Always last point
+    # ORIGINAL LOGIC - Use direction to determine point selection
+    start_point = QgsPoint(geom[-1-s])  # Original formula
+    end_point = QgsPoint(geom[s])       # Original formula
     angle0 = start_point.azimuth(end_point)
+    back_angle0 = angle0 + 180
     
-    print(f"TakeOffSurface: Using consistent points regardless of direction")
+    print(f"TakeOffSurface: Using original point selection logic")
+    print(f"TakeOffSurface: s={s}, start_point index: {-1-s}, end_point index: {s}")
     print(f"TakeOffSurface: Start point: {start_point.x()}, {start_point.y()}")
     print(f"TakeOffSurface: End point: {end_point.x()}, {end_point.y()}")
-    print(f"TakeOffSurface: Base azimuth (angle0): {angle0}")
+    print(f"TakeOffSurface: angle0: {angle0}")
 
-# Initial true azimuth data - FIXED LOGIC FOR PROPER DIRECTION CHANGE
+# ORIGINAL AZIMUTH CALCULATION - Exactly as original
 if s == -1:
-    azimuth = angle0 + 180
-    if azimuth >= 360:
-        azimuth -= 360
-    print(f"TakeOffSurface: REVERSE direction - using angle0 + 180 = {angle0} + 180 = {azimuth}")
+    s2 = 180
 else:
-    azimuth = angle0
-    print(f"TakeOffSurface: NORMAL direction - using angle0 = {azimuth}")
+    s2 = 0
 
+azimuth = angle0 + s2
 bazimuth = azimuth + 180
+
+print(f"TakeOffSurface: Original calculation - s2: {s2}")
 print(f"TakeOffSurface: Final azimuth: {azimuth}, bazimuth: {bazimuth}")
 
-# ENHANCED THRESHOLD SELECTION - Use threshold layer from UI
+# ENHANCED THRESHOLD SELECTION - Use threshold layer from UI OR original method
 try:
     if threshold_layer is not None:
         print(f"TakeOffSurface: Using threshold layer from UI: {threshold_layer.name()}")
@@ -157,27 +173,27 @@ try:
         print(f"TakeOffSurface: Processing {len(threshold_selection)} threshold features")
         
     else:
-        # No fallback - require explicit threshold layer selection
-        raise Exception("No threshold layer provided. Please select a threshold layer from the UI.")
+        # ORIGINAL METHOD - Gets the THR definition from active layer
+        print("TakeOffSurface: No threshold layer from UI, using original active layer method")
+        layer = iface.activeLayer()
+        threshold_selection = layer.selectedFeatures()
+        if not threshold_selection:
+            raise Exception("No features selected in active layer for threshold.")
+        print(f"TakeOffSurface: Using active layer: {layer.name()}")
 
 except Exception as e:
     print(f"TakeOffSurface: Error with threshold layer: {e}")
     iface.messageBar().pushMessage("TakeOffSurface Error", f"Threshold layer error: {str(e)}", level=Qgis.Critical)
     raise
 
-# Get x,y from threshold - Always use first threshold feature
-if len(threshold_selection) >= 1:
-    selected_threshold = threshold_selection[0]
-    threshold_geom = selected_threshold.geometry().asPoint()
-    print(f"TakeOffSurface: Using threshold feature as-is")
-else:
-    raise Exception("No threshold features found")
-
-new_geom = QgsPoint(threshold_geom)
-new_geom.addZValue(Z0)
+# Get x,y from threshold - EXACTLY as original
+for feat in threshold_selection:
+    new_geom = QgsPoint(feat.geometry().asPoint())
+    new_geom.addZValue(Z0)
+    break  # Use first feature
 
 print(f"TakeOffSurface: Threshold point: {new_geom.x()}, {new_geom.y()}, {new_geom.z()}")
-print(f"TakeOffSurface: Direction change handled by azimuth rotation (180°), not threshold position")
+print(f"TakeOffSurface: Using original threshold selection logic")
 
 list_pts = []
 
