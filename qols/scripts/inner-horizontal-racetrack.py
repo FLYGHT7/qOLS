@@ -5,7 +5,6 @@ ENHANCED VERSION - Uses dynamic parameters from UI
 ROBUST VERSION - No fallbacks, no CRS transformations, uses QgsPoint.project()
 '''
 myglobals = set(globals().keys())
-
 from qgis.core import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
