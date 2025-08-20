@@ -28,10 +28,17 @@ try:
     # Layer parameters
     runway_layer = globals().get('runway_layer', None)
     threshold_layer = globals().get('threshold_layer', None)
-    use_selected_feature = globals().get('use_selected_feature', True)
+    
+    # Separate selection parameters for each layer
+    use_runway_selected = globals().get('use_runway_selected', False)
+    use_threshold_selected = globals().get('use_threshold_selected', False)
+    
+    # Legacy parameter for backward compatibility
+    use_selected_feature = globals().get('use_selected_feature', use_runway_selected or use_threshold_selected)
     
     print(f"Conical: Using parameters - radius: {L}m, offset_right: {o1}, offset_left: {o2}")
-    print(f"Conical: Direction parameter s: {s}, Use selected: {use_selected_feature}")
+    print(f"Conical: Direction parameter s: {s}")
+    print(f"Conical: Selection - Runway: {'selected features' if use_runway_selected else 'all features'}, Threshold: {'selected features' if use_threshold_selected else 'all features'}")
     
 except Exception as e:
     print(f"Conical: Error getting parameters, using defaults: {e}")
@@ -57,18 +64,18 @@ try:
     if runway_layer is not None:
         print(f"Conical: Using runway layer from UI: {runway_layer.name()}")
         
-        if use_selected_feature:
-            # Require explicit feature selection
+        if use_runway_selected:
+            # Use selected runway features
             selection = runway_layer.selectedFeatures()
             if not selection:
-                raise Exception("No runway features selected. Please select runway features.")
+                raise Exception("No runway features selected. Please select runway features or uncheck 'Use Selected Runway Features'.")
             print(f"Conical: Using {len(selection)} selected runway features")
         else:
-            # Use all features (take first one)
+            # Use all runway features
             selection = list(runway_layer.getFeatures())
             if not selection:
                 raise Exception("No features found in runway layer.")
-            print(f"Conical: Using first feature from layer (selection disabled)")
+            print(f"Conical: Using all {len(selection)} runway features")
         
         print(f"Conical: Processing {len(selection)} runway features")
         
