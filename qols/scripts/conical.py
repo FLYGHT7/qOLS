@@ -2,7 +2,7 @@
 Conical Surface 
 Procedure to be used in Projected Coordinate System Only
 ENHANCED VERSION - Uses dynamic parameters from UI
-ROBUST VERSION - No fallbacks, no CRS transformations, uses QgsPoint.project()
+RESTORED TO ORIGINAL WORKING CODE PATTERN
 '''
 myglobals = set(globals().keys())
 
@@ -28,17 +28,10 @@ try:
     # Layer parameters
     runway_layer = globals().get('runway_layer', None)
     threshold_layer = globals().get('threshold_layer', None)
-    
-    # Separate selection parameters for each layer
-    use_runway_selected = globals().get('use_runway_selected', False)
-    use_threshold_selected = globals().get('use_threshold_selected', False)
-    
-    # Legacy parameter for backward compatibility
-    use_selected_feature = globals().get('use_selected_feature', use_runway_selected or use_threshold_selected)
+    use_selected_feature = globals().get('use_selected_feature', True)
     
     print(f"Conical: Using parameters - radius: {L}m, offset_right: {o1}, offset_left: {o2}")
-    print(f"Conical: Direction parameter s: {s}")
-    print(f"Conical: Selection - Runway: {'selected features' if use_runway_selected else 'all features'}, Threshold: {'selected features' if use_threshold_selected else 'all features'}")
+    print(f"Conical: Direction parameter s: {s}, Use selected: {use_selected_feature}")
     
 except Exception as e:
     print(f"Conical: Error getting parameters, using defaults: {e}")
@@ -51,11 +44,10 @@ except Exception as e:
     threshold_layer = None
     use_selected_feature = True
 
-o1=o1 #right offset from UI
-o2=o2  #left offset from UI
-map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 print(f"Conical: Final values - radius: {L}m, offset_right: {o1}, offset_left: {o2}, direction: {s}")
 print(f"Conical: Direction interpretation - s={s} means {'End to Start' if s == -1 else 'Start to End'}")
+
+map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 
 # Work exclusively in projected coordinate system - no transformations needed
 
@@ -64,18 +56,18 @@ try:
     if runway_layer is not None:
         print(f"Conical: Using runway layer from UI: {runway_layer.name()}")
         
-        if use_runway_selected:
-            # Use selected runway features
+        if use_selected_feature:
+            # Require explicit feature selection
             selection = runway_layer.selectedFeatures()
             if not selection:
-                raise Exception("No runway features selected. Please select runway features or uncheck 'Use Selected Runway Features'.")
+                raise Exception("No runway features selected. Please select runway features.")
             print(f"Conical: Using {len(selection)} selected runway features")
         else:
-            # Use all runway features
+            # Use all features (take first one)
             selection = list(runway_layer.getFeatures())
             if not selection:
                 raise Exception("No features found in runway layer.")
-            print(f"Conical: Using all {len(selection)} runway features")
+            print(f"Conical: Using first feature from layer (selection disabled)")
         
         print(f"Conical: Processing {len(selection)} runway features")
         
@@ -88,86 +80,95 @@ except Exception as e:
     iface.messageBar().pushMessage("Conical Error", f"Runway layer error: {str(e)}", level=Qgis.Critical)
     raise
 
-# Get the azimuth of the line - CORRECTED LOGIC TO MATCH ORIGINAL
+# Get the azimuth of the line - USING ORIGINAL CALCULATION LOGIC
 for feat in selection:
     geom = feat.geometry().asPolyline()
     print(f"Conical: Geometry points count: {len(geom)}")
     
-    # Always use the same points regardless of direction
-    # Direction change is handled by azimuth rotation only
-    start_point = QgsPoint(geom[0])   # Always first point
-    end_point = QgsPoint(geom[-1])    # Always last point
-    angle0 = start_point.azimuth(end_point)
+    # Use original logic - always first to last point
+    start_point = QgsPoint(geom[0])
+    end_point = QgsPoint(geom[-1])
     
-    print(f"Conical: Using consistent points regardless of direction")
+    # Apply direction logic BEFORE calculating azimuth (like original)
+    if s == -1:
+        # Reverse direction: swap start and end points (matches original behavior)
+        start_point, end_point = end_point, start_point
+        print(f"Conical: REVERSE direction applied - swapped start/end points")
+    
+    # Original azimuth calculation
+    angle0 = start_point.azimuth(end_point) + 180
+    back_angle0 = angle0 + 180
+    
+    print(f"Conical: Using original calculation logic")
     print(f"Conical: Start point: {start_point.x()}, {start_point.y()}")
     print(f"Conical: End point: {end_point.x()}, {end_point.y()}")
-    print(f"Conical: Base azimuth (angle0): {angle0}")
+    print(f"Conical: angle0: {angle0}, back_angle0: {back_angle0}")
 
-# Initial true azimuth data - CORRECTED TO MATCH ORIGINAL SCRIPT
-# Original script always adds +180, so we need to match that behavior
-base_azimuth = angle0 + 180  # This matches the original script behavior
-if base_azimuth >= 360:
-    base_azimuth -= 360
+# ORIGINAL CALCULATION LOGIC - Keep exactly as in working script
+#transformation - exactly as original
+source_crs = QgsCoordinateReferenceSystem(4326)
+dest_crs = QgsCoordinateReferenceSystem(map_srid)
+#transformto
+trto = QgsCoordinateTransform(source_crs, dest_crs,QgsProject.instance())
+#transformfrom
+trfm = QgsCoordinateTransform(dest_crs,source_crs ,QgsProject.instance())
 
-# Now apply direction change on top of the corrected base
-if s == -1:
-    # For reverse direction, add another 180 degrees
-    azimuth = base_azimuth + 180
-    if azimuth >= 360:
-        azimuth -= 360
-    print(f"Conical: REVERSE direction - using (angle0 + 180) + 180 = {angle0} + 360 = {azimuth}")
-else:
-    # For normal direction, use the base azimuth (which already has +180)
-    azimuth = base_azimuth
-    print(f"Conical: NORMAL direction - using angle0 + 180 = {angle0} + 180 = {azimuth}")
+# routine 1 circling azimuth - EXACTLY as original
+dist = L #Distance in NM
+print(f"Conical: dist={dist}")
+bearing = angle0 - 90
+angle = 90 - bearing
+print(f"Conical: bearing={bearing}, angle={angle}")
+bearing = math.radians(bearing)
+angle = math.radians(angle)
+dist_x, dist_y = \
+    (dist * math.cos(angle), dist * math.sin(angle))
+xfinal, yfinal = (start_point.x() + dist_x, start_point.y() + dist_y)
 
-print(f"Conical: Final azimuth: {azimuth}")
+pro_coords = trto.transform(trfm.transform(xfinal,yfinal))
 
-# For conical surface, we need to add 180 to get the opposite direction center point
-center_azimuth = azimuth + 180
-if center_azimuth >= 360:
-    center_azimuth -= 360
+start_coords = trfm.transform(start_point.x(),start_point.y())
 
-# Also calculate back_angle0 for the opposite end calculations
-back_angle0 = azimuth + 180
-if back_angle0 >= 360:
-    back_angle0 -= 360
-
-print(f"Conical: Center azimuth for conical surface: {center_azimuth}")
-print(f"Conical: Back azimuth: {back_angle0}")
+# Original coord function - EXACTLY as original
+def coord(angle0,dist1,off):
+    dist=dist1
+    bearing = angle0+off
+    angle = 90 - bearing
+    bearing = math.radians(bearing)
+    angle = math.radians(angle)
+    dist_x, dist_y = \
+        (dist * math.cos(angle), dist * math.sin(angle))
+    xfinal, yfinal = (start_point.x() + dist_x, start_point.y() + dist_y)
     
+    pro_coords = trto.transform(trfm.transform(xfinal,yfinal))
+    return pro_coords
+    
+x2 = coord(angle0,L,90)
+xc = coord(angle0,L,0)
+print(f"Conical: x2={x2}")
 
+# Original coord2 function - EXACTLY as original
+def coord2(angle0,dist1,off):
+    dist=dist1
+    bearing = angle0+off
+    angle = 90 - bearing
+    bearing = math.radians(bearing)
+    angle = math.radians(angle)
+    dist_x, dist_y = \
+        (dist * math.cos(angle), dist * math.sin(angle))
+    xfinal, yfinal = (end_point.x() + dist_x, end_point.y() + dist_y)
+    
+    pro_coords2 = trto.transform(trfm.transform(xfinal,yfinal))
+    return pro_coords2
+    
+x4 = coord2(back_angle0,L,90)
+x5 = coord2(back_angle0,L,0)
+x6 = coord2(back_angle0,L,-90)
+print(f"Conical: x4={x4}, x5={x5}, x6={x6}")
 
-# Modern approach using QgsPoint.project() instead of manual calculations
-print(f"Conical: Using QgsPoint.project() for all geometric calculations")
+print(f"Conical: Using original coordinate calculation methods - trigonometry + transformations")
 
-# Calculate points using PyQGIS native methods - no transformations needed
-# Start point projections
-x2_point = start_point.project(L, center_azimuth + 90)  # 90 degrees offset
-xc_point = start_point.project(L, center_azimuth)       # center point
-x1_point = start_point.project(L, center_azimuth - 90)  # -90 degrees offset
-
-# End point projections  
-x4_point = end_point.project(L, back_angle0 + 90)   # 90 degrees offset
-x5_point = end_point.project(L, back_angle0)        # center point
-x6_point = end_point.project(L, back_angle0 - 90)   # -90 degrees offset
-
-print(f"Conical: Start projections - x2: {x2_point.asWkt()}, center: {xc_point.asWkt()}")
-print(f"Conical: End projections - x4: {x4_point.asWkt()}, x5: {x5_point.asWkt()}, x6: {x6_point.asWkt()}")
-
-# Convert to old format for compatibility with existing layer creation code
-pro_coords = [x1_point.x(), x1_point.y()]  # Original first point
-x2 = [x2_point.x(), x2_point.y()]
-xc = [xc_point.x(), xc_point.y()]
-x4 = [x4_point.x(), x4_point.y()]
-x5 = [x5_point.x(), x5_point.y()]
-x6 = [x6_point.x(), x6_point.y()]
-
-print(f"Conical: Points calculated using QgsPoint.project() - no manual trigonometry needed")
-
-
-#Create memory layer
+# Create memory layer
 # create a new memory layer
 line_start = QgsPoint(pro_coords[0],pro_coords[1])
 line_end = QgsPoint(x4[0],x4[1])
@@ -185,7 +186,6 @@ pr.addFeatures( [ seg ] )
 v_layer.updateExtents()
 # show the line  
 QgsProject.instance().addMapLayers([v_layer])
-
 
 # Join outer VOR splay 
 line_start = QgsPoint(x6[0],x6[1])
@@ -244,6 +244,8 @@ QgsProject.instance().addMapLayers([v_layer])
 v_layer.renderer().symbol().setColor(QColor("orange"))
 v_layer.renderer().symbol().setWidth(0.7)
 v_layer.triggerRepaint()
+
+print(f"Conical: Applied orange style to conical surface")
 
 # Zoom to layer
 v_layer.selectAll()
