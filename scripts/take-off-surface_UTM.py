@@ -42,7 +42,7 @@ map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 # Select line
 # Gets the runway layer based on name and selected feature
 for layer in QgsProject.instance().mapLayers().values():
-    if "xrunway" in layer.name():
+    if "runway" in layer.name():
         layer = layer
         selection = layer.selectedFeatures()
         rwy_geom = selection[0].geometry()
