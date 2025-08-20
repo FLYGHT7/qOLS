@@ -233,12 +233,78 @@ class QOLS:
         self.execute_script(script_path, params)
 
     def execute_script(self, script_path, params=None):
-        """Execute a script with dynamic parameters."""
-        if params is None:
-            params = {}
-            
+        """Execute a script with dynamic parameters and robust validation."""
         try:
+            # CRITICAL VALIDATION: Ensure parameters exist
+            if params is None:
+                raise Exception("CRITICAL ERROR: No parameters provided to script execution.")
+            
+            # CRITICAL VALIDATION: Verify essential parameters
+            runway_layer = params.get('runway_layer')
+            threshold_layer = params.get('threshold_layer')
+            
+            if runway_layer is None:
+                raise Exception("CRITICAL ERROR: No runway layer in parameters. Execution aborted.")
+            
+            if threshold_layer is None:
+                raise Exception("CRITICAL ERROR: No threshold layer in parameters. Execution aborted.")
+            
+            # SAFETY CHECK: Ensure layer objects are valid QGIS layers
+            if not isinstance(runway_layer, QgsVectorLayer):
+                raise Exception(f"CRITICAL ERROR: Runway layer is not a valid QgsVectorLayer: {type(runway_layer)}")
+            
+            if not isinstance(threshold_layer, QgsVectorLayer):
+                raise Exception(f"CRITICAL ERROR: Threshold layer is not a valid QgsVectorLayer: {type(threshold_layer)}")
+            
+            # SAFETY CHECK: Ensure layers still exist in project
+            project_layers = list(QgsProject.instance().mapLayers().values())
+            if runway_layer not in project_layers:
+                raise Exception(f"CRITICAL ERROR: Runway layer '{runway_layer.name()}' not found in current project.")
+            
+            if threshold_layer not in project_layers:
+                raise Exception(f"CRITICAL ERROR: Threshold layer '{threshold_layer.name()}' not found in current project.")
+            
+            # SAFETY CHECK: Verify layer validity and accessibility
+            if not runway_layer.isValid():
+                raise Exception(f"CRITICAL ERROR: Runway layer '{runway_layer.name()}' is invalid or corrupted.")
+            
+            if not threshold_layer.isValid():
+                raise Exception(f"CRITICAL ERROR: Threshold layer '{threshold_layer.name()}' is invalid or corrupted.")
+            
+            # SAFETY CHECK: Verify layers have features
+            if runway_layer.featureCount() == 0:
+                raise Exception(f"CRITICAL ERROR: Runway layer '{runway_layer.name()}' contains no features.")
+            
+            if threshold_layer.featureCount() == 0:
+                raise Exception(f"CRITICAL ERROR: Threshold layer '{threshold_layer.name()}' contains no features.")
+            
+            # FINAL VALIDATION: Log critical parameters for debugging
+            use_runway_selected = params.get('use_runway_selected', False)
+            use_threshold_selected = params.get('use_threshold_selected', False)
+            
+            print(f"QOLS: EXECUTING SCRIPT WITH VALIDATED PARAMETERS:")
+            print(f"  Script: {script_path}")
+            print(f"  Runway Layer: '{runway_layer.name()}' ({runway_layer.featureCount()} features)")
+            print(f"  Threshold Layer: '{threshold_layer.name()}' ({threshold_layer.featureCount()} features)")
+            print(f"  Use Runway Selected: {use_runway_selected}")
+            print(f"  Use Threshold Selected: {use_threshold_selected}")
+            
+            if use_runway_selected:
+                runway_selected_count = len(runway_layer.selectedFeatures())
+                print(f"  Runway Selected Features: {runway_selected_count}")
+                if runway_selected_count == 0:
+                    raise Exception("CRITICAL ERROR: use_runway_selected=True but no runway features selected.")
+            
+            if use_threshold_selected:
+                threshold_selected_count = len(threshold_layer.selectedFeatures())
+                print(f"  Threshold Selected Features: {threshold_selected_count}")
+                if threshold_selected_count == 0:
+                    raise Exception("CRITICAL ERROR: use_threshold_selected=True but no threshold features selected.")
+            
             # Read the script file
+            if not os.path.exists(script_path):
+                raise Exception(f"CRITICAL ERROR: Script file not found: {script_path}")
+                
             with open(script_path, 'r', encoding='utf-8') as f:
                 script_content = f.read()
             

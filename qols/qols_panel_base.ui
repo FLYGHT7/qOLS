@@ -54,13 +54,42 @@
         <widget class="QgsMapLayerComboBox" name="thresholdLayerCombo"/>
        </item>
        <item row="2" column="0" colspan="2">
-        <widget class="QCheckBox" name="useSelectedFeatureCheckBox">
-         <property name="text">
-          <string>Use Selected Feature</string>
+        <widget class="QGroupBox" name="selectionGroup">
+         <property name="title">
+          <string>Feature Selection</string>
          </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
+         <layout class="QVBoxLayout" name="selectionLayout">
+          <item>
+           <widget class="QCheckBox" name="useSelectedRunwayCheckBox">
+            <property name="text">
+             <string>Use Selected Runway Features</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="useSelectedThresholdCheckBox">
+            <property name="text">
+             <string>Use Selected Threshold Features</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="selectionInfoLabel">
+            <property name="text">
+             <string>Tip: Select features in layers first, then check boxes above</string>
+            </property>
+            <property name="styleSheet">
+             <string>color: #666; font-style: italic; font-size: 10px;</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
       </layout>
