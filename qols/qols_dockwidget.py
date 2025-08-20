@@ -573,6 +573,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             current_tab_index = self.scriptTabWidget.currentIndex()
             surface_type = self.scriptTabWidget.tabText(current_tab_index)
             
+            print(f"QOLS DEBUG: current_tab_index = {current_tab_index}")
+            print(f"QOLS DEBUG: surface_type = '{surface_type}'")
+            print(f"QOLS DEBUG: surface_type type = {type(surface_type)}")
+            print(f"QOLS DEBUG: surface_type repr = {repr(surface_type)}")
+            
             # Get parameters based on current tab
             if surface_type == "Approach Surface":
                 specific_params = {
@@ -604,7 +609,13 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'height': self.spin_outer_horizontal_height.value(),
                     'radius': self.spin_outer_horizontal_radius.value()
                 }
-            elif surface_type == "Take-off Surface":
+            elif surface_type == "Take-Off Surface":
+                print(f"QOLS DEBUG: Collecting Take-off Surface parameters...")
+                print(f"QOLS DEBUG: spin_code_takeoff.value() = {self.spin_code_takeoff.value()}")
+                print(f"QOLS DEBUG: combo_typeAPP_takeoff.currentText() = {self.combo_typeAPP_takeoff.currentText()}")
+                print(f"QOLS DEBUG: spin_widthDep_takeoff.value() = {self.spin_widthDep_takeoff.value()}")
+                print(f"QOLS DEBUG: spin_maxWidthDep_takeoff.value() = {self.spin_maxWidthDep_takeoff.value()}")
+                
                 specific_params = {
                     'code': self.spin_code_takeoff.value(),
                     'typeAPP': self.combo_typeAPP_takeoff.currentText(),
@@ -617,6 +628,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'ARPH': self.spin_ARPH_takeoff.value()
                     # NOTA: IHSlope, L1, L2, LH no se usan en cálculos reales del script
                 }
+                print(f"QOLS DEBUG: Take-off Surface specific_params = {specific_params}")
             elif surface_type == "Transitional Surface":
                 specific_params = {
                     'slope': self.spin_transitional_slope.value() / 100.0,  # Convert to decimal
