@@ -165,6 +165,10 @@ class QOLS:
             specific_params = params.get('specific_params', {})
             
             print(f"QOLS: Executing {surface_type} with params: {specific_params}")
+            print(f"QOLS DEBUG: Full params dict: {params}")
+            print(f"QOLS DEBUG: specific_params content: {specific_params}")
+            print(f"QOLS DEBUG: specific_params type: {type(specific_params)}")
+            print(f"QOLS DEBUG: specific_params keys: {list(specific_params.keys())}")
             
             if surface_type == 'Approach Surface':
                 self.execute_approach_surface(params)
@@ -176,7 +180,7 @@ class QOLS:
                 self.execute_ofz_surface(params)
             elif surface_type == 'Outer Horizontal':
                 self.execute_outer_horizontal_surface(params)
-            elif surface_type == 'Take-off Surface':
+            elif surface_type == 'Take-Off Surface':
                 self.execute_takeoff_surface(params)
             elif surface_type == 'Transitional Surface':
                 self.execute_transitional_surface(params)
@@ -313,6 +317,9 @@ class QOLS:
             # Extract specific parameters and add them to the main params
             specific_params = params.get('specific_params', {})
             
+            print(f"QOLS DEBUG: About to create exec_namespace")
+            print(f"QOLS DEBUG: specific_params before namespace: {specific_params}")
+            
             # Create execution namespace with parameters
             exec_namespace = {
                 'iface': self.iface,
@@ -337,6 +344,10 @@ class QOLS:
                 **params,  # Add all parameters
                 **specific_params  # Add specific parameters directly
             }
+            
+            print(f"QOLS DEBUG: exec_namespace keys related to params: {[k for k in exec_namespace.keys() if k in ['code', 'typeAPP', 'widthDep', 'maxWidthDep', 'Z0', 'ZE', 'ARPH', 'specific_params', 'runway_layer', 'threshold_layer']]}")
+            print(f"QOLS DEBUG: exec_namespace['code'] = {exec_namespace.get('code', 'NOT_FOUND')}")
+            print(f"QOLS DEBUG: exec_namespace['widthDep'] = {exec_namespace.get('widthDep', 'NOT_FOUND')}")
             
             # Execute the script
             exec(script_content, exec_namespace)
