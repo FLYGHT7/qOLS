@@ -33,15 +33,16 @@ try:
     L1 = globals().get('L1', 3000)
     L2 = globals().get('L2', 3600)
     LH = globals().get('LH', 8400)
-    s = globals().get('s', 0)
+    s = globals().get('direction', 0)  # FIXED: Use 'direction' like other scripts
     
     # Layer parameters from UI
     runway_layer = globals().get('runway_layer')
     threshold_layer = globals().get('threshold_layer')
     
-    print(f"TakeOffSurface: Using UI parameters - code={code}, s={s}")
+    print(f"TakeOffSurface: Using UI parameters - code={code}, direction={s}")
     print(f"TakeOffSurface: Z0={Z0}, ZE={ZE}, widthDep={widthDep}, maxWidthDep={maxWidthDep}")
     print(f"TakeOffSurface: runway_layer={runway_layer}, threshold_layer={threshold_layer}")
+    print(f"TakeOffSurface: Direction parameter s={s} ({'End to Start' if s == -1 else 'Start to End'})")
     
 except Exception as e:
     print(f"TakeOffSurface: Error getting UI parameters: {e}")
@@ -68,11 +69,7 @@ except Exception as e:
 # ORIGINAL calculations - Exactly as original
 ZIH = 45 + ARPH
 
-#s use 0 for start, -1 for end - EXACTLY as original
-if s == -1:
-    s2 = 180
-else:
-    s2 = 0
+print(f"TakeOffSurface: Direction will be applied during azimuth calculation")
 
 print(f"TakeOffSurface: Getting map CRS...")
 try:
@@ -129,17 +126,50 @@ except Exception as e:
 # ORIGINAL ZIHs calculation
 ZIHs = ((Z0-((Z0-ZE)/rwy_length)*1800))
 
-# Get the azimuth of the line - EXACTLY as original
+# Get the azimuth of the line - FIXED: Simplified consistent logic like other scripts
 for feat in selection:
     geom = feat.geometry().asPolyline()
-    start_point = QgsPoint(geom[-1-s])
-    end_point = QgsPoint(geom[s])
+    print(f"TakeOffSurface: Geometry points count: {len(geom)}")
+    
+    # FIXED: Always use the same points regardless of direction
+    # Direction change is handled by azimuth rotation only (like approach-surface)
+    start_point = QgsPoint(geom[0])   # Always first point
+    end_point = QgsPoint(geom[-1])    # Always last point
     angle0 = start_point.azimuth(end_point)
-    back_angle0 = angle0 + 180
+    
+    print(f"TakeOffSurface: Using consistent points regardless of direction")
+    print(f"TakeOffSurface: start_point = geom[0] (first point)")
+    print(f"TakeOffSurface: end_point = geom[-1] (last point)")
+    print(f"TakeOffSurface: Start point: {start_point.x():.2f}, {start_point.y():.2f}")
+    print(f"TakeOffSurface: End point: {end_point.x():.2f}, {end_point.y():.2f}")
+    print(f"TakeOffSurface: Base azimuth (angle0): {angle0:.2f}°")
+    break  # Use first feature
 
-# initial true azimuth data - EXACTLY as original
-azimuth = angle0 + s2
+# Initial true azimuth data - FIXED: Proper direction logic for real difference
+# Always use the same points but change the azimuth by exactly 180 degrees
+if s == -1:
+    # For reverse direction, use the opposite direction (180 degrees from normal)
+    azimuth = angle0 + 180
+    if azimuth >= 360:
+        azimuth -= 360
+    print(f"TakeOffSurface: REVERSE direction - using angle0 + 180 = {angle0:.2f} + 180 = {azimuth:.2f}°")
+else:
+    # For normal direction, use the forward azimuth as-is
+    azimuth = angle0
+    print(f"TakeOffSurface: NORMAL direction - using angle0 = {azimuth:.2f}°")
+
+print(f"TakeOffSurface: Using direction s={s}")
+print(f"TakeOffSurface: Base azimuth (angle0): {angle0:.2f}°")
+print(f"TakeOffSurface: Final azimuth: {azimuth:.2f}°")
+print(f"TakeOffSurface: Expected difference between directions: 180°")
+print(f"TakeOffSurface: Direction interpretation - s={s} means {'End to Start' if s == -1 else 'Start to End'}")
+
 bazimuth = azimuth + 180
+if bazimuth >= 360:
+    bazimuth -= 360
+
+print(f"TakeOffSurface: Back azimuth (bazimuth): {bazimuth:.2f}°")
+print(f"TakeOffSurface: Direction button should now work correctly!")
 
 # THRESHOLD LAYER SELECTION - Hybrid approach  
 try:

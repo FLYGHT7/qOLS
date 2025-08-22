@@ -24,6 +24,9 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.setupUi(self)
             print("QOLS: Setting up UI")
             
+            # Apply modern stylesheet
+            self.apply_modern_stylesheet()
+            
             # Configure layer combo boxes with geometry filtering
             self.setup_layer_filters()
             
@@ -60,6 +63,61 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             import traceback
             traceback.print_exc()
             raise
+
+    def apply_modern_stylesheet(self):
+        """Apply compact stylesheet for improved UI appearance."""
+        try:
+            import os
+            # Use only the compact stylesheet
+            compact_stylesheet_path = os.path.join(os.path.dirname(__file__), 'styles_compact.qss')
+            
+            if os.path.exists(compact_stylesheet_path):
+                with open(compact_stylesheet_path, 'r') as f:
+                    stylesheet = f.read()
+                self.setStyleSheet(stylesheet)
+                print("QOLS: Compact stylesheet applied successfully")
+            else:
+                print(f"QOLS: Compact stylesheet not found, using fallback styling")
+                # Compact fallback basic styling
+                self.setStyleSheet("""
+                    QDockWidget { font-size: 10px; font-family: "Segoe UI", Arial, sans-serif; }
+                    QGroupBox { 
+                        font-weight: bold; 
+                        border: 2px solid #dee2e6; 
+                        border-radius: 6px; 
+                        margin-top: 8px; 
+                        padding-top: 4px;
+                        font-size: 11px;
+                    }
+                    QGroupBox::title { 
+                        subcontrol-origin: margin; 
+                        left: 8px; 
+                        padding: 0 4px 0 4px; 
+                    }
+                    QPushButton { 
+                        padding: 6px 12px; 
+                        border-radius: 4px; 
+                        font-size: 10px;
+                        min-height: 24px;
+                    }
+                    QPushButton#calculateButton { 
+                        background-color: #28a745; 
+                        color: white; 
+                        font-weight: bold; 
+                    }
+                    QLabel { font-size: 10px; }
+                    QCheckBox { font-size: 10px; }
+                    QTabBar::tab { font-size: 9px; padding: 6px 12px; }
+                    QSpinBox, QDoubleSpinBox, QComboBox, QgsMapLayerComboBox { 
+                        min-height: 24px; 
+                        font-size: 10px; 
+                        padding: 4px;
+                    }
+                """)
+                
+        except Exception as e:
+            print(f"QOLS: Error applying stylesheet: {e}")
+            # Continue without styling
 
     def setup_layer_filters(self):
         """Configure layer combo boxes with geometry-specific filtering."""
@@ -114,65 +172,104 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             print(f"QOLS: Error applying geometry filters: {e}")
 
     def update_selection_info(self):
-        """Update selection information in real-time."""
+        """Update selection information in real-time with improved individual feedback."""
         try:
+            print("QOLS: update_selection_info called")
             runway_layer = self.runwayLayerCombo.currentLayer()
             threshold_layer = self.thresholdLayerCombo.currentLayer()
             
             use_runway_selected = self.useSelectedRunwayCheckBox.isChecked()
             use_threshold_selected = self.useSelectedThresholdCheckBox.isChecked()
             
-            info_parts = []
+            print(f"QOLS: runway_layer = {runway_layer.name() if runway_layer else 'None'}")
+            print(f"QOLS: threshold_layer = {threshold_layer.name() if threshold_layer else 'None'}")
             
-            # Runway selection info
+            # Update runway info
             if runway_layer:
                 runway_selected = len(runway_layer.selectedFeatures())
                 runway_total = runway_layer.featureCount()
                 
                 if use_runway_selected:
                     if runway_selected > 0:
-                        info_parts.append(f"✅ Runway: {runway_selected}/{runway_total} selected")
+                        runway_info = f"• Using {runway_selected} of {runway_total} selected"
+                        runway_status = f"Selected ({runway_selected})"
                     else:
-                        info_parts.append(f"⚠️ Runway: No features selected!")
+                        runway_info = f"• ⚠️ No features selected"
+                        runway_status = f"❌ No selection"
                 else:
-                    info_parts.append(f"📄 Runway: Using all {runway_total} features")
+                    runway_info = f"• All {runway_total} features"
+                    runway_status = f"All ({runway_total})"
             else:
-                info_parts.append("❌ Runway: No layer selected")
+                runway_info = "• ❌ No layer selected"
+                runway_status = "❌ No layer"
             
-            # Threshold selection info  
+            # Update threshold info
             if threshold_layer:
                 threshold_selected = len(threshold_layer.selectedFeatures())
                 threshold_total = threshold_layer.featureCount()
                 
                 if use_threshold_selected:
                     if threshold_selected > 0:
-                        info_parts.append(f"✅ Threshold: {threshold_selected}/{threshold_total} selected")
+                        threshold_info = f"• Using {threshold_selected} of {threshold_total} selected"
+                        threshold_status = f"Selected ({threshold_selected})"
                     else:
-                        info_parts.append(f"⚠️ Threshold: No features selected!")
+                        threshold_info = f"• ⚠️ No features selected"
+                        threshold_status = f"❌ No selection"
                 else:
-                    info_parts.append(f"📄 Threshold: Using all {threshold_total} features")
+                    threshold_info = f"• All {threshold_total} features"
+                    threshold_status = f"All ({threshold_total})"
             else:
-                info_parts.append("❌ Threshold: No layer selected")
+                threshold_info = "• ❌ No layer selected"
+                threshold_status = "❌ No layer"
+            print(f"QOLS: runway_status = {runway_status}")
+            print(f"QOLS: threshold_status = {threshold_status}")
             
-            # Update the info label
-            info_text = " | ".join(info_parts)
-            self.selectionInfoLabel.setText(info_text)
+            # Individual status icons for each layer
+            if "All" in runway_status:
+                runway_icon = "✅"
+            elif "Selected" in runway_status:
+                runway_icon = "⚠️"
+            else:
+                runway_icon = "❌"
             
-            # Update tooltip with detailed info
-            tooltip_text = (
-                "Selection Status:\n"
-                f"• Runway Layer: {'Selected features' if use_runway_selected else 'All features'}\n"
-                f"• Threshold Layer: {'Selected features' if use_threshold_selected else 'All features'}\n\n"
-                "Instructions:\n"
-                "1. Select features in the map layers\n"
-                "2. Check the boxes to use only selected features\n"
-                "3. Uncheck to use all features in the layer"
-            )
-            self.selectionInfoLabel.setToolTip(tooltip_text)
+            if "All" in threshold_status:
+                threshold_icon = "✅"
+            elif "Selected" in threshold_status:
+                threshold_icon = "⚠️"
+            else:
+                threshold_icon = "❌"
+            
+            combined_status = f"📌 Runway: {runway_icon} {runway_status} | Threshold: {threshold_icon} {threshold_status}"
+            
+            try:
+                self.selectionInfoLabel.setText(combined_status)
+                print(f"QOLS: selectionInfoLabel updated: {combined_status}")
+            except Exception as e:
+                print(f"QOLS: Error updating selectionInfoLabel: {e}")
+            
+            print("QOLS: update_selection_info completed successfully")
             
         except Exception as e:
-            print(f"QOLS: Error updating selection info: {e}")
-            self.selectionInfoLabel.setText("Error updating selection info")
+            print(f"QOLS: Error in update_selection_info: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            # Fallback text in case of error
+            try:
+                self.selectionInfoLabel.setText("📌 Status update error - check console")
+            except:
+                pass
+            
+        except Exception as e:
+            print(f"QOLS: Error in update_selection_info: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            # Fallback text in case of error
+            try:
+                self.selectionInfoLabel.setText("📌 Status update error - check console")
+            except:
+                pass
 
     def validate_layer_change(self):
         """Validate layers immediately when user changes selection."""
