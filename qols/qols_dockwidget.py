@@ -703,8 +703,9 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 }
             elif surface_type == "Outer Horizontal":
                 specific_params = {
-                    'height': self.spin_outer_horizontal_height.value(),
-                    'radius': self.spin_outer_horizontal_radius.value()
+                    'code': self.spin_code_outer.value(),
+                    'radius': self.spin_radius_outer.value(),
+                    'height': self.spin_height_outer.value()
                 }
             elif surface_type == "Take-Off Surface":
                 print(f"QOLS DEBUG: Collecting Take-off Surface parameters...")

@@ -799,10 +799,115 @@
         <string>Outer Horizontal</string>
        </attribute>
        <layout class="QFormLayout" name="formLayout_outer_horizontal">
+        <property name="fieldGrowthPolicy">
+         <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+        </property>
+        <property name="labelAlignment">
+         <set>Qt::AlignRight|Qt::AlignVCenter</set>
+        </property>
+        <property name="horizontalSpacing">
+         <number>15</number>
+        </property>
+        <property name="verticalSpacing">
+         <number>6</number>
+        </property>
         <item row="0" column="0">
+         <widget class="QLabel" name="label_code_outer">
+          <property name="text">
+           <string>Code:</string>
+          </property>
+          <property name="styleSheet">
+           <string>font-weight: bold; font-size: 12px; color: #2c3e50;</string>
+          </property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QSpinBox" name="spin_code_outer">
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>4</number>
+          </property>
+          <property name="value">
+           <number>3</number>
+          </property>
+          <property name="toolTip">
+           <string>Aerodrome code number (3 or 4 for outer horizontal surface per DOC 9137)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_radius_outer">
+          <property name="text">
+           <string>Radius (m):</string>
+          </property>
+          <property name="styleSheet">
+           <string>font-weight: bold; font-size: 12px; color: #2c3e50;</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QDoubleSpinBox" name="spin_radius_outer">
+          <property name="minimum">
+           <double>1000.0</double>
+          </property>
+          <property name="maximum">
+           <double>20000.0</double>
+          </property>
+          <property name="value">
+           <double>15000.0</double>
+          </property>
+          <property name="suffix">
+           <string> m</string>
+          </property>
+          <property name="toolTip">
+           <string>Outer horizontal surface radius: 15,000 m for code 3 or 4 (DOC 9137 Part 6)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_height_outer">
+          <property name="text">
+           <string>Height (m):</string>
+          </property>
+          <property name="styleSheet">
+           <string>font-weight: bold; font-size: 12px; color: #2c3e50;</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QDoubleSpinBox" name="spin_height_outer">
+          <property name="minimum">
+           <double>0.0</double>
+          </property>
+          <property name="maximum">
+           <double>500.0</double>
+          </property>
+          <property name="value">
+           <double>45.0</double>
+          </property>
+          <property name="suffix">
+           <string> m</string>
+          </property>
+          <property name="toolTip">
+           <string>Height above aerodrome elevation (45m for code 3/4 per ICAO standards)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="0" colspan="2">
          <widget class="QLabel" name="label_info_outer">
           <property name="text">
-           <string>No configurable parameters for Outer Horizontal surface.</string>
+           <string>📍 Outer Horizontal Surface: 15,000m circle centered on ARP
+• Code 3 or 4 airports only (DOC 9137 Part 6)
+• Requires Aerodrome Reference Point (ARP)
+• Fixed radius for obstacle limitation</string>
+          </property>
+          <property name="styleSheet">
+           <string>color: #6c757d; font-size: 10px; padding: 8px; background-color: #f8f9fa; border-radius: 4px; border: 1px solid #dee2e6;</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
