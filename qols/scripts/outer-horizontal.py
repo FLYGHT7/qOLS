@@ -28,22 +28,22 @@ if code not in [3, 4]:
     print(f"OuterHorizontal: WARNING - Code {code} not standard for outer horizontal (DOC 9137 requires code 3 or 4)")
 
 # Get ARP (Aerodrome Reference Point) from threshold layer
-threshold_layer = globals().get('threshold_layer')
+aerodrome_reference_point_layer = globals().get('threshold_layer')
 use_selected_feature = globals().get('use_selected_feature', True)
 
-if not threshold_layer:
-    raise Exception("No threshold layer provided. Please select a threshold layer from the UI.")
+if not aerodrome_reference_point_layer:
+    raise Exception("No ARP (Aerodrome Reference Point) layer provided. Please select a threshold layer from the UI.")
 
-# Get ARP coordinates - require explicit selection
+# Get ARP coordinates - require explicit selection for DOC 9137 compliance
 if use_selected_feature:
-    selection = threshold_layer.selectedFeatures()
+    selection = aerodrome_reference_point_layer.selectedFeatures()
     if not selection:
-        raise Exception("No ARP (threshold) features selected. Please select ARP feature.")
+        raise Exception("No ARP (Aerodrome Reference Point) features selected. Please select ARP feature.")
     print(f"OuterHorizontal: Using {len(selection)} selected ARP features")
 else:
-    selection = list(threshold_layer.getFeatures())
+    selection = list(aerodrome_reference_point_layer.getFeatures())
     if not selection:
-        raise Exception("No features found in threshold layer.")
+        raise Exception("No features found in ARP (Aerodrome Reference Point) layer.")
     print(f"OuterHorizontal: Using first ARP feature from layer")
 
 # Create memory layer for outer horizontal surface
@@ -66,27 +66,24 @@ features_created = 0
 for feat in selection:
     arp_point = feat.geometry().asPoint()
     arp_x, arp_y = arp_point.x(), arp_point.y()
-    print(f"OuterHorizontal: Creating circle at ARP: {arp_x}, {arp_y}")
+    print(f"OuterHorizontal: Creating 15,000m circle at ARP: {arp_x}, {arp_y}")
     
-    # Create circle geometry - 15,000m radius from ARP
-    circle_points = []
-    num_points = 72  # 5-degree intervals for smooth circle
+    # Use PyQGIS native QgsCircle for precise geometry generation (DOC 9137 compliance)
+    # Create circle centered at ARP with specified radius
+    center_point = QgsPoint(arp_x, arp_y)
+    qgs_circle = QgsCircle(center_point, radius)
     
-    for i in range(num_points):
-        angle = (i * 360.0 / num_points) * pi / 180.0  # Convert to radians
-        x = arp_x + radius * cos(angle)
-        y = arp_y + radius * sin(angle)
-        circle_points.append(QgsPointXY(x, y))
+    # Convert circle to polygon with 360 points (1-degree intervals for maximum precision)
+    # Note: Consider making this configurable in plugin settings for different precision needs
+    num_segments = 360  # Increased from 72 as per client feedback
+    polygon_geometry = qgs_circle.toPolygon(num_segments)
     
-    # Close the polygon
-    circle_points.append(circle_points[0])
+    # Convert to QgsGeometry
+    circle_geometry = QgsGeometry(polygon_geometry)
     
-    # Create polygon geometry
-    polygon = QgsGeometry.fromPolygonXY([circle_points])
-    
-    # Create feature
+    # Create feature with proper geometry reference
     feature = QgsFeature()
-    feature.setGeometry(polygon)
+    feature.setGeometry(circle_geometry)
     feature.setAttributes([
         "Outer Horizontal",
         code,

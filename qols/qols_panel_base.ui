@@ -552,46 +552,6 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_o1_inner">
-          <property name="text">
-           <string>Offset Right (o1):</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QDoubleSpinBox" name="spin_o1_inner">
-          <property name="minimum">
-           <double>-1000.0</double>
-          </property>
-          <property name="maximum">
-           <double>1000.0</double>
-          </property>
-          <property name="value">
-           <double>0.0</double>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_o2_inner">
-          <property name="text">
-           <string>Offset Left (o2):</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QDoubleSpinBox" name="spin_o2_inner">
-          <property name="minimum">
-           <double>-1000.0</double>
-          </property>
-          <property name="maximum">
-           <double>1000.0</double>
-          </property>
-          <property name="value">
-           <double>0.0</double>
-          </property>
-         </widget>
-        </item>
        </layout>
       </widget>
       

@@ -695,9 +695,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 }
             elif surface_type == "Inner Horizontal":
                 specific_params = {
-                    'radius': self.spin_L_inner.value(),          # Distance L is the radius
-                    'offset_right': self.spin_o1_inner.value(),   # Offset Right
-                    'offset_left': self.spin_o2_inner.value()     # Offset Left
+                    'radius': self.spin_L_inner.value()           # Distance L is the radius
                 }
             elif surface_type == "Outer Horizontal":
                 specific_params = {
