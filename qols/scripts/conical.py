@@ -19,8 +19,6 @@ try:
     # Try to get parameters from plugin namespace
     # Conical surface parameters from UI
     L = globals().get('radius', 6000)  # Distance L / Radius from UI
-    o1 = globals().get('offset_right', 0)  # Offset Right 
-    o2 = globals().get('offset_left', 0)   # Offset Left
     
     # Direction parameter
     s = globals().get('direction', 0)  # 0 for start to end, -1 for end to start
@@ -30,21 +28,19 @@ try:
     threshold_layer = globals().get('threshold_layer', None)
     use_selected_feature = globals().get('use_selected_feature', True)
     
-    print(f"Conical: Using parameters - radius: {L}m, offset_right: {o1}, offset_left: {o2}")
+    print(f"Conical: Using parameters - radius: {L}m")
     print(f"Conical: Direction parameter s: {s}, Use selected: {use_selected_feature}")
     
 except Exception as e:
     print(f"Conical: Error getting parameters, using defaults: {e}")
     # Fallback to defaults if parameters not provided
     L = 6000
-    o1 = 0  # right offset
-    o2 = 0  # left offset
     s = 0
     runway_layer = None
     threshold_layer = None
     use_selected_feature = True
 
-print(f"Conical: Final values - radius: {L}m, offset_right: {o1}, offset_left: {o2}, direction: {s}")
+print(f"Conical: Final values - radius: {L}m, direction: {s}")
 print(f"Conical: Direction interpretation - s={s} means {'End to Start' if s == -1 else 'Start to End'}")
 
 map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
@@ -270,10 +266,10 @@ if sc < 30000:
 canvas.zoomScale(sc)
 
 print(f"Conical: Conical surface calculation completed successfully")
-print(f"Conical: Radius: {L}m, Offset Right: {o1}, Offset Left: {o2}")
+print(f"Conical: Radius: {L}m")
 
 # Success message
-iface.messageBar().pushMessage("QOLS Success", f"Conical Surface (R={L}m, Offsets: R={o1}, L={o2}) calculated successfully", level=Qgis.Success)
+iface.messageBar().pushMessage("QOLS Success", f"Conical Surface (R={L}m) calculated successfully", level=Qgis.Success)
 
 # Clean up globals
 set(globals().keys()).difference(myglobals)
