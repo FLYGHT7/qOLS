@@ -75,9 +75,8 @@ for feat in selection:
     print(f"OuterHorizontal: Creating 15,000m circle at ARP: {arp_x}, {arp_y}")
     
     # Use PyQGIS native QgsCircle for precise geometry generation (DOC 9137 compliance)
-    # Create circle centered at ARP with specified radius
-    center_point = QgsPoint(arp_x, arp_y)
-    qgs_circle = QgsCircle(center_point, radius)
+    # Create circle centered at ARP with specified radius (using arp_point directly)
+    qgs_circle = QgsCircle(arp_point, radius)
     
     # Convert circle to polygon with 360 points (1-degree intervals for maximum precision)
     # Note: Consider making this configurable in plugin settings for different precision needs
