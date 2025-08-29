@@ -3,6 +3,10 @@ Outer Horizontal Surface
 DOC 9137 Part 6 Implementation - 15,000m circle centered on ARP
 For Aerodrome Code 3 or 4 only
 Procedure to be used in Projected Coordinate System Only
+
+Note: Plugin integration uses 'threshold_layer' parameter name for compatibility
+with existing UI, but this script uses ARP (Aerodrome Reference Point) terminology
+for clarity and DOC 9137 compliance.
 '''
 
 from qgis.core import *
@@ -28,6 +32,8 @@ if code not in [3, 4]:
     print(f"OuterHorizontal: WARNING - Code {code} not standard for outer horizontal (DOC 9137 requires code 3 or 4)")
 
 # Get ARP (Aerodrome Reference Point) from threshold layer
+# Note: Plugin parameter is still named 'threshold_layer' for compatibility,
+# but we use descriptive variable name for better code documentation
 aerodrome_reference_point_layer = globals().get('threshold_layer')
 use_selected_feature = globals().get('use_selected_feature', True)
 
