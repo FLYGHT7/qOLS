@@ -691,7 +691,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 }
             elif surface_type == "Conical":
                 specific_params = {
-                    'radius': self.spin_L_conical.value()  # Distance L is the radius
+                    'radius': self.spin_L_conical.value(),        # Distance L is the radius
+                    'height': self.spin_height_conical.value()    # Height for 3D polygon
                 }
             elif surface_type == "Inner Horizontal":
                 specific_params = {

@@ -19,6 +19,7 @@ try:
     # Try to get parameters from plugin namespace
     # Conical surface parameters from UI
     L = globals().get('radius', 6000)  # Distance L / Radius from UI
+    height = globals().get('height', 60.0)  # Height for 3D polygon (new parameter)
     
     # Direction parameter
     s = globals().get('direction', 0)  # 0 for start to end, -1 for end to start
@@ -28,19 +29,20 @@ try:
     threshold_layer = globals().get('threshold_layer', None)
     use_selected_feature = globals().get('use_selected_feature', True)
     
-    print(f"Conical: Using parameters - radius: {L}m")
+    print(f"Conical: Using parameters - radius: {L}m, height: {height}m")
     print(f"Conical: Direction parameter s: {s}, Use selected: {use_selected_feature}")
     
 except Exception as e:
     print(f"Conical: Error getting parameters, using defaults: {e}")
     # Fallback to defaults if parameters not provided
     L = 6000
+    height = 60.0
     s = 0
     runway_layer = None
     threshold_layer = None
     use_selected_feature = True
 
-print(f"Conical: Final values - radius: {L}m, direction: {s}")
+print(f"Conical: Final values - radius: {L}m, height: {height}m, direction: {s}")
 print(f"Conical: Direction interpretation - s={s} means {'End to Start' if s == -1 else 'Start to End'}")
 
 map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
@@ -164,84 +166,98 @@ print(f"Conical: x4={x4}, x5={x5}, x6={x6}")
 
 print(f"Conical: Using original coordinate calculation methods - trigonometry + transformations")
 
-# Create memory layer
-# create a new memory layer
-line_start = QgsPoint(pro_coords[0],pro_coords[1])
-line_end = QgsPoint(x4[0],x4[1])
-line = QgsGeometry.fromPolyline([line_start,line_end])
-v_layer = QgsVectorLayer("Linestring?crs="+map_srid, "Conical", "memory")
-pr = v_layer.dataProvider()
-# create a new feature
-seg = QgsFeature()
-# add the geometry to the feature, 
-seg.setGeometry(QgsGeometry.fromPolyline([line_start, line_end]))
-# ...it was here that you can add attributes, after having defined....
-# add the geometry to the layer
-pr.addFeatures( [ seg ] )
-# update extent of the layer (not necessary)
+# Create memory layer for 3D polygon (PolygonZ) instead of separate LineStrings
+v_layer = QgsVectorLayer(f"PolygonZ?crs={map_srid}", "Conical Surface", "memory")
+v_layer_provider = v_layer.dataProvider()
+
+# Add attributes for the polygon
+v_layer_provider.addAttributes([
+    QgsField("surface_type", QVariant.String),
+    QgsField("radius_m", QVariant.Double),
+    QgsField("height_m", QVariant.Double),
+    QgsField("runway_start_x", QVariant.Double),
+    QgsField("runway_start_y", QVariant.Double),
+    QgsField("runway_end_x", QVariant.Double),
+    QgsField("runway_end_y", QVariant.Double),
+    QgsField("azimuth", QVariant.Double)
+])
+v_layer.updateFields()
+
+print(f"Conical: Creating racetrack polygon with radius {L}m at height {height}m")
+
+polygon_points = []
+
+# Start with pro_coords (left side start)
+polygon_points.append(QgsPoint(pro_coords[0], pro_coords[1], height))
+
+# Add circular arc at start (from pro_coords to x2 via center xc)
+# Approximate the circular arc with multiple points for smooth curve
+num_arc_points = 18  # 10-degree intervals for 180-degree arc
+for i in range(1, num_arc_points):
+    # Calculate intermediate points along the arc from pro_coords to x2
+    arc_angle = angle0 + (-90 + (i * 180.0 / num_arc_points))  # -90 to +90 degrees
+    arc_coord = coord(angle0, L, arc_angle - angle0)
+    polygon_points.append(QgsPoint(arc_coord[0], arc_coord[1], height))
+
+# Add x2 point (right side start)
+polygon_points.append(QgsPoint(x2[0], x2[1], height))
+
+# Add straight line to x4 (right side end)
+polygon_points.append(QgsPoint(x4[0], x4[1], height))
+
+# Add circular arc at end (from x4 to x6 via center x5)
+for i in range(1, num_arc_points):
+    # Calculate intermediate points along the arc from x4 to x6
+    arc_angle = back_angle0 + (90 + (i * 180.0 / num_arc_points))  # +90 to +270 degrees (or -90)
+    arc_coord = coord2(back_angle0, L, arc_angle - back_angle0)
+    polygon_points.append(QgsPoint(arc_coord[0], arc_coord[1], height))
+
+# Add x6 point (left side end)
+polygon_points.append(QgsPoint(x6[0], x6[1], height))
+
+# Close the polygon by returning to start
+polygon_points.append(QgsPoint(pro_coords[0], pro_coords[1], height))
+
+print(f"Conical: Created racetrack polygon with {len(polygon_points)} points")
+
+# Create 3D polygon geometry
+polygon_geometry = QgsGeometry.fromPolygonXY([polygon_points])
+
+# Create feature
+feature = QgsFeature()
+feature.setGeometry(polygon_geometry)
+feature.setAttributes([
+    "Conical",
+    L,
+    height,
+    start_point.x(),
+    start_point.y(),
+    end_point.x(),
+    end_point.y(),
+    angle0
+])
+
+# Add feature to layer
+v_layer_provider.addFeatures([feature])
+
 v_layer.updateExtents()
-# show the line  
+print(f"Conical: Created conical 3D surface")
+
+# Add to map
 QgsProject.instance().addMapLayers([v_layer])
 
-# Join outer VOR splay 
-line_start = QgsPoint(x6[0],x6[1])
-line_end = QgsPoint(x2[0],x2[1])
-line = QgsGeometry.fromPolyline([line_start,line_end])
-pr = v_layer.dataProvider()
-# create a new feature
-seg = QgsFeature()
-# add the geometry to the feature, 
-seg.setGeometry(QgsGeometry.fromPolyline([line_start, line_end]))
-# ...it was here that you can add attributes, after having defined....
-# add the geometry to the layer
-pr.addFeatures( [ seg ] )
-# update extent of the layer (not necessary)
-v_layer.updateExtents()
-# show the line  
-QgsProject.instance().addMapLayers([v_layer])
-
-# Circular String
-pr = v_layer.dataProvider()
-cString = QgsCircularString()
-#cString.fromTwoPointsAndCenter((QgsPoint(pro_coords[0],pro_coords[1]),QgsPoint(x2[0],x2[1]),QgsPoint(xc[0],xc[1]))
-#construct 
-cString.setPoints([QgsPoint(pro_coords[0],pro_coords[1]),QgsPoint(xc[0],xc[1]),QgsPoint(x2[0],x2[1])])
-# create a new feature
-geom_cString=QgsGeometry(cString)
-seg = QgsFeature()
-# add the geometry to the feature, 
-seg.setGeometry(geom_cString)
-# ...it was here that you can add attributes, after having defined....
-# add the geometry to the layer
-pr.addFeatures( [ seg ] )
-# update extent of the layer (not necessary)
-v_layer.updateExtents()
-# show the line  
-QgsProject.instance().addMapLayers([v_layer])
-
-# Circular String
-pr = v_layer.dataProvider()
-cString = QgsCircularString()
-cString.setPoints([QgsPoint(x4[0],x4[1]),QgsPoint(x5[0],x5[1]),QgsPoint(x6[0],x6[1])])
-# create a new feature
-geom_cString=QgsGeometry(cString)
-seg = QgsFeature()
-# add the geometry to the feature, 
-seg.setGeometry(geom_cString)
-# ...it was here that you can add attributes, after having defined....
-# add the geometry to the layer
-pr.addFeatures( [ seg ] )
-# update extent of the layer (not necessary)
-v_layer.updateExtents()
-# show the line  
-QgsProject.instance().addMapLayers([v_layer])
-
-# Change style of layer 
-v_layer.renderer().symbol().setColor(QColor("orange"))
-v_layer.renderer().symbol().setWidth(0.7)
+# Style the layer for 3D polygon (orange like original)
+symbol = QgsFillSymbol.createSimple({
+    'color': '255,165,0,100',  # Orange with transparency
+    'style': 'solid',
+    'outline_color': '255,165,0,255',
+    'outline_style': 'solid',
+    'outline_width': '0.7'
+})
+v_layer.renderer().setSymbol(symbol)
 v_layer.triggerRepaint()
 
-print(f"Conical: Applied orange style to conical surface")
+print(f"Conical: Applied orange style to conical 3D surface")
 
 # Zoom to layer
 v_layer.selectAll()
@@ -265,14 +281,13 @@ if sc < 30000:
    sc=30000
 canvas.zoomScale(sc)
 
-print(f"Conical: Conical surface calculation completed successfully")
-print(f"Conical: Radius: {L}m")
+print(f"Conical: Conical 3D surface calculation completed successfully")
+print(f"Conical: Radius: {L}m, Height: {height}m")
 
 # Success message
-iface.messageBar().pushMessage("QOLS Success", f"Conical Surface (R={L}m) calculated successfully", level=Qgis.Success)
+iface.messageBar().pushMessage("QOLS Success", f"Conical 3D Surface (R={L}m, H={height}m) calculated successfully", level=Qgis.Success)
 
 # Clean up globals
-set(globals().keys()).difference(myglobals)
 for g in set(globals().keys()).difference(myglobals):
     if g != 'myglobals':
         del globals()[g]

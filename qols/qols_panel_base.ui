@@ -523,6 +523,35 @@
           </property>
          </widget>
         </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_height_conical">
+          <property name="text">
+           <string>Height (m):</string>
+          </property>
+          <property name="styleSheet">
+           <string>font-weight: bold; font-size: 12px; color: #2c3e50;</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QDoubleSpinBox" name="spin_height_conical">
+          <property name="minimum">
+           <double>0.0</double>
+          </property>
+          <property name="maximum">
+           <double>500.0</double>
+          </property>
+          <property name="value">
+           <double>60.0</double>
+          </property>
+          <property name="toolTip">
+           <string>Height for 3D PolygonZ surface. Conical surfaces typically use 60m height for ICAO compliance.</string>
+          </property>
+          <property name="styleSheet">
+           <string>font-weight: bold; border: 2px solid #3498db;</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
       
