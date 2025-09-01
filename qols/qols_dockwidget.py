@@ -695,7 +695,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 }
             elif surface_type == "Inner Horizontal":
                 specific_params = {
-                    'radius': self.spin_L_inner.value()           # Distance L is the radius
+                    'radius': self.spin_L_inner.value(),          # Distance L is the radius
+                    'height': self.spin_height_inner.value()      # Height for 3D polygon
                 }
             elif surface_type == "Outer Horizontal":
                 specific_params = {
