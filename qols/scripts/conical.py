@@ -12,6 +12,7 @@ from PyQt5.QtGui import *
 from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
+from qgis.utils import iface
 
 # Parameters - NOW COME FROM UI INSTEAD OF HARDCODED
 # These parameters will be injected by the plugin
@@ -84,8 +85,11 @@ for feat in selection:
     print(f"Conical: Geometry points count: {len(geom)}")
     
     # Use original logic - always first to last point
-    start_point = QgsPoint(geom[0])
-    end_point = QgsPoint(geom[-1])
+    # Convert QgsPointXY to QgsPoint for compatibility
+    start_point_xy = geom[0]
+    end_point_xy = geom[-1]
+    start_point = QgsPoint(start_point_xy.x(), start_point_xy.y())
+    end_point = QgsPoint(end_point_xy.x(), end_point_xy.y())
     
     # Apply direction logic BEFORE calculating azimuth (like original)
     if s == -1:
@@ -183,45 +187,133 @@ v_layer_provider.addAttributes([
 ])
 v_layer.updateFields()
 
-print(f"Conical: Creating racetrack polygon with radius {L}m at height {height}m")
+print(f"Conical: Creating unified 3D surface with radius {L}m at height {height}m")
 
 polygon_points = []
 
-# Start with pro_coords (left side start)
-polygon_points.append(QgsPoint(pro_coords[0], pro_coords[1], height))
+# SOLUTION: Use QGIS CircularString interpolation to get exact arc points
+# This matches exactly how the original working code creates the circular arcs
+# IMPORTANT: Changed point sequence to avoid crossing lines
 
-# Add circular arc at start (from pro_coords to x2 via center xc)
-# Approximate the circular arc with multiple points for smooth curve
-num_arc_points = 18  # 10-degree intervals for 180-degree arc
-for i in range(1, num_arc_points):
-    # Calculate intermediate points along the arc from pro_coords to x2
-    arc_angle = angle0 + (-90 + (i * 180.0 / num_arc_points))  # -90 to +90 degrees
-    arc_coord = coord(angle0, L, arc_angle - angle0)
-    polygon_points.append(QgsPoint(arc_coord[0], arc_coord[1], height))
+print(f"Conical: Using QGIS CircularString interpolation to generate polygon points")
+print(f"Conical: CORRECTED sequence to avoid line crossings:")
+print(f"Conical: 1. Arc 1: pro_coords → xc → x2")
+print(f"Conical: 2. Line: x2 → x6 (connect arc endpoints)")
+print(f"Conical: 3. Arc 2: x6 → x5 → x4 (REVERSED)")
+print(f"Conical: 4. Line: x4 → pro_coords (close polygon)")
 
-# Add x2 point (right side start)
-polygon_points.append(QgsPoint(x2[0], x2[1], height))
+# First arc: Create CircularString and extract points
+# This is exactly how the original code creates the first arc: [pro_coords, xc, x2]
+cString1 = QgsCircularString()
+cString1.setPoints([QgsPoint(pro_coords[0], pro_coords[1]), 
+                    QgsPoint(xc[0], xc[1]), 
+                    QgsPoint(x2[0], x2[1])])
 
-# Add straight line to x4 (right side end)
-polygon_points.append(QgsPoint(x4[0], x4[1], height))
+# Convert to regular geometry and extract points with high resolution
+geom1 = QgsGeometry(cString1)
+# Convert to segmented curve with many points for smooth polygon
+segmented1 = geom1.convertToType(QgsWkbTypes.LineGeometry, True)
+if segmented1:
+    # Handle both LineString and MultiLineString cases
+    if segmented1.wkbType() == QgsWkbTypes.LineString:
+        polyline1 = segmented1.asPolyline()
+        print(f"Conical: Arc 1 interpolated to {len(polyline1)} points (LineString)")
+        
+        # Add arc points with height
+        for point in polyline1:
+            polygon_points.append(QgsPoint(point.x(), point.y(), height))
+    elif segmented1.wkbType() == QgsWkbTypes.MultiLineString:
+        multiline1 = segmented1.asMultiPolyline()
+        print(f"Conical: Arc 1 interpolated to {len(multiline1)} parts (MultiLineString)")
+        
+        # Add points from all parts
+        for part in multiline1:
+            for point in part:
+                polygon_points.append(QgsPoint(point.x(), point.y(), height))
+    else:
+        print(f"Conical: Warning - Unexpected geometry type: {segmented1.wkbType()}")
+        # Fallback to original points
+        polygon_points.extend([
+            QgsPoint(pro_coords[0], pro_coords[1], height),
+            QgsPoint(xc[0], xc[1], height),
+            QgsPoint(x2[0], x2[1], height)
+        ])
+else:
+    print("Conical: Warning - Could not interpolate first arc, using original points")
+    polygon_points.extend([
+        QgsPoint(pro_coords[0], pro_coords[1], height),
+        QgsPoint(xc[0], xc[1], height),
+        QgsPoint(x2[0], x2[1], height)
+    ])
 
-# Add circular arc at end (from x4 to x6 via center x5)
-for i in range(1, num_arc_points):
-    # Calculate intermediate points along the arc from x4 to x6
-    arc_angle = back_angle0 + (90 + (i * 180.0 / num_arc_points))  # +90 to +270 degrees (or -90)
-    arc_coord = coord2(back_angle0, L, arc_angle - back_angle0)
-    polygon_points.append(QgsPoint(arc_coord[0], arc_coord[1], height))
-
-# Add x6 point (left side end)
+# Add straight line from x2 to x6 (connect arc endpoints, not diagonals)
 polygon_points.append(QgsPoint(x6[0], x6[1], height))
 
-# Close the polygon by returning to start
+# Second arc: Create CircularString and extract points  
+# This is exactly how the original code creates the second arc: [x6, x5, x4] (REVERSED)
+cString2 = QgsCircularString()
+cString2.setPoints([QgsPoint(x6[0], x6[1]), 
+                    QgsPoint(x5[0], x5[1]), 
+                    QgsPoint(x4[0], x4[1])])
+
+# Convert to regular geometry and extract points with high resolution
+geom2 = QgsGeometry(cString2)
+# Convert to segmented curve with many points for smooth polygon
+segmented2 = geom2.convertToType(QgsWkbTypes.LineGeometry, True)
+if segmented2:
+    # Handle both LineString and MultiLineString cases
+    if segmented2.wkbType() == QgsWkbTypes.LineString:
+        polyline2 = segmented2.asPolyline()
+        print(f"Conical: Arc 2 interpolated to {len(polyline2)} points (LineString)")
+        
+        # Add arc points with height (skip first point to avoid duplication with x6)
+        for i, point in enumerate(polyline2):
+            if i == 0:  # Skip first point as it's the same as x6 we just added
+                continue
+            polygon_points.append(QgsPoint(point.x(), point.y(), height))
+    elif segmented2.wkbType() == QgsWkbTypes.MultiLineString:
+        multiline2 = segmented2.asMultiPolyline()
+        print(f"Conical: Arc 2 interpolated to {len(multiline2)} parts (MultiLineString)")
+        
+        # Add points from all parts (skip first point of first part to avoid duplication with x6)
+        for part_idx, part in enumerate(multiline2):
+            for point_idx, point in enumerate(part):
+                if part_idx == 0 and point_idx == 0:  # Skip first point of first part (x6)
+                    continue
+                polygon_points.append(QgsPoint(point.x(), point.y(), height))
+    else:
+        print(f"Conical: Warning - Unexpected geometry type: {segmented2.wkbType()}")
+        # Fallback to original points (reversed order: x5, x4)
+        polygon_points.extend([
+            QgsPoint(x5[0], x5[1], height),
+            QgsPoint(x4[0], x4[1], height)
+        ])
+else:
+    print("Conical: Warning - Could not interpolate second arc, using original points")
+    polygon_points.extend([
+        QgsPoint(x5[0], x5[1], height),
+        QgsPoint(x4[0], x4[1], height)
+    ])
+
+# Add straight line back to start (closing the polygon)
 polygon_points.append(QgsPoint(pro_coords[0], pro_coords[1], height))
 
-print(f"Conical: Created racetrack polygon with {len(polygon_points)} points")
+print(f"Conical: Created surface with proper circular arcs using QGIS interpolation")
+print(f"Conical: Total points in polygon: {len(polygon_points)}")
+print(f"Conical: Point sequence: pro_coords → arc1 → x2 → x6 → arc2 → x4 → pro_coords")
+print(f"Conical: This avoids crossing diagonal lines")
 
-# Create 3D polygon geometry
-polygon_geometry = QgsGeometry.fromPolygonXY([polygon_points])
+# Create 3D polygon geometry using WKT for proper PolygonZ
+# Convert points to WKT format with Z coordinates
+wkt_points = []
+for pt in polygon_points:
+    wkt_points.append(f"{pt.x()} {pt.y()} {pt.z()}")
+
+# Create WKT string for PolygonZ
+wkt_polygon = f"POLYGONZ(({', '.join(wkt_points)}))"
+polygon_geometry = QgsGeometry.fromWkt(wkt_polygon)
+
+print(f"Conical: Created true 3D PolygonZ geometry with Z coordinates")
 
 # Create feature
 feature = QgsFeature()

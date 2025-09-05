@@ -43,6 +43,14 @@ print(f"InnerHorizontal: Final values - radius: {L}m, height: {height}m, directi
 
 map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 
+# Work exclusively in projected coordinate system - coordinate transformations
+source_crs = QgsCoordinateReferenceSystem(4326)
+dest_crs = QgsCoordinateReferenceSystem(map_srid)
+# transformto
+trto = QgsCoordinateTransform(source_crs, dest_crs, QgsProject.instance())
+# transformfrom
+trfm = QgsCoordinateTransform(dest_crs, source_crs, QgsProject.instance())
+
 # ENHANCED LAYER SELECTION - Use layers from UI
 try:
     if runway_layer is not None:
@@ -93,9 +101,11 @@ for feat in selection:
     geom = feat.geometry().asPolyline()
     print(f"InnerHorizontal: Geometry points count: {len(geom)}")
     
-    # Get runway endpoints
-    start_point = QgsPoint(geom[0])   # Always first point
-    end_point = QgsPoint(geom[-1])    # Always last point
+    # Get runway endpoints - convert QgsPointXY to QgsPoint
+    start_point_xy = geom[0]
+    end_point_xy = geom[-1]
+    start_point = QgsPoint(start_point_xy.x(), start_point_xy.y())   # Always first point
+    end_point = QgsPoint(end_point_xy.x(), end_point_xy.y())       # Always last point
     angle0 = start_point.azimuth(end_point)
     
     print(f"InnerHorizontal: Start point: {start_point.x()}, {start_point.y()}")
@@ -124,59 +134,176 @@ for feat in selection:
     if back_angle0 >= 360:
         back_angle0 -= 360
 
-    # Calculate racetrack points using QgsPoint.project() - SAME AS ORIGINAL
+    # Calculate racetrack points using ORIGINAL LOGIC - SAME AS CONICAL SURFACE
     print(f"InnerHorizontal: Creating racetrack polygon with radius {L}m at height {height}m")
+    print(f"InnerHorizontal: Using same successful approach as conical surface")
     
-    # Start end projections using angle0 (same as original)
-    x1_point = start_point.project(L, angle0 - 90)  # Left side start
-    x2_point = start_point.project(L, angle0 + 90)  # Right side start
-    xc_point = start_point.project(L, angle0)       # center point
+    # Use ORIGINAL coordinate calculation methods from working script
+    # Distance and bearing calculations (same as original inner horizontal)
+    dist = L
     
-    # End projections using back_angle0 (same as original)
-    x4_point = end_point.project(L, back_angle0 + 90)   # Right side end
-    x5_point = end_point.project(L, back_angle0)        # center point
-    x6_point = end_point.project(L, back_angle0 - 90)   # Left side end
+    # Original coord function - same as conical surface pattern
+    def coord(angle0, dist1, off):
+        dist = dist1
+        bearing = angle0 + off
+        angle = 90 - bearing
+        bearing = math.radians(bearing)
+        angle = math.radians(angle)
+        dist_x, dist_y = (dist * math.cos(angle), dist * math.sin(angle))
+        xfinal, yfinal = (start_point.x() + dist_x, start_point.y() + dist_y)
+        
+        # Transform coordinates (same pattern as conical)
+        pro_coords = trto.transform(trfm.transform(xfinal, yfinal))
+        return pro_coords
+    
+    # Original coord2 function - same as conical surface pattern  
+    def coord2(angle0, dist1, off):
+        dist = dist1
+        bearing = angle0 + off
+        angle = 90 - bearing
+        bearing = math.radians(bearing)
+        angle = math.radians(angle)
+        dist_x, dist_y = (dist * math.cos(angle), dist * math.sin(angle))
+        xfinal, yfinal = (end_point.x() + dist_x, end_point.y() + dist_y)
+        
+        # Transform coordinates (same pattern as conical)
+        pro_coords2 = trto.transform(trfm.transform(xfinal, yfinal))
+        return pro_coords2
+    
+    # Calculate 6 key points exactly like conical surface
+    pro_coords = coord(angle0, L, -90)  # Starting point left
+    x2 = coord(angle0, L, 90)           # Starting point right  
+    xc = coord(angle0, L, 0)            # Starting center point
+    
+    x4 = coord2(back_angle0, L, 90)     # Ending point right
+    x5 = coord2(back_angle0, L, 0)      # Ending center point
+    x6 = coord2(back_angle0, L, -90)    # Ending point left
+    
+    print(f"InnerHorizontal: Calculated 6 points using original trigonometry + transformations")
+    print(f"InnerHorizontal: pro_coords: {pro_coords}, x2: {x2}, x4: {x4}, x6: {x6}")
 
-    print(f"InnerHorizontal: Calculated racetrack boundary points (including center points xc and x5)")
-
-    # Create racetrack polygon using circular arcs at ends
-    # We'll approximate the circular ends with multiple points for smooth curves
+    # SOLUTION: Use QGIS CircularString interpolation - SAME AS CONICAL SURFACE SUCCESS
+    print(f"InnerHorizontal: Using QGIS CircularString interpolation for exact arcs")
+    print(f"InnerHorizontal: CORRECTED sequence to avoid line crossings:")
+    print(f"InnerHorizontal: 1. Arc 1: pro_coords → xc → x2")
+    print(f"InnerHorizontal: 2. Line: x2 → x6 (connect arc endpoints)")
+    print(f"InnerHorizontal: 3. Arc 2: x6 → x5 → x4 (REVERSED)")
+    print(f"InnerHorizontal: 4. Line: x4 → pro_coords (close polygon)")
     
     polygon_points = []
-    
-    # Start with left side straight line
-    polygon_points.append(QgsPoint(x1_point.x(), x1_point.y(), height))
-    
-    # Add circular arc at start (from x1 to x2 via center start_point)
-    # Create multiple points along the arc for smooth curve
-    num_arc_points = 18  # 10-degree intervals for 180-degree arc
-    for i in range(1, num_arc_points):
-        angle_offset = (i * 180.0 / num_arc_points) - 90  # -90 to +90 degrees
-        arc_point = start_point.project(L, angle0 + angle_offset)
-        polygon_points.append(QgsPoint(arc_point.x(), arc_point.y(), height))
-    
-    # Add right side point at start
-    polygon_points.append(QgsPoint(x2_point.x(), x2_point.y(), height))
-    
-    # Add right side straight line to end
-    polygon_points.append(QgsPoint(x4_point.x(), x4_point.y(), height))
-    
-    # Add circular arc at end (from x4 to x6 via center end_point)
-    for i in range(1, num_arc_points):
-        angle_offset = (i * 180.0 / num_arc_points) + 90  # +90 to +270 degrees (or -90)
-        arc_point = end_point.project(L, back_angle0 + angle_offset)
-        polygon_points.append(QgsPoint(arc_point.x(), arc_point.y(), height))
-    
-    # Add left side point at end
-    polygon_points.append(QgsPoint(x6_point.x(), x6_point.y(), height))
-    
-    # Close the polygon by returning to start
-    polygon_points.append(QgsPoint(x1_point.x(), x1_point.y(), height))
-    
-    print(f"InnerHorizontal: Created racetrack polygon with {len(polygon_points)} points")
 
-    # Create 3D polygon geometry
-    polygon_geometry = QgsGeometry.fromPolygonXY([polygon_points])
+    # First arc: Create CircularString and extract points  
+    # This is exactly how the conical surface creates the first arc: [pro_coords, xc, x2]
+    cString1 = QgsCircularString()
+    cString1.setPoints([QgsPoint(pro_coords[0], pro_coords[1]), 
+                        QgsPoint(xc[0], xc[1]), 
+                        QgsPoint(x2[0], x2[1])])
+
+    # Convert to regular geometry and extract points with high resolution
+    geom1 = QgsGeometry(cString1)
+    # Convert to segmented curve with many points for smooth polygon
+    segmented1 = geom1.convertToType(QgsWkbTypes.LineGeometry, True)
+    if segmented1:
+        # Handle both LineString and MultiLineString cases
+        if segmented1.wkbType() == QgsWkbTypes.LineString:
+            polyline1 = segmented1.asPolyline()
+            print(f"InnerHorizontal: Arc 1 interpolated to {len(polyline1)} points (LineString)")
+            
+            # Add arc points with height
+            for point in polyline1:
+                polygon_points.append(QgsPoint(point.x(), point.y(), height))
+        elif segmented1.wkbType() == QgsWkbTypes.MultiLineString:
+            multiline1 = segmented1.asMultiPolyline()
+            print(f"InnerHorizontal: Arc 1 interpolated to {len(multiline1)} parts (MultiLineString)")
+            
+            # Add points from all parts
+            for part in multiline1:
+                for point in part:
+                    polygon_points.append(QgsPoint(point.x(), point.y(), height))
+        else:
+            print(f"InnerHorizontal: Warning - Unexpected geometry type: {segmented1.wkbType()}")
+            # Fallback to original points
+            polygon_points.extend([
+                QgsPoint(pro_coords[0], pro_coords[1], height),
+                QgsPoint(xc[0], xc[1], height),
+                QgsPoint(x2[0], x2[1], height)
+            ])
+    else:
+        print("InnerHorizontal: Warning - Could not interpolate first arc, using original points")
+        polygon_points.extend([
+            QgsPoint(pro_coords[0], pro_coords[1], height),
+            QgsPoint(xc[0], xc[1], height),
+            QgsPoint(x2[0], x2[1], height)
+        ])
+
+    # Add straight line from x2 to x6 (connect arc endpoints, not diagonals)
+    polygon_points.append(QgsPoint(x6[0], x6[1], height))
+
+    # Second arc: Create CircularString and extract points  
+    # This is exactly how the conical surface creates the second arc: [x6, x5, x4] (REVERSED)
+    cString2 = QgsCircularString()
+    cString2.setPoints([QgsPoint(x6[0], x6[1]), 
+                        QgsPoint(x5[0], x5[1]), 
+                        QgsPoint(x4[0], x4[1])])
+
+    # Convert to regular geometry and extract points with high resolution
+    geom2 = QgsGeometry(cString2)
+    # Convert to segmented curve with many points for smooth polygon
+    segmented2 = geom2.convertToType(QgsWkbTypes.LineGeometry, True)
+    if segmented2:
+        # Handle both LineString and MultiLineString cases
+        if segmented2.wkbType() == QgsWkbTypes.LineString:
+            polyline2 = segmented2.asPolyline()
+            print(f"InnerHorizontal: Arc 2 interpolated to {len(polyline2)} points (LineString)")
+            
+            # Add arc points with height (skip first point to avoid duplication with x6)
+            for i, point in enumerate(polyline2):
+                if i == 0:  # Skip first point as it's the same as x6 we just added
+                    continue
+                polygon_points.append(QgsPoint(point.x(), point.y(), height))
+        elif segmented2.wkbType() == QgsWkbTypes.MultiLineString:
+            multiline2 = segmented2.asMultiPolyline()
+            print(f"InnerHorizontal: Arc 2 interpolated to {len(multiline2)} parts (MultiLineString)")
+            
+            # Add points from all parts (skip first point of first part to avoid duplication with x6)
+            for part_idx, part in enumerate(multiline2):
+                for point_idx, point in enumerate(part):
+                    if part_idx == 0 and point_idx == 0:  # Skip first point of first part (x6)
+                        continue
+                    polygon_points.append(QgsPoint(point.x(), point.y(), height))
+        else:
+            print(f"InnerHorizontal: Warning - Unexpected geometry type: {segmented2.wkbType()}")
+            # Fallback to original points (reversed order: x5, x4)
+            polygon_points.extend([
+                QgsPoint(x5[0], x5[1], height),
+                QgsPoint(x4[0], x4[1], height)
+            ])
+    else:
+        print("InnerHorizontal: Warning - Could not interpolate second arc, using original points")
+        polygon_points.extend([
+            QgsPoint(x5[0], x5[1], height),
+            QgsPoint(x4[0], x4[1], height)
+        ])
+
+    # Add straight line back to start (closing the polygon)
+    polygon_points.append(QgsPoint(pro_coords[0], pro_coords[1], height))
+    
+    print(f"InnerHorizontal: Created racetrack surface with proper circular arcs using QGIS interpolation")
+    print(f"InnerHorizontal: Total points in polygon: {len(polygon_points)}")
+    print(f"InnerHorizontal: Point sequence: pro_coords → arc1 → x2 → x6 → arc2 → x4 → pro_coords")
+    print(f"InnerHorizontal: This avoids crossing diagonal lines - SAME FIX AS CONICAL SURFACE")
+
+    # Create 3D polygon geometry using WKT for proper PolygonZ
+    # Convert points to WKT format with Z coordinates
+    wkt_points = []
+    for pt in polygon_points:
+        wkt_points.append(f"{pt.x()} {pt.y()} {pt.z()}")
+    
+    # Create WKT string for PolygonZ
+    wkt_polygon = f"POLYGONZ(({', '.join(wkt_points)}))"
+    polygon_geometry = QgsGeometry.fromWkt(wkt_polygon)
+    
+    print(f"InnerHorizontal: Created true 3D PolygonZ geometry with Z coordinates")
     
     # Create feature
     feature = QgsFeature()
