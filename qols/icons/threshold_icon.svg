@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <!-- Threshold icon - threshold markings at runway end -->
+  <rect x="2" y="6" width="12" height="4" fill="#e2e8f0" stroke="#4a5568" stroke-width="0.5"/>
+  <!-- Threshold stripes -->
+  <rect x="2" y="6" width="2" height="4" fill="#f56565"/>
+  <rect x="5" y="6" width="1" height="4" fill="#ffffff"/>
+  <rect x="7" y="6" width="1" height="4" fill="#f56565"/>
+  <rect x="9" y="6" width="1" height="4" fill="#ffffff"/>
+  <rect x="11" y="6" width="1" height="4" fill="#f56565"/>
+  <rect x="13" y="6" width="1" height="4" fill="#ffffff"/>
+  <!-- Arrow indicating threshold direction -->
+  <polygon points="8,3 10,5 6,5" fill="#f56565"/>
+</svg>

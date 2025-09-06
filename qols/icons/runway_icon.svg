@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <!-- Runway icon - simple runway strip with centerline -->
+  <rect x="2" y="6" width="12" height="4" fill="#4a5568" stroke="#2d3748" stroke-width="0.5"/>
+  <!-- Centerline -->
+  <line x1="2" y1="8" x2="14" y2="8" stroke="#ffffff" stroke-width="0.5" stroke-dasharray="1,1"/>
+  <!-- Runway markings -->
+  <rect x="3" y="6.5" width="1" height="3" fill="#ffffff"/>
+  <rect x="6" y="6.5" width="1" height="3" fill="#ffffff"/>
+  <rect x="9" y="6.5" width="1" height="3" fill="#ffffff"/>
+  <rect x="12" y="6.5" width="1" height="3" fill="#ffffff"/>
+</svg>
