@@ -184,7 +184,7 @@
        <item>
         <widget class="QLabel" name="selectionInfoLabel">
          <property name="text">
-          <string>ðŸ“Œ Runway: ✅ All (1) | Threshold: âš ï¸ Selected (1 of 2)</string>
+          <string>📌 Runway: ✅ All (1) | Threshold: ⚠️ Selected (1 of 2)</string>
          </property>
          
          <property name="minimumHeight">
@@ -236,15 +236,7 @@
         </item>
         <item row="0" column="1">
          <widget class="QSpinBox" name="spin_code">
-          <property name="minimum">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <number>10</number>
-          </property>
-          <property name="value">
-           <number>4</number>
-          </property>
+
           <property name="minimumHeight">
            <number>22</number>
           </property>
@@ -289,18 +281,11 @@
          </widget>
         </item>
         <item row="2" column="1">
-         <widget class="QDoubleSpinBox" name="spin_widthApp">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="decimals">
-           <number>8</number>
-          </property>
-          <property name="value">
-           <double>280.0</double>
+         <widget class="QLineEdit" name="spin_widthApp">
+          <property name="text">
+           <string>280.00</string>
+          </property><property name="text">
+           <string>280.00</string>
           </property>
          </widget>
         </item>
@@ -313,20 +298,10 @@
          </widget>
         </item>
         <item row="3" column="1">
-         <widget class="QDoubleSpinBox" name="spin_Z0">
-          <property name="minimum">
-           <double>-100.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="decimals">
-           <number>8</number>
-          </property>
-          <property name="value">
-           <double>21.7</double>
-          </property>
-         </widget>
+         <widget class="QLineEdit" name="spin_Z0">
+          <property name="text">
+           <string>21.70</string>
+          </property></widget>
         </item>
         <item row="4" column="0">
          <widget class="QLabel" name="label_ZE">
@@ -337,20 +312,10 @@
          </widget>
         </item>
         <item row="4" column="1">
-         <widget class="QDoubleSpinBox" name="spin_ZE">
-          <property name="minimum">
-           <double>-100.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="decimals">
-           <number>8</number>
-          </property>
-          <property name="value">
-           <double>21.7</double>
-          </property>
-         </widget>
+         <widget class="QLineEdit" name="spin_ZE">
+          <property name="text">
+           <string>42.70</string>
+          </property></widget>
         </item>
         <item row="5" column="0">
          <widget class="QLabel" name="label_ARPH">
@@ -361,20 +326,10 @@
          </widget>
         </item>
         <item row="5" column="1">
-         <widget class="QDoubleSpinBox" name="spin_ARPH">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>1000.0</double>
-          </property>
-          <property name="decimals">
-           <number>8</number>
-          </property>
-          <property name="value">
-           <double>29.3</double>
-          </property>
-         </widget>
+         <widget class="QLineEdit" name="spin_ARPH">
+          <property name="text">
+           <string>15.00</string>
+          </property></widget>
         </item>
         <item row="6" column="0">
          <widget class="QLabel" name="label_L1">
@@ -386,15 +341,7 @@
         </item>
         <item row="6" column="1">
          <widget class="QDoubleSpinBox" name="spin_L1">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>50000.0</double>
-          </property>
-          <property name="value">
-           <double>3000.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="7" column="0">
@@ -406,15 +353,7 @@
         </item>
         <item row="7" column="1">
          <widget class="QDoubleSpinBox" name="spin_L2">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>50000.0</double>
-          </property>
-          <property name="value">
-           <double>3600.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="8" column="0">
@@ -426,15 +365,7 @@
         </item>
         <item row="8" column="1">
          <widget class="QDoubleSpinBox" name="spin_LH">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>100000.0</double>
-          </property>
-          <property name="value">
-           <double>8400.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="9" column="0">
@@ -446,18 +377,7 @@
         </item>
         <item row="9" column="1">
          <widget class="QDoubleSpinBox" name="spin_IHSlope">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>100.0</double>
-          </property>
-          <property name="decimals">
-           <number>8</number>
-          </property>
-          <property name="value">
-           <double>33.3</double>
-          </property>
+
          </widget>
         </item>
        </layout>
@@ -477,20 +397,10 @@
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QDoubleSpinBox" name="spin_L_conical">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>50000.0</double>
-          </property>
-          <property name="decimals">
-           <number>8</number>
-          </property>
-          <property name="value">
-           <double>6000.0</double>
-          </property>
-         </widget>
+         <widget class="QLineEdit" name="spin_L_conical">
+          <property name="text">
+           <string>6000.00</string>
+          </property></widget>
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_height_conical">
@@ -501,20 +411,10 @@
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QDoubleSpinBox" name="spin_height_conical">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>500.0</double>
-          </property>
-          <property name="decimals">
-           <number>8</number>
-          </property>
-          <property name="value">
-           <double>60.0</double>
-          </property>
-          <property name="toolTip">
+         <widget class="QLineEdit" name="spin_height_conical">
+          <property name="text">
+           <string>60.00</string>
+          </property><property name="toolTip">
            <string>Height for 3D PolygonZ surface. Conical surfaces typically use 60m height for ICAO compliance.</string>
           </property>
          </widget>
@@ -536,20 +436,10 @@
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QDoubleSpinBox" name="spin_L_inner">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>50000.0</double>
-          </property>
-          <property name="decimals">
-           <number>8</number>
-          </property>
-          <property name="value">
-           <double>4000.0</double>
-          </property>
-         </widget>
+         <widget class="QLineEdit" name="spin_L_inner">
+          <property name="text">
+           <string>4000.00</string>
+          </property></widget>
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_height_inner">
@@ -560,20 +450,10 @@
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QDoubleSpinBox" name="spin_height_inner">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>500.0</double>
-          </property>
-          <property name="decimals">
-           <number>8</number>
-          </property>
-          <property name="value">
-           <double>45.0</double>
-          </property>
-          <property name="toolTip">
+         <widget class="QLineEdit" name="spin_height_inner">
+          <property name="text">
+           <string>45.00</string>
+          </property><property name="toolTip">
            <string>Height for 3D polygon surface (PolygonZ)</string>
           </property>
          </widget>
@@ -610,15 +490,7 @@
         </item>
         <item row="0" column="1">
          <widget class="QSpinBox" name="spin_code_ofz">
-          <property name="minimum">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <number>10</number>
-          </property>
-          <property name="value">
-           <number>4</number>
-          </property>
+
          </widget>
         </item>
         <item row="1" column="0">
@@ -656,15 +528,7 @@
         </item>
         <item row="2" column="1">
          <widget class="QDoubleSpinBox" name="spin_width_ofz">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>120.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="3" column="0">
@@ -676,15 +540,7 @@
         </item>
         <item row="3" column="1">
          <widget class="QDoubleSpinBox" name="spin_Z0_ofz">
-          <property name="minimum">
-           <double>-100.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>2546.5</double>
-          </property>
+
          </widget>
         </item>
         <item row="4" column="0">
@@ -696,15 +552,7 @@
         </item>
         <item row="4" column="1">
          <widget class="QDoubleSpinBox" name="spin_ZE_ofz">
-          <property name="minimum">
-           <double>-100.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>2548.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="5" column="0">
@@ -716,15 +564,7 @@
         </item>
         <item row="5" column="1">
          <widget class="QDoubleSpinBox" name="spin_ARPH_ofz">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>2548.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="6" column="0">
@@ -736,18 +576,7 @@
         </item>
         <item row="6" column="1">
          <widget class="QDoubleSpinBox" name="spin_IHSlope_ofz">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>100.0</double>
-          </property>
-          <property name="decimals">
-           <number>8</number>
-          </property>
-          <property name="value">
-           <double>33.3</double>
-          </property>
+
          </widget>
         </item>
        </layout>
@@ -805,11 +634,8 @@
         </item>
         <item row="1" column="1">
          <widget class="QDoubleSpinBox" name="spin_radius_outer">
-          <property name="minimum">
-           <double>1000.0</double>
-          </property>
           <property name="maximum">
-           <double>20000.0</double>
+           <double>99999.0</double>
           </property>
           <property name="value">
            <double>15000.0</double>
@@ -829,11 +655,8 @@
         </item>
         <item row="2" column="1">
          <widget class="QDoubleSpinBox" name="spin_height_outer">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
           <property name="maximum">
-           <double>500.0</double>
+           <double>9999.0</double>
           </property>
           <property name="value">
            <double>45.0</double>
@@ -846,7 +669,7 @@
         <item row="3" column="0" colspan="2">
          <widget class="QLabel" name="label_info_outer">
           <property name="text">
-           <string>ðŸ“ Outer Horizontal Surface: 15,000m circle centered on ARP
+           <string>📋 Outer Horizontal Surface: 15,000m circle centered on ARP
 • Code 3 or 4 airports only (DOC 9137 Part 6)
 • Requires Aerodrome Reference Point (ARP)
 • Fixed radius for obstacle limitation</string>
@@ -875,15 +698,7 @@
         </item>
         <item row="0" column="1">
          <widget class="QSpinBox" name="spin_code_takeoff">
-          <property name="minimum">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <number>10</number>
-          </property>
-          <property name="value">
-           <number>4</number>
-          </property>
+
          </widget>
         </item>
         <item row="1" column="0">
@@ -921,15 +736,7 @@
         </item>
         <item row="2" column="1">
          <widget class="QDoubleSpinBox" name="spin_widthApp_takeoff">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>150.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="3" column="0">
@@ -941,15 +748,7 @@
         </item>
         <item row="3" column="1">
          <widget class="QDoubleSpinBox" name="spin_widthDep_takeoff">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>180.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="4" column="0">
@@ -961,15 +760,7 @@
         </item>
         <item row="4" column="1">
          <widget class="QDoubleSpinBox" name="spin_maxWidthDep_takeoff">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>1800.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="5" column="0">
@@ -981,15 +772,7 @@
         </item>
         <item row="5" column="1">
          <widget class="QDoubleSpinBox" name="spin_CWYLength_takeoff">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>0.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="6" column="0">
@@ -1001,15 +784,7 @@
         </item>
         <item row="6" column="1">
          <widget class="QDoubleSpinBox" name="spin_Z0_takeoff">
-          <property name="minimum">
-           <double>-100.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>2548.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="7" column="0">
@@ -1021,15 +796,7 @@
         </item>
         <item row="7" column="1">
          <widget class="QDoubleSpinBox" name="spin_ZE_takeoff">
-          <property name="minimum">
-           <double>-100.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>2546.5</double>
-          </property>
+
          </widget>
         </item>
         <item row="8" column="0">
@@ -1041,15 +808,7 @@
         </item>
         <item row="8" column="1">
          <widget class="QDoubleSpinBox" name="spin_ARPH_takeoff">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>2548.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="9" column="0">
@@ -1061,18 +820,7 @@
         </item>
         <item row="9" column="1">
          <widget class="QDoubleSpinBox" name="spin_IHSlope_takeoff">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>100.0</double>
-          </property>
-          <property name="decimals">
-           <number>8</number>
-          </property>
-          <property name="value">
-           <double>33.3</double>
-          </property>
+
          </widget>
         </item>
         <item row="10" column="0">
@@ -1084,15 +832,7 @@
         </item>
         <item row="10" column="1">
          <widget class="QDoubleSpinBox" name="spin_L1_takeoff">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>50000.0</double>
-          </property>
-          <property name="value">
-           <double>3000.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="11" column="0">
@@ -1104,15 +844,7 @@
         </item>
         <item row="11" column="1">
          <widget class="QDoubleSpinBox" name="spin_L2_takeoff">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>50000.0</double>
-          </property>
-          <property name="value">
-           <double>3600.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="12" column="0">
@@ -1124,15 +856,7 @@
         </item>
         <item row="12" column="1">
          <widget class="QDoubleSpinBox" name="spin_LH_takeoff">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>100000.0</double>
-          </property>
-          <property name="value">
-           <double>8400.0</double>
-          </property>
+
          </widget>
         </item>
        </layout>
@@ -1153,15 +877,7 @@
         </item>
         <item row="0" column="1">
          <widget class="QSpinBox" name="spin_code_transitional">
-          <property name="minimum">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <number>10</number>
-          </property>
-          <property name="value">
-           <number>4</number>
-          </property>
+
          </widget>
         </item>
         <item row="1" column="0">
@@ -1199,15 +915,7 @@
         </item>
         <item row="2" column="1">
          <widget class="QDoubleSpinBox" name="spin_widthApp_transitional">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>280.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="3" column="0">
@@ -1219,15 +927,7 @@
         </item>
         <item row="3" column="1">
          <widget class="QDoubleSpinBox" name="spin_Z0_transitional">
-          <property name="minimum">
-           <double>-100.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>2548.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="4" column="0">
@@ -1239,15 +939,7 @@
         </item>
         <item row="4" column="1">
          <widget class="QDoubleSpinBox" name="spin_ZE_transitional">
-          <property name="minimum">
-           <double>-100.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>2546.5</double>
-          </property>
+
          </widget>
         </item>
         <item row="5" column="0">
@@ -1259,15 +951,7 @@
         </item>
         <item row="5" column="1">
          <widget class="QDoubleSpinBox" name="spin_ARPH_transitional">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>10000.0</double>
-          </property>
-          <property name="value">
-           <double>2548.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="6" column="0">
@@ -1279,18 +963,7 @@
         </item>
         <item row="6" column="1">
          <widget class="QDoubleSpinBox" name="spin_IHSlope_transitional">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>100.0</double>
-          </property>
-          <property name="decimals">
-           <number>8</number>
-          </property>
-          <property name="value">
-           <double>33.3</double>
-          </property>
+
          </widget>
         </item>
         <item row="7" column="0">
@@ -1302,15 +975,7 @@
         </item>
         <item row="7" column="1">
          <widget class="QDoubleSpinBox" name="spin_L1_transitional">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>50000.0</double>
-          </property>
-          <property name="value">
-           <double>3000.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="8" column="0">
@@ -1322,15 +987,7 @@
         </item>
         <item row="8" column="1">
          <widget class="QDoubleSpinBox" name="spin_L2_transitional">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>50000.0</double>
-          </property>
-          <property name="value">
-           <double>3600.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="9" column="0">
@@ -1342,15 +999,7 @@
         </item>
         <item row="9" column="1">
          <widget class="QDoubleSpinBox" name="spin_LH_transitional">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>100000.0</double>
-          </property>
-          <property name="value">
-           <double>8400.0</double>
-          </property>
+
          </widget>
         </item>
         <item row="10" column="0">
@@ -1362,18 +1011,7 @@
         </item>
         <item row="10" column="1">
          <widget class="QDoubleSpinBox" name="spin_Tslope_transitional">
-          <property name="minimum">
-           <double>0.0</double>
-          </property>
-          <property name="maximum">
-           <double>100.0</double>
-          </property>
-          <property name="decimals">
-           <number>8</number>
-          </property>
-          <property name="value">
-           <double>14.3</double>
-          </property>
+
          </widget>
         </item>
        </layout>
@@ -1403,10 +1041,10 @@
         <item>
          <widget class="QPushButton" name="directionButton">
           <property name="text">
-           <string>ðŸ“ Start to End</string>
+           <string>🔄 Start to End</string>
           </property>
           <property name="toolTip">
-           <string>Toggle calculation direction (Start to End / End to Start)</string>
+           <string>🔄 Start to End</string>
           </property>
           <property name="checkable">
            <bool>true</bool>
@@ -1477,9 +1115,4 @@
  <resources/>
  <connections/>
 </ui>
-
-
-
-
-
 

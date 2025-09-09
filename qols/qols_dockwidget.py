@@ -27,8 +27,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Apply modern stylesheet
             self.apply_modern_stylesheet()
             
-            # Configure decimal precision for all QDoubleSpinBox widgets
-            self.setup_decimal_precision()
+            # Configure numeric input validation for all QLineEdit widgets (formerly QDoubleSpinBox)
+            self.setup_numeric_lineedit_validation()
             
             # Configure layer combo boxes with geometry filtering
             self.setup_layer_filters()
@@ -90,7 +90,138 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Ensure no styles are applied
             self.setStyleSheet("")
 
-    def setup_decimal_precision(self):
+    def setup_numeric_lineedit_validation(self):
+        """Configure numeric input validation for all QLineEdit widgets (formerly QDoubleSpinBox)."""
+        try:
+            from qgis.PyQt.QtCore import QRegExp
+            from qgis.PyQt.QtGui import QRegExpValidator
+            
+            print("QOLS: Setting up numeric validation for QLineEdit widgets")
+            
+            # List of all numeric input widget names (formerly QDoubleSpinBox)
+            lineedit_names = [
+                'spin_widthApp', 'spin_Z0', 'spin_ZE', 'spin_ARPH', 
+                'spin_L1', 'spin_L2', 'spin_LH', 'spin_IHSlope',
+                'spin_L_conical', 'spin_height_conical',
+                'spin_L_inner', 'spin_height_inner',
+                'spin_width_ofz', 'spin_Z0_ofz', 'spin_ZE_ofz', 'spin_ARPH_ofz', 'spin_IHSlope_ofz',
+                'spin_radius_outer', 'spin_height_outer',
+                'spin_widthApp_takeoff', 'spin_widthDep_takeoff', 'spin_maxWidthDep_takeoff',
+                'spin_CWYLength_takeoff', 'spin_Z0_takeoff', 'spin_ZE_takeoff', 'spin_ARPH_takeoff',
+                'spin_IHSlope_takeoff', 'spin_L1_takeoff', 'spin_L2_takeoff', 'spin_LH_takeoff',
+                'spin_widthApp_transitional', 'spin_Z0_transitional', 'spin_ZE_transitional',
+                'spin_ARPH_transitional', 'spin_IHSlope_transitional', 'spin_L1_transitional',
+                'spin_L2_transitional', 'spin_LH_transitional', 'spin_Tslope_transitional'
+            ]
+            
+            # Default values for clean initial display
+            default_values = {
+                'spin_widthApp': '280.00', 'spin_Z0': '21.70', 'spin_ZE': '42.70', 'spin_ARPH': '15.00',
+                'spin_L1': '60.00', 'spin_L2': '60.00', 'spin_LH': '0.00', 'spin_IHSlope': '2.50',
+                'spin_L_conical': '6000.00', 'spin_height_conical': '60.00',
+                'spin_L_inner': '4000.00', 'spin_height_inner': '45.00',
+                'spin_width_ofz': '280.00', 'spin_Z0_ofz': '21.70', 'spin_ZE_ofz': '42.70',
+                'spin_ARPH_ofz': '15.00', 'spin_IHSlope_ofz': '2.50',
+                'spin_radius_outer': '4000.00', 'spin_height_outer': '45.00'
+            }
+            
+            # Create validator for numeric input with up to 8 decimal places
+            # Pattern: optional minus, digits, optional decimal point with up to 8 digits
+            decimal_pattern = r'^-?\d*\.?\d{0,8}$'
+            regex = QRegExp(decimal_pattern)
+            validator = QRegExpValidator(regex)
+            
+            configured_count = 0
+            
+            for name in lineedit_names:
+                try:
+                    lineedit = getattr(self, name, None)
+                    if lineedit and hasattr(lineedit, 'setText'):
+                        # Set numeric validator
+                        lineedit.setValidator(validator)
+                        
+                        # Set default value if available
+                        if name in default_values:
+                            lineedit.setText(default_values[name])
+                        else:
+                            lineedit.setText('0.00')
+                        
+                        # Add smart formatting on focus out
+                        self._configure_smart_formatting(lineedit)
+                        
+                        configured_count += 1
+                        print(f"QOLS: Configured {name} - numeric validation and default value set")
+                        
+                except Exception as e:
+                    print(f"QOLS: Warning - could not configure {name}: {e}")
+            
+            print(f"QOLS: Successfully configured {configured_count} QLineEdit widgets with numeric validation")
+            print("QOLS: All numeric inputs now support unlimited decimal precision with clean display")
+            
+        except Exception as e:
+            print(f"QOLS: Error in numeric validation setup: {e}")
+
+    def _configure_smart_formatting(self, lineedit):
+        """Configure smart formatting for numeric QLineEdit - clean display for simple values."""
+        try:
+            def format_on_focus_out():
+                try:
+                    text = lineedit.text().strip()
+                    if text:
+                        # Try to parse as float
+                        try:
+                            value = float(text)
+                            # Format intelligently
+                            if abs(value - round(value)) < 0.000001:
+                                # It's an integer, format as XX.00
+                                lineedit.setText(f"{int(round(value))}.00")
+                            elif abs(value - round(value, 2)) < 0.000001:
+                                # It's a 2-decimal value, format cleanly
+                                lineedit.setText(f"{value:.2f}")
+                            # Otherwise leave as is for high precision
+                        except ValueError:
+                            # If it's not a valid number, clear or set default
+                            lineedit.setText('0.00')
+                except:
+                    pass
+            
+            # Connect to focus out event
+            try:
+                lineedit.editingFinished.connect(format_on_focus_out)
+            except:
+                pass
+            
+        except Exception as e:
+            print(f"QOLS: Warning - smart formatting setup failed for {lineedit.objectName()}: {e}")
+
+    def get_numeric_value(self, widget_name):
+        """Get numeric value from QLineEdit widget, returns float or 0.0 if invalid."""
+        try:
+            widget = getattr(self, widget_name, None)
+            if widget and hasattr(widget, 'text'):
+                text = widget.text().strip()
+                if text:
+                    return float(text)
+            return 0.0
+        except (ValueError, AttributeError):
+            return 0.0
+
+    def set_numeric_value(self, widget_name, value):
+        """Set numeric value in QLineEdit widget with smart formatting."""
+        try:
+            widget = getattr(self, widget_name, None)
+            if widget and hasattr(widget, 'setText'):
+                if isinstance(value, (int, float)):
+                    if abs(value - round(value)) < 0.000001:
+                        widget.setText(f"{int(round(value))}.00")
+                    else:
+                        widget.setText(f"{value:.8f}".rstrip('0').rstrip('.'))
+                else:
+                    widget.setText(str(value))
+        except Exception as e:
+            print(f"QOLS: Warning - could not set value for {widget_name}: {e}")
+
+    def setup_decimal_precision_OLD_DISABLED(self):
         """Configure decimal precision with CUSTOM VALIDATION to allow true multi-decimal input."""
         try:
             print("QOLS: Setting up CUSTOM decimal validation for true multi-decimal support")
@@ -1339,26 +1470,26 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Get parameters based on current tab
             if surface_type == "Approach Surface":
                 specific_params = {
-                    'code': self.spin_code.value(),
+                    'code': self.get_numeric_value('spin_code'),
                     'typeAPP': self.combo_typeAPP.currentText(),
-                    'widthApp': self.spin_widthApp.value(),
-                    'Z0': self.spin_Z0.value(),
-                    'ZE': self.spin_ZE.value(),
-                    'ARPH': self.spin_ARPH.value(),
-                    'IHSlope': self.spin_IHSlope.value() / 100.0,  # Convert to decimal
-                    'L1': self.spin_L1.value(),
-                    'L2': self.spin_L2.value(),
-                    'LH': self.spin_LH.value()
+                    'widthApp': self.get_numeric_value('spin_widthApp'),
+                    'Z0': self.get_numeric_value('spin_Z0'),
+                    'ZE': self.get_numeric_value('spin_ZE'),
+                    'ARPH': self.get_numeric_value('spin_ARPH'),
+                    'IHSlope': self.get_numeric_value('spin_IHSlope') / 100.0,  # Convert to decimal
+                    'L1': self.get_numeric_value('spin_L1'),
+                    'L2': self.get_numeric_value('spin_L2'),
+                    'LH': self.get_numeric_value('spin_LH')
                 }
             elif surface_type == "Conical":
                 specific_params = {
-                    'radius': self.spin_L_conical.value(),        # Distance L is the radius
-                    'height': self.spin_height_conical.value()    # Height for 3D polygon
+                    'radius': self.get_numeric_value('spin_L_conical'),        # Distance L is the radius
+                    'height': self.get_numeric_value('spin_height_conical')    # Height for 3D polygon
                 }
             elif surface_type == "Inner Horizontal":
                 specific_params = {
-                    'radius': self.spin_L_inner.value(),          # Distance L is the radius
-                    'height': self.spin_height_inner.value()      # Height for 3D polygon
+                    'radius': self.get_numeric_value('spin_L_inner'),          # Distance L is the radius
+                    'height': self.get_numeric_value('spin_height_inner')      # Height for 3D polygon
                 }
             elif surface_type == "Outer Horizontal":
                 specific_params = {
