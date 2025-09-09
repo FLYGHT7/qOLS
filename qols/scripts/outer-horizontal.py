@@ -35,13 +35,13 @@ if code not in [3, 4]:
 # Note: Plugin parameter is still named 'threshold_layer' for compatibility,
 # but we use descriptive variable name for better code documentation
 aerodrome_reference_point_layer = globals().get('threshold_layer')
-use_selected_feature = globals().get('use_selected_feature', True)
+use_threshold_selected = globals().get('use_threshold_selected', False)
 
 if not aerodrome_reference_point_layer:
     raise Exception("No ARP (Aerodrome Reference Point) layer provided. Please select a threshold layer from the UI.")
 
-# Get ARP coordinates - require explicit selection for DOC 9137 compliance
-if use_selected_feature:
+# Get ARP coordinates - use selection or all features based on UI setting
+if use_threshold_selected:
     selection = aerodrome_reference_point_layer.selectedFeatures()
     if not selection:
         raise Exception("No ARP (Aerodrome Reference Point) features selected. Please select ARP feature.")
@@ -50,7 +50,7 @@ else:
     selection = list(aerodrome_reference_point_layer.getFeatures())
     if not selection:
         raise Exception("No features found in ARP (Aerodrome Reference Point) layer.")
-    print(f"OuterHorizontal: Using first ARP feature from layer")
+    print(f"OuterHorizontal: Using all {len(selection)} ARP features from layer")
 
 # Create memory layer for outer horizontal surface
 v_layer = QgsVectorLayer(f"Polygon?crs={map_srid}", "Outer Horizontal Surface", "memory")
@@ -74,17 +74,22 @@ for feat in selection:
     arp_x, arp_y = arp_point.x(), arp_point.y()
     print(f"OuterHorizontal: Creating 15,000m circle at ARP: {arp_x}, {arp_y}")
     
-    # Use PyQGIS native QgsCircle for precise geometry generation (DOC 9137 compliance)
-    # Create circle centered at ARP with specified radius (using arp_point directly)
-    qgs_circle = QgsCircle(arp_point, radius)
+    # Create circular polygon using WKT approach (most reliable)
+    # Generate points around the circle (360 points for 1-degree intervals)
+    num_segments = 360
+    wkt_points = []
     
-    # Convert circle to polygon with 360 points (1-degree intervals for maximum precision)
-    # Note: Consider making this configurable in plugin settings for different precision needs
-    num_segments = 360  # Increased from 72 as per client feedback
-    polygon_geometry = qgs_circle.toPolygon(num_segments)
+    for i in range(num_segments + 1):  # +1 to close the polygon
+        angle = i * 2 * pi / num_segments
+        x = arp_x + radius * cos(angle)
+        y = arp_y + radius * sin(angle)
+        wkt_points.append(f"{x} {y}")
     
-    # Convert to QgsGeometry
-    circle_geometry = QgsGeometry(polygon_geometry)
+    # Create WKT string for polygon
+    wkt_polygon = f"POLYGON(({', '.join(wkt_points)}))"
+    
+    # Create polygon geometry from WKT
+    circle_geometry = QgsGeometry.fromWkt(wkt_polygon)
     
     # Create feature with proper geometry reference
     feature = QgsFeature()
