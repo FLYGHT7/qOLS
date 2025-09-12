@@ -633,7 +633,7 @@ This indicator updates automatically based on your layer selections.</string>
         <item row="6" column="0">
          <widget class="QLabel" name="label_IHSlope_ofz">
           <property name="text">
-           <string>IH Slope (%):</string>
+           <string>Inner Transitional Slope (%):</string>
           </property>
          </widget>
         </item>

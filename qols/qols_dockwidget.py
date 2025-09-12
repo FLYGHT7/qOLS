@@ -130,8 +130,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_L1': '60.00', 'spin_L2': '60.00', 'spin_LH': '0.00', 'spin_IHSlope': '2.50',
                 'spin_L_conical': '6000.00', 'spin_height_conical': '60.00',
                 'spin_L_inner': '4000.00', 'spin_height_inner': '45.00',
-                'spin_width_ofz': '280.00', 'spin_Z0_ofz': '21.70', 'spin_ZE_ofz': '42.70',
-                'spin_ARPH_ofz': '15.00', 'spin_IHSlope_ofz': '2.50',
+                'spin_width_ofz': '120.00', 'spin_Z0_ofz': '2548.00', 'spin_ZE_ofz': '2546.50',
+                'spin_ARPH_ofz': '2548.00', 'spin_IHSlope_ofz': '33.30',
                 'spin_radius_outer': '4000.00', 'spin_height_outer': '45.00'
             }
             
@@ -255,11 +255,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_height_inner': 45.0
             }
             ofz_defaults = {
-                'spin_width_ofz': 280.0,
-                'spin_Z0_ofz': 21.7,
-                'spin_ZE_ofz': 42.7,
-                'spin_ARPH_ofz': 15.0,
-                'spin_IHSlope_ofz': 2.5
+                'spin_width_ofz': 120.0,
+                'spin_Z0_ofz': 2548.0,
+                'spin_ZE_ofz': 2546.5,
+                'spin_ARPH_ofz': 2548.0,
+                'spin_IHSlope_ofz': 33.3
             }
             outer_defaults = {
                 'spin_radius_outer': 4000.0,
