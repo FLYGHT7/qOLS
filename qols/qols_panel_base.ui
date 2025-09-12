@@ -113,7 +113,7 @@
              <number>28</number>
             </property>
             <property name="toolTip">
-             <string>Select the runway layer from your project</string>
+             <string>🛩️ Select the runway layer from your project. This layer should contain line features representing runway centerlines.</string>
             </property>
            </widget>
           </item>
@@ -123,7 +123,7 @@
              <string>Selected Only</string>
             </property>
             <property name="toolTip">
-             <string>Check to use only selected runway features</string>
+             <string>✅ Check to use only selected runway features instead of all features in the layer</string>
             </property>
            </widget>
           </item>
@@ -162,7 +162,7 @@
              <number>28</number>
             </property>
             <property name="toolTip">
-             <string>Select the threshold layer from your project</string>
+             <string>🎯 Select the threshold layer from your project. This layer should contain point features representing runway thresholds or ARP points.</string>
             </property>
            </widget>
           </item>
@@ -172,7 +172,7 @@
              <string>Selected Only</string>
             </property>
             <property name="toolTip">
-             <string>Check to use only selected threshold features</string>
+             <string>⚠️ Check to use only selected threshold features instead of all features in the layer</string>
             </property>
            </widget>
           </item>
@@ -184,7 +184,7 @@
        <item>
         <widget class="QLabel" name="selectionInfoLabel">
          <property name="text">
-          <string>📌 Runway: ✅ All (1) | Threshold: ⚠️ Selected (1 of 2)</string>
+          <string>📌 Runway: ⚠️ All (1) | Threshold: ✅ Selected (1 of 2)</string>
          </property>
          
          <property name="minimumHeight">
@@ -194,7 +194,11 @@
           <bool>true</bool>
          </property>
          <property name="toolTip">
-          <string>Live status: Shows current selection for calculations with visual indicators</string>
+          <string>📊 Live Selection Status:
+⚠️ All = Using all features from layer (caution - may include unwanted features)
+✅ Selected = Using only selected features (recommended for precise calculations)
+
+This indicator updates automatically based on your layer selections.</string>
          </property>
         </widget>
        </item>
@@ -301,7 +305,8 @@
          <widget class="QLineEdit" name="spin_Z0">
           <property name="text">
            <string>21.70</string>
-          </property></widget>
+          </property>
+         </widget>
         </item>
         <item row="4" column="0">
          <widget class="QLabel" name="label_ZE">
@@ -315,7 +320,8 @@
          <widget class="QLineEdit" name="spin_ZE">
           <property name="text">
            <string>42.70</string>
-          </property></widget>
+          </property>
+         </widget>
         </item>
         <item row="5" column="0">
          <widget class="QLabel" name="label_ARPH">
@@ -329,7 +335,8 @@
          <widget class="QLineEdit" name="spin_ARPH">
           <property name="text">
            <string>15.00</string>
-          </property></widget>
+          </property>
+         </widget>
         </item>
         <item row="6" column="0">
          <widget class="QLabel" name="label_L1">
@@ -340,8 +347,10 @@
          </widget>
         </item>
         <item row="6" column="1">
-         <widget class="QDoubleSpinBox" name="spin_L1">
-
+         <widget class="QLineEdit" name="spin_L1">
+          <property name="text">
+           <string>3000.0</string>
+          </property>
          </widget>
         </item>
         <item row="7" column="0">
@@ -352,8 +361,10 @@
          </widget>
         </item>
         <item row="7" column="1">
-         <widget class="QDoubleSpinBox" name="spin_L2">
-
+         <widget class="QLineEdit" name="spin_L2">
+          <property name="text">
+           <string>3600.0</string>
+          </property>
          </widget>
         </item>
         <item row="8" column="0">
@@ -364,8 +375,10 @@
          </widget>
         </item>
         <item row="8" column="1">
-         <widget class="QDoubleSpinBox" name="spin_LH">
-
+         <widget class="QLineEdit" name="spin_LH">
+          <property name="text">
+           <string>8400.0</string>
+          </property>
          </widget>
         </item>
         <item row="9" column="0">
@@ -376,8 +389,10 @@
          </widget>
         </item>
         <item row="9" column="1">
-         <widget class="QDoubleSpinBox" name="spin_IHSlope">
-
+         <widget class="QLineEdit" name="spin_IHSlope">
+          <property name="text">
+           <string>33.3</string>
+          </property>
          </widget>
         </item>
        </layout>
@@ -400,7 +415,8 @@
          <widget class="QLineEdit" name="spin_L_conical">
           <property name="text">
            <string>6000.00</string>
-          </property></widget>
+          </property>
+         </widget>
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_height_conical">
@@ -439,7 +455,8 @@
          <widget class="QLineEdit" name="spin_L_inner">
           <property name="text">
            <string>4000.00</string>
-          </property></widget>
+          </property>
+         </widget>
         </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_height_inner">
@@ -527,8 +544,10 @@
          </widget>
         </item>
         <item row="2" column="1">
-         <widget class="QDoubleSpinBox" name="spin_width_ofz">
-
+         <widget class="QLineEdit" name="spin_width_ofz">
+          <property name="text">
+           <string>120.0</string>
+          </property>
          </widget>
         </item>
         <item row="3" column="0">
@@ -539,8 +558,10 @@
          </widget>
         </item>
         <item row="3" column="1">
-         <widget class="QDoubleSpinBox" name="spin_Z0_ofz">
-
+         <widget class="QLineEdit" name="spin_Z0_ofz">
+          <property name="text">
+           <string>2548.0</string>
+          </property>
          </widget>
         </item>
         <item row="4" column="0">
@@ -551,8 +572,10 @@
          </widget>
         </item>
         <item row="4" column="1">
-         <widget class="QDoubleSpinBox" name="spin_ZE_ofz">
-
+         <widget class="QLineEdit" name="spin_ZE_ofz">
+          <property name="text">
+           <string>2546.5</string>
+          </property>
          </widget>
         </item>
         <item row="5" column="0">
@@ -563,8 +586,10 @@
          </widget>
         </item>
         <item row="5" column="1">
-         <widget class="QDoubleSpinBox" name="spin_ARPH_ofz">
-
+         <widget class="QLineEdit" name="spin_ARPH_ofz">
+          <property name="text">
+           <string>2548.0</string>
+          </property>
          </widget>
         </item>
         <item row="6" column="0">
@@ -575,8 +600,10 @@
          </widget>
         </item>
         <item row="6" column="1">
-         <widget class="QDoubleSpinBox" name="spin_IHSlope_ofz">
-
+         <widget class="QLineEdit" name="spin_IHSlope_ofz">
+          <property name="text">
+           <string>33.3</string>
+          </property>
          </widget>
         </item>
        </layout>
@@ -633,12 +660,9 @@
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QDoubleSpinBox" name="spin_radius_outer">
-          <property name="maximum">
-           <double>99999.0</double>
-          </property>
-          <property name="value">
-           <double>15000.0</double>
+         <widget class="QLineEdit" name="spin_radius_outer">
+          <property name="text">
+           <string>15000.0</string>
           </property>
           <property name="toolTip">
            <string>Outer horizontal surface radius: 15,000 m for code 3 or 4 (DOC 9137 Part 6)</string>
@@ -654,12 +678,9 @@
          </widget>
         </item>
         <item row="2" column="1">
-         <widget class="QDoubleSpinBox" name="spin_height_outer">
-          <property name="maximum">
-           <double>9999.0</double>
-          </property>
-          <property name="value">
-           <double>45.0</double>
+         <widget class="QLineEdit" name="spin_height_outer">
+          <property name="text">
+           <string>45.0</string>
           </property>
           <property name="toolTip">
            <string>Height above aerodrome elevation (45m for code 3/4 per ICAO standards)</string>
@@ -698,7 +719,15 @@
         </item>
         <item row="0" column="1">
          <widget class="QSpinBox" name="spin_code_takeoff">
-
+          <property name="minimum">
+           <number>1</number>
+          </property>
+          <property name="maximum">
+           <number>4</number>
+          </property>
+          <property name="value">
+           <number>4</number>
+          </property>
          </widget>
         </item>
         <item row="1" column="0">
@@ -735,8 +764,10 @@
          </widget>
         </item>
         <item row="2" column="1">
-         <widget class="QDoubleSpinBox" name="spin_widthApp_takeoff">
-
+         <widget class="QLineEdit" name="spin_widthApp_takeoff">
+          <property name="text">
+           <string>150.0</string>
+          </property>
          </widget>
         </item>
         <item row="3" column="0">
@@ -747,8 +778,10 @@
          </widget>
         </item>
         <item row="3" column="1">
-         <widget class="QDoubleSpinBox" name="spin_widthDep_takeoff">
-
+         <widget class="QLineEdit" name="spin_widthDep_takeoff">
+          <property name="text">
+           <string>180.0</string>
+          </property>
          </widget>
         </item>
         <item row="4" column="0">
@@ -759,8 +792,10 @@
          </widget>
         </item>
         <item row="4" column="1">
-         <widget class="QDoubleSpinBox" name="spin_maxWidthDep_takeoff">
-
+         <widget class="QLineEdit" name="spin_maxWidthDep_takeoff">
+          <property name="text">
+           <string>1800.0</string>
+          </property>
          </widget>
         </item>
         <item row="5" column="0">
@@ -771,8 +806,10 @@
          </widget>
         </item>
         <item row="5" column="1">
-         <widget class="QDoubleSpinBox" name="spin_CWYLength_takeoff">
-
+         <widget class="QLineEdit" name="spin_CWYLength_takeoff">
+          <property name="text">
+           <string>0.0</string>
+          </property>
          </widget>
         </item>
         <item row="6" column="0">
@@ -783,8 +820,10 @@
          </widget>
         </item>
         <item row="6" column="1">
-         <widget class="QDoubleSpinBox" name="spin_Z0_takeoff">
-
+         <widget class="QLineEdit" name="spin_Z0_takeoff">
+          <property name="text">
+           <string>2548.0</string>
+          </property>
          </widget>
         </item>
         <item row="7" column="0">
@@ -795,8 +834,10 @@
          </widget>
         </item>
         <item row="7" column="1">
-         <widget class="QDoubleSpinBox" name="spin_ZE_takeoff">
-
+         <widget class="QLineEdit" name="spin_ZE_takeoff">
+          <property name="text">
+           <string>2546.5</string>
+          </property>
          </widget>
         </item>
         <item row="8" column="0">
@@ -807,8 +848,13 @@
          </widget>
         </item>
         <item row="8" column="1">
-         <widget class="QDoubleSpinBox" name="spin_ARPH_takeoff">
-
+         <widget class="QLineEdit" name="spin_ARPH_takeoff">
+          <property name="text">
+           <string>2548.0</string>
+          </property>
+          <property name="value">
+           <double>2548.0</double>
+          </property>
          </widget>
         </item>
         <item row="9" column="0">
@@ -819,8 +865,10 @@
          </widget>
         </item>
         <item row="9" column="1">
-         <widget class="QDoubleSpinBox" name="spin_IHSlope_takeoff">
-
+         <widget class="QLineEdit" name="spin_IHSlope_takeoff">
+          <property name="text">
+           <string>33.3</string>
+          </property>
          </widget>
         </item>
         <item row="10" column="0">
@@ -831,8 +879,10 @@
          </widget>
         </item>
         <item row="10" column="1">
-         <widget class="QDoubleSpinBox" name="spin_L1_takeoff">
-
+         <widget class="QLineEdit" name="spin_L1_takeoff">
+          <property name="text">
+           <string>3000.0</string>
+          </property>
          </widget>
         </item>
         <item row="11" column="0">
@@ -843,8 +893,10 @@
          </widget>
         </item>
         <item row="11" column="1">
-         <widget class="QDoubleSpinBox" name="spin_L2_takeoff">
-
+         <widget class="QLineEdit" name="spin_L2_takeoff">
+          <property name="text">
+           <string>3600.0</string>
+          </property>
          </widget>
         </item>
         <item row="12" column="0">
@@ -855,8 +907,10 @@
          </widget>
         </item>
         <item row="12" column="1">
-         <widget class="QDoubleSpinBox" name="spin_LH_takeoff">
-
+         <widget class="QLineEdit" name="spin_LH_takeoff">
+          <property name="text">
+           <string>8400.0</string>
+          </property>
          </widget>
         </item>
        </layout>
@@ -914,7 +968,7 @@
          </widget>
         </item>
         <item row="2" column="1">
-         <widget class="QDoubleSpinBox" name="spin_widthApp_transitional">
+         <widget class="QLineEdit" name="spin_widthApp_transitional">
 
          </widget>
         </item>
@@ -926,7 +980,7 @@
          </widget>
         </item>
         <item row="3" column="1">
-         <widget class="QDoubleSpinBox" name="spin_Z0_transitional">
+         <widget class="QLineEdit" name="spin_Z0_transitional">
 
          </widget>
         </item>
@@ -938,7 +992,7 @@
          </widget>
         </item>
         <item row="4" column="1">
-         <widget class="QDoubleSpinBox" name="spin_ZE_transitional">
+         <widget class="QLineEdit" name="spin_ZE_transitional">
 
          </widget>
         </item>
@@ -950,7 +1004,7 @@
          </widget>
         </item>
         <item row="5" column="1">
-         <widget class="QDoubleSpinBox" name="spin_ARPH_transitional">
+         <widget class="QLineEdit" name="spin_ARPH_transitional">
 
          </widget>
         </item>
@@ -962,7 +1016,7 @@
          </widget>
         </item>
         <item row="6" column="1">
-         <widget class="QDoubleSpinBox" name="spin_IHSlope_transitional">
+         <widget class="QLineEdit" name="spin_IHSlope_transitional">
 
          </widget>
         </item>
@@ -974,7 +1028,7 @@
          </widget>
         </item>
         <item row="7" column="1">
-         <widget class="QDoubleSpinBox" name="spin_L1_transitional">
+         <widget class="QLineEdit" name="spin_L1_transitional">
 
          </widget>
         </item>
@@ -986,7 +1040,7 @@
          </widget>
         </item>
         <item row="8" column="1">
-         <widget class="QDoubleSpinBox" name="spin_L2_transitional">
+         <widget class="QLineEdit" name="spin_L2_transitional">
 
          </widget>
         </item>
@@ -998,7 +1052,7 @@
          </widget>
         </item>
         <item row="9" column="1">
-         <widget class="QDoubleSpinBox" name="spin_LH_transitional">
+         <widget class="QLineEdit" name="spin_LH_transitional">
 
          </widget>
         </item>
@@ -1010,8 +1064,43 @@
          </widget>
         </item>
         <item row="10" column="1">
-         <widget class="QDoubleSpinBox" name="spin_Tslope_transitional">
+         <widget class="QLineEdit" name="spin_Tslope_transitional">
 
+         </widget>
+        </item>
+        <item row="11" column="0" colspan="2">
+         <widget class="QPushButton" name="button_rotate_transitional">
+          <property name="text">
+           <string>🔄 Runway Direction: Normal</string>
+          </property>
+          <property name="toolTip">
+           <string>Toggle runway direction for transitional surface calculation - This literally uses the runway from the opposite direction</string>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
+          </property>
+          <property name="minimumHeight">
+           <number>35</number>
+          </property>
+          <property name="styleSheet">
+           <string>QPushButton {
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+}
+QPushButton:checked {
+    background-color: #FF9800;
+    color: white;
+}
+QPushButton:hover {
+    background-color: #45a049;
+}
+QPushButton:checked:hover {
+    background-color: #F57C00;
+}</string>
+          </property>
          </widget>
         </item>
        </layout>

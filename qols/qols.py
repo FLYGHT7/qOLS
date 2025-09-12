@@ -182,7 +182,7 @@ class QOLS:
                 self.execute_outer_horizontal_surface(params)
             elif surface_type == 'Take-Off Surface':
                 self.execute_takeoff_surface(params)
-            elif surface_type == 'Transitional Surface':
+            elif surface_type == 'Transitional Surface' or surface_type == 'Transitional':
                 self.execute_transitional_surface(params)
             else:
                 self.iface.messageBar().pushMessage("QOLS", "Please select a surface type", level=Qgis.Warning)
@@ -341,6 +341,8 @@ class QOLS:
                 'os': os,
                 'sys': sys,
                 'math': math,
+                # Map UI parameter names to script parameter names
+                'use_selected_feature': params.get('use_threshold_selected', False),
                 **params,  # Add all parameters
                 **specific_params  # Add specific parameters directly
             }
