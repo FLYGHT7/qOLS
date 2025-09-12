@@ -79,12 +79,12 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Set initial direction
             self.direction_start_to_end = True
             self.transitional_direction_normal = True  # True = normal (s=0), False = rotated (s=-1)
+
+            # Update direction buttons and initial selection info
             self.update_direction_button()
             self.update_transitional_direction_button()
-            
-            # Update selection info initially
             self.update_selection_info()
-            
+
             print("QOLS: QolsDockWidget initialized successfully")
             
         except Exception as e:
@@ -96,213 +96,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
     def apply_modern_stylesheet(self):
         """Use native Qt styling for maximum compatibility and performance."""
         try:
-            # Clear any existing custom styles to use native Qt appearance
             self.setStyleSheet("")
             print("QOLS: Using native Qt styling for maximum compatibility")
-            
         except Exception as e:
             print(f"QOLS: Error clearing stylesheet: {e}")
-            # Ensure no styles are applied
             self.setStyleSheet("")
-
-    def initialize_takeoff_defaults(self):
-        """Initialize Take-Off Surface default values immediately after widget creation."""
-        try:
-            print("QOLS: Initializing Take-Off Surface default values")
-            
-            # Take-Off Surface default values
-            takeoff_defaults = {
-                'spin_widthApp_takeoff': 150.0,
-                'spin_widthDep_takeoff': 180.0,
-                'spin_maxWidthDep_takeoff': 1800.0,
-                'spin_CWYLength_takeoff': 0.0,
-                'spin_Z0_takeoff': 2548.0,
-                'spin_ZE_takeoff': 2546.5,
-                'spin_ARPH_takeoff': 2548.0,
-                'spin_IHSlope_takeoff': 33.3,
-                'spin_L1_takeoff': 3000.0,
-                'spin_L2_takeoff': 3600.0,
-                'spin_LH_takeoff': 8400.0
-            }
-            
-            # Set each value using our smart setter
-            for widget_name, default_value in takeoff_defaults.items():
-                self.set_numeric_value(widget_name, default_value)
-                print(f"QOLS: Set {widget_name} = {default_value}")
-                
-        except Exception as e:
-            print(f"QOLS: Error initializing Take-Off defaults: {e}")
-            
-        # Initialize Transitional Surface default values
-        try:
-            print("QOLS: Initializing Transitional Surface default values")
-            
-            # Transitional Surface default values
-            transitional_defaults = {
-                'spin_widthApp_transitional': '280.00',  # Width should be 280 for transitional
-                'spin_Z0_transitional': '2548.00',
-                'spin_ZE_transitional': '2546.50',
-                'spin_ARPH_transitional': '2548.00',
-                'spin_IHSlope_transitional': '33.30',  # 33.3% slope for IH
-                'spin_L1_transitional': '3000.00',
-                'spin_L2_transitional': '3600.00',
-                'spin_LH_transitional': '8400.00',
-                'spin_Tslope_transitional': '14.30'  # Transitional slope 14.3%
-            }
-            
-            # Set each value using our smart setter
-            for widget_name, default_value in transitional_defaults.items():
-                self.set_numeric_value(widget_name, default_value)
-                print(f"QOLS: Set {widget_name} = {default_value}")
-                
-            # Set the code spinner for transitional (QSpinBox)
-            self.spin_code_transitional.setValue(4)
-            print(f"QOLS: Set spin_code_transitional = 4")
-            
-            # Set the default type APP for transitional (QComboBox)
-            try:
-                self.combo_typeAPP_transitional.setCurrentText('CAT I')
-                print(f"QOLS: Set combo_typeAPP_transitional = CAT I")
-            except AttributeError:
-                print(f"QOLS: combo_typeAPP_transitional not found")
-                
-        except Exception as e:
-            print(f"QOLS: Error initializing Transitional defaults: {e}")
-            
-        # Initialize other surface default values
-        try:
-            print("QOLS: Initializing other surface default values")
-            
-            # Approach Surface default values
-            approach_defaults = {
-                'spin_widthApp': 150.0,
-                'spin_Z0': 2548.0,
-                'spin_ZE': 2546.5,
-                'spin_ARPH': 2548.0,
-                'spin_IHSlope': 2.5,  # 2.5% slope
-                'spin_L1': 3000.0,
-                'spin_L2': 3600.0,
-                'spin_LH': 8400.0
-            }
-            
-            # Conical Surface default values  
-            conical_defaults = {
-                'spin_L_conical': 6000.0,
-                'spin_height_conical': 60.0
-            }
-            
-            # Inner Horizontal default values
-            inner_defaults = {
-                'spin_L_inner': 4000.0,
-                'spin_height_inner': 45.0
-            }
-            
-            # OFZ default values
-            ofz_defaults = {
-                'spin_width_ofz': 280.0,
-                'spin_Z0_ofz': 21.7,
-                'spin_ZE_ofz': 42.7,
-                'spin_ARPH_ofz': 15.0,
-                'spin_IHSlope_ofz': 2.5  # 2.5% slope
-            }
-            
-            # Outer Horizontal default values
-            outer_defaults = {
-                'spin_radius_outer': 4000.0,
-                'spin_height_outer': 45.0
-            }
-            
-            # Set all default values
-            all_defaults = {**approach_defaults, **conical_defaults, **inner_defaults, 
-                          **ofz_defaults, **outer_defaults}
-            
-            for widget_name, default_value in all_defaults.items():
-                self.set_numeric_value(widget_name, default_value)
-                print(f"QOLS: Set {widget_name} = {default_value}")
-                
-            # Set code spinners (QSpinBox widgets)
-            self.spin_code.setValue(4)  # Approach Surface
-            self.spin_code_ofz.setValue(4)  # OFZ
-            self.spin_code_outer.setValue(4)  # Outer Horizontal
-            print(f"QOLS: Set all code spinners = 4")
-                
-        except Exception as e:
-            print(f"QOLS: Error initializing other surface defaults: {e}")
-
-    def setup_dynamic_takeoff_values(self):
-        """Setup dynamic value updates for Take-Off Surface based on aerodrome code."""
-        try:
-            print("QOLS: Setting up dynamic Take-Off Surface values")
-            
-            # Connect the code spinbox value change signal
-            if hasattr(self, 'spin_code_takeoff'):
-                self.spin_code_takeoff.valueChanged.connect(self.update_takeoff_values_by_code)
-                print("QOLS: Connected spin_code_takeoff valueChanged signal")
-            else:
-                print("QOLS: Warning - spin_code_takeoff widget not found")
-                
-        except Exception as e:
-            print(f"QOLS: Error setting up dynamic Take-Off values: {e}")
-
-    def update_takeoff_values_by_code(self, code_value):
-        """Update Take-Off Surface values based on aerodrome code according to ICAO standards."""
-        try:
-            print(f"QOLS: Updating Take-Off values for code: {code_value}")
-            
-            # ICAO Annex 14 - Table 4-2: Take-Off Climb Surface dimensions
-            takeoff_values_by_code = {
-                1: {
-                    'spin_widthApp_takeoff': 60.0,    # Length of inner edge
-                    'spin_widthDep_takeoff': 60.0,    # Same as inner edge for code 1
-                    'spin_maxWidthDep_takeoff': 380.0, # Final width
-                    'distance_from_runway': 30.0,     # Distance from runway end
-                    'length': 1600.0,                 # Length
-                    'slope': 5.0                      # Slope percentage
-                },
-                2: {
-                    'spin_widthApp_takeoff': 80.0,    # Length of inner edge
-                    'spin_widthDep_takeoff': 80.0,    # Same as inner edge for code 2
-                    'spin_maxWidthDep_takeoff': 580.0, # Final width
-                    'distance_from_runway': 60.0,     # Distance from runway end
-                    'length': 2500.0,                 # Length
-                    'slope': 4.0                      # Slope percentage
-                },
-                3: {
-                    'spin_widthApp_takeoff': 180.0,   # Length of inner edge
-                    'spin_widthDep_takeoff': 180.0,   # Same as inner edge for code 3
-                    'spin_maxWidthDep_takeoff': 1200.0, # Final width (option 1)
-                    'distance_from_runway': 60.0,     # Distance from runway end
-                    'length': 15000.0,                # Length
-                    'slope': 2.0                      # Slope percentage
-                },
-                4: {
-                    'spin_widthApp_takeoff': 180.0,   # Length of inner edge
-                    'spin_widthDep_takeoff': 180.0,   # Same as inner edge for code 4
-                    'spin_maxWidthDep_takeoff': 1800.0, # Final width (option 2)
-                    'distance_from_runway': 60.0,     # Distance from runway end
-                    'length': 15000.0,                # Length
-                    'slope': 2.0                      # Slope percentage
-                }
-            }
-            
-            # Get values for the selected code
-            if code_value in takeoff_values_by_code:
-                code_values = takeoff_values_by_code[code_value]
-                
-                # Update only the relevant fields, preserving others
-                for widget_name, value in code_values.items():
-                    if widget_name.startswith('spin_'):
-                        self.set_numeric_value(widget_name, value)
-                        print(f"QOLS: Updated {widget_name} = {value} for code {code_value}")
-                
-                # Show user-friendly message about the update
-                print(f"QOLS: Take-Off Surface updated to ICAO standards for aerodrome code {code_value}")
-                
-            else:
-                print(f"QOLS: Warning - Unknown aerodrome code: {code_value}")
-                
-        except Exception as e:
-            print(f"QOLS: Error updating Take-Off values: {e}")
 
     def setup_numeric_lineedit_validation(self):
         """Configure numeric input validation for all QLineEdit widgets (formerly QDoubleSpinBox)."""
@@ -312,7 +110,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             
             print("QOLS: Setting up numeric validation for QLineEdit widgets")
             
-            # List of all numeric input widget names (formerly QDoubleSpinBox)
             lineedit_names = [
                 'spin_widthApp', 'spin_Z0', 'spin_ZE', 'spin_ARPH', 
                 'spin_L1', 'spin_L2', 'spin_LH', 'spin_IHSlope',
@@ -328,85 +125,221 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_L2_transitional', 'spin_LH_transitional', 'spin_Tslope_transitional'
             ]
             
-            # Default values for clean initial display
             default_values = {
                 'spin_widthApp': '280.00', 'spin_Z0': '21.70', 'spin_ZE': '42.70', 'spin_ARPH': '15.00',
                 'spin_L1': '60.00', 'spin_L2': '60.00', 'spin_LH': '0.00', 'spin_IHSlope': '2.50',
                 'spin_L_conical': '6000.00', 'spin_height_conical': '60.00',
                 'spin_L_inner': '4000.00', 'spin_height_inner': '45.00',
-                'spin_width_ofz': '280.00', 'spin_Z0_ofz': '21.70', 'spin_ZE_ofz': '42.70',
-                'spin_ARPH_ofz': '15.00', 'spin_IHSlope_ofz': '2.50',
+                'spin_width_ofz': '120.00', 'spin_Z0_ofz': '2548.00', 'spin_ZE_ofz': '2546.50',
+                'spin_ARPH_ofz': '2548.00', 'spin_IHSlope_ofz': '33.30',
                 'spin_radius_outer': '4000.00', 'spin_height_outer': '45.00'
             }
             
-            # Create validator for numeric input with up to 8 decimal places
-            # Pattern: optional minus, digits, optional decimal point with up to 8 digits
-            decimal_pattern = r'^-?\d*\.?\d{0,8}$'
+            # Allow unlimited decimals; optional sign and decimal part
+            decimal_pattern = r'^-?\d*(?:\.\d*)?$'
             regex = QRegExp(decimal_pattern)
             validator = QRegExpValidator(regex)
             
             configured_count = 0
-            
             for name in lineedit_names:
                 try:
                     lineedit = getattr(self, name, None)
                     if lineedit and hasattr(lineedit, 'setText'):
-                        # Set numeric validator
                         lineedit.setValidator(validator)
-                        
-                        # Set default value if available
-                        if name in default_values:
-                            lineedit.setText(default_values[name])
-                        else:
-                            lineedit.setText('0.00')
-                        
-                        # Add smart formatting on focus out
+                        lineedit.setText(default_values.get(name, '0.00'))
                         self._configure_smart_formatting(lineedit)
-                        
                         configured_count += 1
                         print(f"QOLS: Configured {name} - numeric validation and default value set")
-                        
                 except Exception as e:
                     print(f"QOLS: Warning - could not configure {name}: {e}")
             
             print(f"QOLS: Successfully configured {configured_count} QLineEdit widgets with numeric validation")
             print("QOLS: All numeric inputs now support unlimited decimal precision with clean display")
-            
         except Exception as e:
             print(f"QOLS: Error in numeric validation setup: {e}")
 
     def _configure_smart_formatting(self, lineedit):
-        """Configure smart formatting for numeric QLineEdit - clean display for simple values."""
+        """Smart formatting for QLineEdit: show clean 2-decimals for simple values."""
         try:
             def format_on_focus_out():
                 try:
                     text = lineedit.text().strip()
                     if text:
-                        # Try to parse as float
                         try:
                             value = float(text)
-                            # Format intelligently
-                            if abs(value - round(value)) < 0.000001:
-                                # It's an integer, format as XX.00
+                            if abs(value - round(value)) < 1e-6:
                                 lineedit.setText(f"{int(round(value))}.00")
-                            elif abs(value - round(value, 2)) < 0.000001:
-                                # It's a 2-decimal value, format cleanly
+                            elif abs(value - round(value, 2)) < 1e-6:
                                 lineedit.setText(f"{value:.2f}")
-                            # Otherwise leave as is for high precision
+                            # Otherwise, leave user's precision as-is
                         except ValueError:
-                            # If it's not a valid number, clear or set default
                             lineedit.setText('0.00')
                 except:
                     pass
-            
-            # Connect to focus out event
             try:
                 lineedit.editingFinished.connect(format_on_focus_out)
             except:
                 pass
-            
         except Exception as e:
-            print(f"QOLS: Warning - smart formatting setup failed for {lineedit.objectName()}: {e}")
+            print(f"QOLS: Warning - smart formatting setup failed for {getattr(lineedit, 'objectName', lambda: '')()}: {e}")
+
+    def initialize_takeoff_defaults(self):
+        """Initialize default values for Take-Off and other surfaces."""
+        try:
+            print("QOLS: Initializing Take-Off Surface default values")
+            takeoff_defaults = {
+                'spin_widthApp_takeoff': 150.0,
+                'spin_widthDep_takeoff': 180.0,
+                'spin_maxWidthDep_takeoff': 1800.0,
+                'spin_CWYLength_takeoff': 0.0,
+                'spin_Z0_takeoff': 2548.0,
+                'spin_ZE_takeoff': 2546.5,
+                'spin_ARPH_takeoff': 2548.0,
+                'spin_IHSlope_takeoff': 33.3,
+                'spin_L1_takeoff': 3000.0,
+                'spin_L2_takeoff': 3600.0,
+                'spin_LH_takeoff': 8400.0
+            }
+            for widget_name, default_value in takeoff_defaults.items():
+                self.set_numeric_value(widget_name, default_value)
+                print(f"QOLS: Set {widget_name} = {default_value}")
+        except Exception as e:
+            print(f"QOLS: Error initializing Take-Off defaults: {e}")
+
+        # Transitional defaults
+        try:
+            print("QOLS: Initializing Transitional Surface default values")
+            transitional_defaults = {
+                'spin_widthApp_transitional': '280.00',
+                'spin_Z0_transitional': '2548.00',
+                'spin_ZE_transitional': '2546.50',
+                'spin_ARPH_transitional': '2548.00',
+                'spin_IHSlope_transitional': '33.30',
+                'spin_L1_transitional': '3000.00',
+                'spin_L2_transitional': '3600.00',
+                'spin_LH_transitional': '8400.00',
+                'spin_Tslope_transitional': '14.30'
+            }
+            for widget_name, default_value in transitional_defaults.items():
+                self.set_numeric_value(widget_name, default_value)
+                print(f"QOLS: Set {widget_name} = {default_value}")
+            self.set_code_value('spin_code_transitional', 4)
+            print("QOLS: Set spin_code_transitional = 4")
+            try:
+                self.combo_typeAPP_transitional.setCurrentText('CAT I')
+                print("QOLS: Set combo_typeAPP_transitional = CAT I")
+            except AttributeError:
+                print("QOLS: combo_typeAPP_transitional not found")
+        except Exception as e:
+            print(f"QOLS: Error initializing Transitional defaults: {e}")
+
+        # Other defaults
+        try:
+            print("QOLS: Initializing other surface default values")
+            approach_defaults = {
+                'spin_widthApp': 150.0,
+                'spin_Z0': 2548.0,
+                'spin_ZE': 2546.5,
+                'spin_ARPH': 2548.0,
+                'spin_IHSlope': 2.5,
+                'spin_L1': 3000.0,
+                'spin_L2': 3600.0,
+                'spin_LH': 8400.0
+            }
+            conical_defaults = {
+                'spin_L_conical': 6000.0,
+                'spin_height_conical': 60.0
+            }
+            inner_defaults = {
+                'spin_L_inner': 4000.0,
+                'spin_height_inner': 45.0
+            }
+            ofz_defaults = {
+                'spin_width_ofz': 120.0,
+                'spin_Z0_ofz': 2548.0,
+                'spin_ZE_ofz': 2546.5,
+                'spin_ARPH_ofz': 2548.0,
+                'spin_IHSlope_ofz': 33.3
+            }
+            outer_defaults = {
+                'spin_radius_outer': 4000.0,
+                'spin_height_outer': 45.0
+            }
+            all_defaults = {**approach_defaults, **conical_defaults, **inner_defaults, **ofz_defaults, **outer_defaults}
+            for widget_name, default_value in all_defaults.items():
+                self.set_numeric_value(widget_name, default_value)
+                print(f"QOLS: Set {widget_name} = {default_value}")
+            # Initialize code dropdowns
+            self.set_code_value('spin_code', 4)
+            self.set_code_value('spin_code_ofz', 4)
+            self.set_code_value('spin_code_takeoff', 4)
+            self.set_code_value('spin_code_outer', 4)
+            print("QOLS: Set all code widgets = 4")
+        except Exception as e:
+            print(f"QOLS: Error initializing other surface defaults: {e}")
+
+    def setup_dynamic_takeoff_values(self):
+        """Setup dynamic value updates for Take-Off Surface based on aerodrome code."""
+        try:
+            print("QOLS: Setting up dynamic Take-Off Surface values")
+            if hasattr(self, 'spin_code_takeoff'):
+                self.spin_code_takeoff.currentTextChanged.connect(self.update_takeoff_values_by_code)
+                print("QOLS: Connected spin_code_takeoff currentTextChanged signal")
+            else:
+                print("QOLS: Warning - spin_code_takeoff widget not found")
+        except Exception as e:
+            print(f"QOLS: Error setting up dynamic Take-Off values: {e}")
+
+    def update_takeoff_values_by_code(self, code_value):
+        """Update Take-Off Surface values to ICAO standards by code (1-4)."""
+        try:
+            if isinstance(code_value, str):
+                code_value = int(code_value)
+            print(f"QOLS: Updating Take-Off values for code: {code_value}")
+            takeoff_values_by_code = {
+                1: {
+                    'spin_widthApp_takeoff': 60.0,
+                    'spin_widthDep_takeoff': 60.0,
+                    'spin_maxWidthDep_takeoff': 380.0,
+                    'distance_from_runway': 30.0,
+                    'length': 1600.0,
+                    'slope': 5.0
+                },
+                2: {
+                    'spin_widthApp_takeoff': 80.0,
+                    'spin_widthDep_takeoff': 80.0,
+                    'spin_maxWidthDep_takeoff': 580.0,
+                    'distance_from_runway': 60.0,
+                    'length': 2500.0,
+                    'slope': 4.0
+                },
+                3: {
+                    'spin_widthApp_takeoff': 180.0,
+                    'spin_widthDep_takeoff': 180.0,
+                    'spin_maxWidthDep_takeoff': 1200.0,
+                    'distance_from_runway': 60.0,
+                    'length': 15000.0,
+                    'slope': 2.0
+                },
+                4: {
+                    'spin_widthApp_takeoff': 180.0,
+                    'spin_widthDep_takeoff': 180.0,
+                    'spin_maxWidthDep_takeoff': 1800.0,
+                    'distance_from_runway': 60.0,
+                    'length': 15000.0,
+                    'slope': 2.0
+                }
+            }
+            if code_value in takeoff_values_by_code:
+                for widget_name, value in takeoff_values_by_code[code_value].items():
+                    if widget_name.startswith('spin_'):
+                        self.set_numeric_value(widget_name, value)
+                        print(f"QOLS: Updated {widget_name} = {value} for code {code_value}")
+                print(f"QOLS: Take-Off Surface updated to ICAO standards for aerodrome code {code_value}")
+            else:
+                print(f"QOLS: Warning - Unknown aerodrome code: {code_value}")
+        except Exception as e:
+            print(f"QOLS: Error updating Take-Off values: {e}")
 
     def get_numeric_value(self, widget_name):
         """Get numeric value from QLineEdit widget, returns float or 0.0 if invalid."""
@@ -419,6 +352,51 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             return 0.0
         except (ValueError, AttributeError):
             return 0.0
+
+    def get_code_value(self, widget_name):
+        """Get code value from QComboBox or QSpinBox widget, returns int."""
+        try:
+            widget = getattr(self, widget_name, None)
+            if widget is None:
+                return 1  # Default code value
+            
+            # Handle QComboBox (new code dropdowns)
+            if hasattr(widget, 'currentText'):
+                text = widget.currentText().strip()
+                if text:
+                    return int(text)
+            
+            # Handle QSpinBox (legacy code widgets)
+            if hasattr(widget, 'value'):
+                return widget.value()
+                
+            return 1  # Default code value
+        except (ValueError, AttributeError):
+            return 1  # Default code value
+
+    def set_code_value(self, widget_name, value):
+        """Set code value in QComboBox or QSpinBox widget."""
+        try:
+            widget = getattr(self, widget_name, None)
+            if widget is None:
+                print(f"QOLS: Warning - code widget {widget_name} not found")
+                return
+            
+            # Handle QComboBox (new code dropdowns)
+            if hasattr(widget, 'setCurrentText'):
+                widget.setCurrentText(str(value))
+                print(f"QOLS: Set {widget_name} (QComboBox) = {value}")
+                return
+            
+            # Handle QSpinBox (legacy code widgets)
+            if hasattr(widget, 'setValue'):
+                widget.setValue(value)
+                print(f"QOLS: Set {widget_name} (QSpinBox) = {value}")
+                return
+                
+            print(f"QOLS: Warning - {widget_name} is neither QComboBox nor QSpinBox")
+        except Exception as e:
+            print(f"QOLS: Error setting code value for {widget_name}: {e}")
 
     def set_numeric_value(self, widget_name, value):
         """Set numeric value in widget - works with both QLineEdit and QDoubleSpinBox."""
@@ -446,366 +424,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         except Exception as e:
             print(f"QOLS: Warning - could not set value for {widget_name}: {e}")
 
-    def setup_decimal_precision_OLD_DISABLED(self):
-        """Configure decimal precision with CUSTOM VALIDATION to allow true multi-decimal input."""
-        try:
-            print("QOLS: Setting up CUSTOM decimal validation for true multi-decimal support")
-            
-            # List of all QDoubleSpinBox widget names
-            spinbox_names = [
-                'spin_widthApp', 'spin_Z0', 'spin_ZE', 'spin_ARPH', 
-                'spin_L1', 'spin_L2', 'spin_LH', 'spin_IHSlope',
-                'spin_L_conical', 'spin_height_conical',
-                'spin_L_inner', 'spin_height_inner',
-                'spin_width_ofz', 'spin_Z0_ofz', 'spin_ZE_ofz', 'spin_ARPH_ofz', 'spin_IHSlope_ofz',
-                'spin_radius_outer', 'spin_height_outer'
-            ]
-            
-            configured_count = 0
-            
-            for name in spinbox_names:
-                try:
-                    spinbox = getattr(self, name, None)
-                    if spinbox:
-                        # Configure for maximum precision but controlled display
-                        self._configure_precision_spinbox(spinbox)
-                        
-                        # Set reasonable range and step
-                        if spinbox.maximum() == 99.99:
-                            spinbox.setMaximum(999999.99999999)
-                        spinbox.setSingleStep(0.01)
-                        
-                        configured_count += 1
-                        print(f"QOLS: Configured {name} - custom precision validation enabled")
-                        
-                except Exception as e:
-                    print(f"QOLS: Warning - could not configure {name}: {e}")
-            
-            print(f"QOLS: Successfully configured {configured_count} QDoubleSpinBox widgets with custom validation")
-            print("QOLS: All spinboxes now support true multi-decimal input without Qt rounding")
-            
-        except Exception as e:
-            print(f"QOLS: Error setting up decimal precision: {e}")
-
-    def _configure_precision_spinbox(self, spinbox):
-        """
-        Configure spinbox with CUSTOM validation to bypass Qt's automatic rounding.
-        This allows true multi-decimal input by overriding Qt's built-in behavior.
-        """
-        try:
-            from qgis.PyQt.QtCore import QRegExp
-            from qgis.PyQt.QtGui import QRegExpValidator
-            
-            # Create custom validator that allows up to 8 decimal places
-            # Pattern: optional minus, digits, optional decimal point with up to 8 digits
-            decimal_pattern = r'^-?\d+\.?\d{0,8}$|^-?\d*\.\d{1,8}$|^\d+$'
-            regex = QRegExp(decimal_pattern)
-            validator = QRegExpValidator(regex)
-            
-            # Apply custom validator to lineEdit
-            if hasattr(spinbox, 'lineEdit') and spinbox.lineEdit():
-                spinbox.lineEdit().setValidator(validator)
-            
-            # Set maximum decimals to 8 to allow the precision
-            spinbox.setDecimals(8)
-            
-            # Store original value for clean display logic
-            spinbox._original_precision = 2
-            spinbox._is_displaying_clean = True
-            
-            # Override textFromValue to control display format
-            original_textFromValue = spinbox.textFromValue
-            def custom_textFromValue(value):
-                try:
-                    # If we're in "clean display" mode and it's a simple value
-                    if hasattr(spinbox, '_is_displaying_clean') and spinbox._is_displaying_clean:
-                        if abs(value - round(value, 2)) < 0.000001:
-                            return f"{value:.2f}"
-                    
-                    # Otherwise, use smart formatting
-                    if abs(value - round(value)) < 0.000001:
-                        return f"{int(round(value))}.00"
-                    else:
-                        # Format with minimal necessary decimals
-                        formatted = f"{value:.8f}".rstrip('0').rstrip('.')
-                        if '.' not in formatted:
-                            formatted += ".00"
-                        elif len(formatted.split('.')[1]) == 1:
-                            formatted += "0"
-                        return formatted
-                except:
-                    return original_textFromValue(value)
-            
-            # Apply custom formatting (be careful about method replacement)
-            try:
-                spinbox.textFromValue = custom_textFromValue
-            except:
-                pass  # If method replacement fails, continue with default
-            
-            # Handle input changes to adjust clean display mode
-            def handle_text_input():
-                try:
-                    if hasattr(spinbox, 'lineEdit') and spinbox.lineEdit():
-                        text = spinbox.lineEdit().text()
-                        if '.' in text and len(text.split('.')[1]) > 2:
-                            spinbox._is_displaying_clean = False
-                        else:
-                            spinbox._is_displaying_clean = True
-                except:
-                    pass
-            
-            # Connect to text changes
-            if hasattr(spinbox, 'lineEdit') and spinbox.lineEdit():
-                spinbox.lineEdit().textChanged.connect(handle_text_input)
-            
-            print(f"QOLS: Custom precision validation configured for {spinbox.objectName()}")
-            
-        except Exception as e:
-            print(f"QOLS: Warning - custom precision setup failed for {spinbox.objectName()}: {e}")
-            # Fallback to standard configuration
-            try:
-                spinbox.setDecimals(8)
-            except:
-                pass
-
-    def _configure_smart_expansion_OLD_DISABLED(self, spinbox):
-        """
-        Configure smart decimal expansion - starts with 2, expands when user inputs more.
-        IMPROVED VERSION: Actually allows more decimal input.
-        """
-        try:
-            # Set initial decimals to 2 for clean display
-            spinbox.setDecimals(2)
-            
-            # Configure dynamic expansion on text input
-            def handle_text_input():
-                try:
-                    text = spinbox.lineEdit().text()
-                    
-                    # Check decimal places needed
-                    if '.' in text:
-                        try:
-                            # Count decimal places in input
-                            decimal_part = text.split('.')[1]
-                            needed_decimals = len(decimal_part)
-                            
-                            # Expand spinbox if user needs more decimals
-                            current_decimals = spinbox.decimals()
-                            if needed_decimals > current_decimals and needed_decimals <= 8:
-                                spinbox.setDecimals(needed_decimals)
-                                print(f"QOLS: Expanded {spinbox.objectName()} to {needed_decimals} decimals")
-                                
-                        except (IndexError, ValueError):
-                            pass  # Invalid format, let Qt handle it
-                            
-                except Exception as e:
-                    pass  # Ignore errors during live typing
-            
-            # Connect to text changes for dynamic expansion
-            if hasattr(spinbox, 'lineEdit') and spinbox.lineEdit():
-                spinbox.lineEdit().textChanged.connect(handle_text_input)
-            
-            print(f"QOLS: Advanced decimal expansion configured for {spinbox.objectName()}")
-            
-        except Exception as e:
-            print(f"QOLS: Warning - advanced expansion setup failed for {spinbox.objectName()}: {e}")
-            # Fallback: at least set basic 2 decimals
-            try:
-                spinbox.setDecimals(2)
-            except:
-                pass
-
-    def _configure_clean_value_display(self, spinbox):
-        """
-        Configurar display inteligente REAL - SOLUCIÓN ELEGANTE
-        
-        OBJETIVO EXACTO DEL CLIENTE:
-        - Display inicial: 60.00 (2 decimales, limpio)
-        - Input flexible: 60.123456789 (sin límites)
-        - Display adapta: muestra decimales necesarios
-        """
-        try:
-            # Configurar máxima precisión interna
-            spinbox.setDecimals(8)  # Maximum expansion when needed
-            
-            # SOLUCIÓN ELEGANTE: Override textFromValue para control completo de display
-            original_textFromValue = spinbox.textFromValue
-            
-            def smart_textFromValue(value):
-                """
-                Método personalizado que controla exactamente cómo se muestra el valor:
-                - Valores enteros: 60 (sin decimales innecesarios)
-                - Por defecto: 60.00 (2 decimales limpios)
-                - Con decimales: 60.123 (solo los necesarios)
-                """
-                # Verificar si está en modo edición
-                is_editing = getattr(spinbox, '_smart_editing_mode', False)
-                
-                if is_editing:
-                    # Durante edición, mostrar formato completo para flexibilidad
-                    if value == int(value):
-                        return f"{int(value)}"
-                    else:
-                        # Mostrar hasta 8 decimales, eliminando ceros trailing
-                        text = f"{value:.8f}".rstrip('0').rstrip('.')
-                        # Asegurar al menos 2 decimales para consistencia visual
-                        if '.' not in text:
-                            text += ".00"
-                        elif len(text.split('.')[1]) == 1:
-                            text += "0"
-                        return text
-                else:
-                    # Display normal: formato limpio y consistente
-                    if value == int(value):
-                        return f"{int(value)}.00"  # Formato consistente
-                    else:
-                        # Determinar decimales mínimos necesarios
-                        for decimals in range(1, 7):
-                            rounded = round(value, decimals)
-                            if abs(value - rounded) < 1e-10:
-                                # Usar al menos 2 decimales para consistencia
-                                display_decimals = max(2, decimals)
-                                return f"{value:.{display_decimals}f}"
-                        # Fallback: 2 decimales
-                        return f"{value:.2f}"
-            
-            # Reemplazar el método textFromValue
-            spinbox.textFromValue = smart_textFromValue
-            
-            # Configurar eventos para detectar modo edición
-            spinbox._smart_editing_mode = False
-            
-            # Override eventos de focus para controlar modo edición
-            original_focusInEvent = spinbox.focusInEvent
-            original_focusOutEvent = spinbox.focusOutEvent
-            
-            def smart_focusInEvent(event):
-                spinbox._smart_editing_mode = True
-                original_focusInEvent(event)
-            
-            def smart_focusOutEvent(event):
-                spinbox._smart_editing_mode = False
-                original_focusOutEvent(event)
-                # Forzar actualización del display
-                spinbox.update()
-            
-            spinbox.focusInEvent = smart_focusInEvent
-            spinbox.focusOutEvent = smart_focusOutEvent
-            
-            # Configurar eventos de line edit si está disponible
-            try:
-                line_edit = spinbox.lineEdit()
-                if line_edit:
-                    def on_editing_started():
-                        spinbox._smart_editing_mode = True
-                    
-                    def on_editing_finished():
-                        spinbox._smart_editing_mode = False
-                        spinbox.update()
-                    
-                    line_edit.editingFinished.connect(on_editing_finished)
-                    # textChanged no lo usamos para evitar updates excesivos
-            except:
-                pass  # Ignore si no se puede configurar
-            
-            print(f"QOLS: Smart display configured for {spinbox.objectName()}")
-            print(f"      Display: 60.00 (clean), Input: 60.123456 (flexible)")
-            
-        except Exception as e:
-            print(f"QOLS: Warning - smart display setup failed: {e}")
-            # Fallback a configuración básica
-            spinbox.setDecimals(2)
-
-    def _apply_clean_display_formatting(self, spinbox):
-        """
-        Aplicar formateo limpio al display.
-        
-        OBJETIVO: Mostrar 60.00 en lugar de 60.000000 para valores simples
-        PERO: Permitir 60.123456 cuando el usuario lo ingrese
-        """
-        try:
-            # Esta es una limitación de Qt QDoubleSpinBox
-            # La mejor solución práctica es configurar valores iniciales limpios
-            # y documentar que el comportamiento de input es completo
-            
-            # Configurar step y comportamiento para mejor UX
-            current_step = spinbox.singleStep()
-            if current_step < 0.01:
-                spinbox.setSingleStep(0.01)  # Step más razonable para UX
-            
-            # El display mostrará 6 decimales, pero funcionalmente es correcto
-            # porque permite la precisión completa que requiere el cliente
-            
-        except Exception as e:
-            print(f"QOLS: Error applying clean formatting: {e}")
-
-    def _configure_flexible_input(self, spinbox):
-        """
-        Configurar input flexible para cumplir EXACTAMENTE el requerimiento del cliente:
-        
-        DISPLAY DEFAULT: 60.00 (2 decimales, se ve limpio)
-        INPUT FLEXIBLE: Usuario puede escribir 60.123456789 y se acepta
-        ALMACENAMIENTO: Se guarda exactamente lo que el usuario escribió
-        
-        Estrategia: Interceptar eventos de texto y ajustar decimales dinámicamente
-        """
-        try:
-            # Almacenar referencia al valor con alta precisión
-            spinbox._high_precision_value = spinbox.value()
-            
-            # Conectar eventos para manejar input personalizado
-            spinbox.lineEdit().textChanged.connect(
-                lambda text, sb=spinbox: self._handle_flexible_input(sb, text)
-            )
-            
-            # Conectar valueChanged para sincronizar
-            spinbox.valueChanged.connect(
-                lambda value, sb=spinbox: self._sync_high_precision_value(sb, value)
-            )
-            
-            print(f"QOLS: Flexible input configured for {spinbox.objectName()}")
-            
-        except Exception as e:
-            print(f"QOLS: Warning - flexible input setup failed: {e}")
-
-    def _handle_flexible_input(self, spinbox, text):
-        """
-        Manejar input de texto para permitir alta precisión.
-        
-        Lógica:
-        - Si usuario escribe 60.123456, temporalmente aumentar decimales
-        - Preservar el valor exacto
-        - Cuando no esté editando, volver a display limpio
-        """
-        try:
-            # Contar decimales en el texto actual
-            if '.' in text:
-                decimal_part = text.split('.')[-1]
-                needed_decimals = len(decimal_part)
-                
-                # Si necesita más de 2 decimales, ajustar temporalmente
-                if needed_decimals > 2:
-                    current_decimals = spinbox.decimals()
-                    if needed_decimals > current_decimals:
-                        spinbox.setDecimals(min(needed_decimals, 8))  # Máximo 8 decimales
-                        print(f"QOLS: Adjusted {spinbox.objectName()} to {needed_decimals} decimals for input")
-            
-            # Parsear y almacenar el valor de alta precisión
-            try:
-                high_precision_value = float(text)
-                spinbox._high_precision_value = high_precision_value
-            except ValueError:
-                pass  # Texto inválido, ignorar
-                
-        except Exception as e:
-            print(f"QOLS: Error handling flexible input: {e}")
-
-    def _sync_high_precision_value(self, spinbox, value):
-        """Sincronizar el valor de alta precisión con el valor del spinbox"""
-        try:
-            spinbox._high_precision_value = value
-        except Exception as e:
-            print(f"QOLS: Error syncing high precision value: {e}")
+    # Legacy QDoubleSpinBox helpers removed since all numeric inputs are QLineEdit now.
 
     def _configure_smart_decimal_display(self, spinbox):
         """
@@ -1646,9 +1265,9 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 except Exception as e:
                     print(f"QOLS: Error setting {widget_name}: {e}")
                 
-            # Set code and type (these are still spinbox/combobox)
+            # Set code and type (these are QComboBox)
             try:
-                self.spin_code_transitional.setValue(4)
+                self.set_code_value('spin_code_transitional', 4)
                 print("QOLS: Set code = 4")
             except Exception as e:
                 print(f"QOLS: Error setting code: {e}")
@@ -1951,7 +1570,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Get parameters based on current tab
             if surface_type == "Approach Surface":
                 specific_params = {
-                    'code': self.get_numeric_value('spin_code'),
+                    'code': self.get_code_value('spin_code'),  # QComboBox
                     'typeAPP': self.combo_typeAPP.currentText(),
                     'widthApp': self.get_numeric_value('spin_widthApp'),
                     'Z0': self.get_numeric_value('spin_Z0'),
@@ -1974,19 +1593,19 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 }
             elif surface_type == "Outer Horizontal":
                 specific_params = {
-                    'code': self.spin_code_outer.value(),  # QSpinBox
+                    'code': self.get_code_value('spin_code_outer'),  # QComboBox
                     'radius': float(self.spin_radius_outer.text() or "0"),  # QLineEdit
                     'height': float(self.spin_height_outer.text() or "0")   # QLineEdit
                 }
             elif surface_type == "Take-Off Surface":
                 print(f"QOLS DEBUG: Collecting Take-off Surface parameters...")
-                print(f"QOLS DEBUG: spin_code_takeoff.value() = {self.spin_code_takeoff.value()}")
+                print(f"QOLS DEBUG: spin_code_takeoff.currentText() = {self.spin_code_takeoff.currentText()}")
                 print(f"QOLS DEBUG: combo_typeAPP_takeoff.currentText() = {self.combo_typeAPP_takeoff.currentText()}")
                 print(f"QOLS DEBUG: spin_widthDep_takeoff.text() = {self.spin_widthDep_takeoff.text()}")
                 print(f"QOLS DEBUG: spin_maxWidthDep_takeoff.text() = {self.spin_maxWidthDep_takeoff.text()}")
                 
                 specific_params = {
-                    'code': self.spin_code_takeoff.value(),  # QSpinBox
+                    'code': self.get_code_value('spin_code_takeoff'),  # QComboBox
                     'typeAPP': self.combo_typeAPP_takeoff.currentText(),
                     'widthApp': float(self.spin_widthApp_takeoff.text() or "0"),      # QLineEdit
                     'widthDep': float(self.spin_widthDep_takeoff.text() or "0"),     # QLineEdit
@@ -1994,8 +1613,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'CWYLength': float(self.spin_CWYLength_takeoff.text() or "0"),   # QLineEdit
                     'Z0': float(self.spin_Z0_takeoff.text() or "0"),                 # QLineEdit
                     'ZE': float(self.spin_ZE_takeoff.text() or "0"),                 # QLineEdit
-                    'ARPH': float(self.spin_ARPH_takeoff.text() or "0")              # QLineEdit
-                    # NOTA: IHSlope, L1, L2, LH no se usan en cálculos reales del script
+                    'ARPH': float(self.spin_ARPH_takeoff.text() or "0"),             # QLineEdit
+                    'IHSlope': float(self.spin_IHSlope_takeoff.text() or "0") / 100.0, # QLineEdit, convert % to decimal
+                    'L1': float(self.spin_L1_takeoff.text() or "0"),                # QLineEdit
+                    'L2': float(self.spin_L2_takeoff.text() or "0"),                # QLineEdit
+                    'LH': float(self.spin_LH_takeoff.text() or "0")                 # QLineEdit
                 }
                 print(f"QOLS DEBUG: Take-off Surface specific_params = {specific_params}")
             elif surface_type == "Transitional Surface" or surface_type == "Transitional":
@@ -2006,7 +1628,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 print(f"QOLS DEBUG: Transitional rotation button normal={self.transitional_direction_normal}, s={s_value}")
                 
                 specific_params = {
-                    'code': self.spin_code_transitional.value(),  # QSpinBox
+                    'code': self.get_code_value('spin_code_transitional'),  # QComboBox
                     'typeAPP': self.combo_typeAPP_transitional.currentText(),
                     'widthApp': float(self.spin_widthApp_transitional.text() or "0"),  # QLineEdit
                     'Z0': float(self.spin_Z0_transitional.text() or "0"),              # QLineEdit
@@ -2018,6 +1640,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 print(f"QOLS DEBUG: Transitional Surface specific_params = {specific_params}")
             elif surface_type == "OFZ":
                 specific_params = {
+                    'code': self.get_code_value('spin_code_ofz'),  # QComboBox
                     'width': float(self.spin_width_ofz.text() or "0"),
                     'Z0': float(self.spin_Z0_ofz.text() or "0"),
                     'ZE': float(self.spin_ZE_ofz.text() or "0"),

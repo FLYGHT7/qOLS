@@ -239,11 +239,30 @@ This indicator updates automatically based on your layer selections.</string>
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QSpinBox" name="spin_code">
-
+         <widget class="QComboBox" name="spin_code">
           <property name="minimumHeight">
            <number>22</number>
           </property>
+          <item>
+           <property name="text">
+            <string>1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>4</string>
+           </property>
+          </item>
          </widget>
         </item>
         <item row="1" column="0">
@@ -506,8 +525,27 @@ This indicator updates automatically based on your layer selections.</string>
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QSpinBox" name="spin_code_ofz">
-
+         <widget class="QComboBox" name="spin_code_ofz">
+          <item>
+           <property name="text">
+            <string>1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>4</string>
+           </property>
+          </item>
          </widget>
         </item>
         <item row="1" column="0">
@@ -595,7 +633,7 @@ This indicator updates automatically based on your layer selections.</string>
         <item row="6" column="0">
          <widget class="QLabel" name="label_IHSlope_ofz">
           <property name="text">
-           <string>IH Slope (%):</string>
+           <string>Inner Transitional Slope (%):</string>
           </property>
          </widget>
         </item>
@@ -635,22 +673,36 @@ This indicator updates automatically based on your layer selections.</string>
           
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QSpinBox" name="spin_code_outer">
-          <property name="minimum">
-           <number>1</number>
-          </property>
-          <property name="maximum">
-           <number>4</number>
-          </property>
-          <property name="value">
-           <number>3</number>
-          </property>
-          <property name="toolTip">
-           <string>Aerodrome code number (3 or 4 for outer horizontal surface per DOC 9137)</string>
-          </property>
-         </widget>
-        </item>
+    <item row="0" column="1">
+     <widget class="QComboBox" name="spin_code_outer">
+      <property name="toolTip">
+       <string>Aerodrome code number (3 or 4 for outer horizontal surface per DOC 9137)</string>
+      </property>
+      <item>
+       <property name="text">
+        <string>1</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>2</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>3</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>4</string>
+       </property>
+      </item>
+      <property name="currentIndex">
+       <number>3</number>
+      </property>
+     </widget>
+    </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_radius_outer">
           <property name="text">
@@ -718,16 +770,30 @@ This indicator updates automatically based on your layer selections.</string>
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QSpinBox" name="spin_code_takeoff">
-          <property name="minimum">
-           <number>1</number>
+         <widget class="QComboBox" name="spin_code_takeoff">
+          <property name="currentIndex">
+           <number>3</number>
           </property>
-          <property name="maximum">
-           <number>4</number>
-          </property>
-          <property name="value">
-           <number>4</number>
-          </property>
+          <item>
+           <property name="text">
+            <string>1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>4</string>
+           </property>
+          </item>
          </widget>
         </item>
         <item row="1" column="0">
@@ -930,8 +996,27 @@ This indicator updates automatically based on your layer selections.</string>
          </widget>
         </item>
         <item row="0" column="1">
-         <widget class="QSpinBox" name="spin_code_transitional">
-
+         <widget class="QComboBox" name="spin_code_transitional">
+          <item>
+           <property name="text">
+            <string>1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>4</string>
+           </property>
+          </item>
          </widget>
         </item>
         <item row="1" column="0">
