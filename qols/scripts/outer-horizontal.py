@@ -74,22 +74,20 @@ for feat in selection:
     arp_x, arp_y = arp_point.x(), arp_point.y()
     print(f"OuterHorizontal: Creating 15,000m circle at ARP: {arp_x}, {arp_y}")
     
-    # Create circular polygon using WKT approach (most reliable)
-    # Generate points around the circle (360 points for 1-degree intervals)
-    num_segments = 360
-    wkt_points = []
+    # Create circular polygon using PyQGIS native QgsCircle (as requested by client)
+    # Fix: Convert QgsPointXY to QgsPoint for QgsCircle compatibility
+    center_point = QgsPoint(arp_x, arp_y)
     
-    for i in range(num_segments + 1):  # +1 to close the polygon
-        angle = i * 2 * pi / num_segments
-        x = arp_x + radius * cos(angle)
-        y = arp_y + radius * sin(angle)
-        wkt_points.append(f"{x} {y}")
+    # Use PyQGIS native QgsCircle for precise geometry generation (DOC 9137 compliance)
+    qgs_circle = QgsCircle(center_point, radius)
     
-    # Create WKT string for polygon
-    wkt_polygon = f"POLYGON(({', '.join(wkt_points)}))"
+    # Convert circle to polygon with configurable precision
+    # Note: Consider making this configurable in plugin settings for different precision needs
+    num_segments = 360  # Increased from 72 as per client feedback
+    polygon_geometry = qgs_circle.toPolygon(num_segments)
     
-    # Create polygon geometry from WKT
-    circle_geometry = QgsGeometry.fromWkt(wkt_polygon)
+    # Convert to QgsGeometry
+    circle_geometry = QgsGeometry(polygon_geometry)
     
     # Create feature with proper geometry reference
     feature = QgsFeature()
