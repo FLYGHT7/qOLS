@@ -17,7 +17,7 @@ from math import *
 try:
     # Try to get parameters from plugin namespace
     code = globals().get('code', 4)
-    typeAPP = globals().get('typeAPP', 'CAT I')
+    rwyClassification = globals().get('rwyClassification', 'Precision Approach CAT I')
     width = globals().get('width', 120)
     Z0 = globals().get('Z0', 2546.5)
     ZE = globals().get('ZE', 2548)
@@ -39,7 +39,7 @@ except Exception as e:
     print(f"OFZ: Error getting parameters, using defaults: {e}")
     # Fallback to defaults if parameters not provided
     code = 4
-    typeAPP = 'CAT I'
+    rwyClassification = 'Precision Approach CAT I'
     width = 120
     Z0 = 2546.5
     ZE = 2548

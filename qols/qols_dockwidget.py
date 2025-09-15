@@ -112,27 +112,25 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             
             lineedit_names = [
                 'spin_widthApp', 'spin_Z0', 'spin_ZE', 'spin_ARPH', 
-                'spin_L1', 'spin_L2', 'spin_LH', 'spin_IHSlope',
+                'spin_L1', 'spin_L2', 'spin_LH',
                 'spin_L_conical', 'spin_height_conical',
                 'spin_L_inner', 'spin_height_inner',
                 'spin_width_ofz', 'spin_Z0_ofz', 'spin_ZE_ofz', 'spin_ARPH_ofz', 'spin_IHSlope_ofz',
                 'spin_radius_outer', 'spin_height_outer',
                 'spin_widthApp_takeoff', 'spin_widthDep_takeoff', 'spin_maxWidthDep_takeoff',
-                'spin_CWYLength_takeoff', 'spin_Z0_takeoff', 'spin_ZE_takeoff', 'spin_ARPH_takeoff',
-                'spin_IHSlope_takeoff', 'spin_L1_takeoff', 'spin_L2_takeoff', 'spin_LH_takeoff',
+                'spin_CWYLength_takeoff', 'spin_Z0_takeoff',
                 'spin_widthApp_transitional', 'spin_Z0_transitional', 'spin_ZE_transitional',
-                'spin_ARPH_transitional', 'spin_IHSlope_transitional', 'spin_L1_transitional',
-                'spin_L2_transitional', 'spin_LH_transitional', 'spin_Tslope_transitional'
+                'spin_ARPH_transitional', 'spin_IHSlope_transitional', 'spin_Tslope_transitional'
             ]
             
             default_values = {
                 'spin_widthApp': '280.00', 'spin_Z0': '21.70', 'spin_ZE': '42.70', 'spin_ARPH': '15.00',
-                'spin_L1': '60.00', 'spin_L2': '60.00', 'spin_LH': '0.00', 'spin_IHSlope': '2.50',
+                'spin_L1': '60.00', 'spin_L2': '60.00', 'spin_LH': '0.00',
                 'spin_L_conical': '6000.00', 'spin_height_conical': '60.00',
                 'spin_L_inner': '4000.00', 'spin_height_inner': '45.00',
                 'spin_width_ofz': '120.00', 'spin_Z0_ofz': '2548.00', 'spin_ZE_ofz': '2546.50',
                 'spin_ARPH_ofz': '2548.00', 'spin_IHSlope_ofz': '33.30',
-                'spin_radius_outer': '4000.00', 'spin_height_outer': '45.00'
+                'spin_radius_outer': '15000.00', 'spin_height_outer': '150.00'
             }
             
             # Allow unlimited decimals; optional sign and decimal part
@@ -188,17 +186,10 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         try:
             print("QOLS: Initializing Take-Off Surface default values")
             takeoff_defaults = {
-                'spin_widthApp_takeoff': 150.0,
                 'spin_widthDep_takeoff': 180.0,
                 'spin_maxWidthDep_takeoff': 1800.0,
                 'spin_CWYLength_takeoff': 0.0,
-                'spin_Z0_takeoff': 2548.0,
-                'spin_ZE_takeoff': 2546.5,
-                'spin_ARPH_takeoff': 2548.0,
-                'spin_IHSlope_takeoff': 33.3,
-                'spin_L1_takeoff': 3000.0,
-                'spin_L2_takeoff': 3600.0,
-                'spin_LH_takeoff': 8400.0
+                'spin_Z0_takeoff': 2548.0
             }
             for widget_name, default_value in takeoff_defaults.items():
                 self.set_numeric_value(widget_name, default_value)
@@ -215,9 +206,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_ZE_transitional': '2546.50',
                 'spin_ARPH_transitional': '2548.00',
                 'spin_IHSlope_transitional': '33.30',
-                'spin_L1_transitional': '3000.00',
-                'spin_L2_transitional': '3600.00',
-                'spin_LH_transitional': '8400.00',
                 'spin_Tslope_transitional': '14.30'
             }
             for widget_name, default_value in transitional_defaults.items():
@@ -226,10 +214,10 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.set_code_value('spin_code_transitional', 4)
             print("QOLS: Set spin_code_transitional = 4")
             try:
-                self.combo_typeAPP_transitional.setCurrentText('CAT I')
-                print("QOLS: Set combo_typeAPP_transitional = CAT I")
+                self.combo_rwyClassification_transitional.setCurrentText('Precision Approach CAT I')
+                print("QOLS: Set combo_rwyClassification_transitional = Precision Approach CAT I")
             except AttributeError:
-                print("QOLS: combo_typeAPP_transitional not found")
+                print("QOLS: combo_rwyClassification_transitional not found")
         except Exception as e:
             print(f"QOLS: Error initializing Transitional defaults: {e}")
 
@@ -237,11 +225,10 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         try:
             print("QOLS: Initializing other surface default values")
             approach_defaults = {
-                'spin_widthApp': 150.0,
+                'spin_widthApp': 280.0,
                 'spin_Z0': 2548.0,
                 'spin_ZE': 2546.5,
                 'spin_ARPH': 2548.0,
-                'spin_IHSlope': 2.5,
                 'spin_L1': 3000.0,
                 'spin_L2': 3600.0,
                 'spin_LH': 8400.0
@@ -262,8 +249,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_IHSlope_ofz': 33.3
             }
             outer_defaults = {
-                'spin_radius_outer': 4000.0,
-                'spin_height_outer': 45.0
+                'spin_radius_outer': 15000.0,
+                'spin_height_outer': 150.0
             }
             all_defaults = {**approach_defaults, **conical_defaults, **inner_defaults, **ofz_defaults, **outer_defaults}
             for widget_name, default_value in all_defaults.items():
@@ -275,6 +262,25 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.set_code_value('spin_code_takeoff', 4)
             self.set_code_value('spin_code_outer', 4)
             print("QOLS: Set all code widgets = 4")
+            
+            # Initialize RWY Classification dropdowns
+            try:
+                self.combo_rwyClassification.setCurrentText('Precision Approach CAT I')
+                print("QOLS: Set combo_rwyClassification = Precision Approach CAT I")
+            except:
+                print("QOLS: combo_rwyClassification not found")
+                
+            try:
+                self.combo_rwyClassification_ofz.setCurrentText('Precision Approach CAT I')
+                print("QOLS: Set combo_rwyClassification_ofz = Precision Approach CAT I")
+            except:
+                print("QOLS: combo_rwyClassification_ofz not found")
+                
+            try:
+                self.combo_rwyClassification_takeoff.setCurrentText('Precision Approach CAT I')
+                print("QOLS: Set combo_rwyClassification_takeoff = Precision Approach CAT I")
+            except:
+                print("QOLS: combo_rwyClassification_takeoff not found")
         except Exception as e:
             print(f"QOLS: Error initializing other surface defaults: {e}")
 
@@ -539,7 +545,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_L_conical', 'spin_height_conical',
                 'spin_L_inner', 'spin_height_inner',
                 'spin_widthApp', 'spin_Z0', 'spin_ZE', 'spin_ARPH', 
-                'spin_L1', 'spin_L2', 'spin_LH', 'spin_IHSlope',
+                'spin_L1', 'spin_L2', 'spin_LH',
                 'spin_width_ofz', 'spin_Z0_ofz', 'spin_ZE_ofz', 'spin_ARPH_ofz', 'spin_IHSlope_ofz',
                 'spin_radius_outer', 'spin_height_outer'
             ]
@@ -586,7 +592,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # List of all QDoubleSpinBox widget names
             spinbox_names = [
                 'spin_widthApp', 'spin_Z0', 'spin_ZE', 'spin_ARPH', 
-                'spin_L1', 'spin_L2', 'spin_LH', 'spin_IHSlope',
+                'spin_L1', 'spin_L2', 'spin_LH',
                 'spin_L_conical', 'spin_height_conical',
                 'spin_L_inner', 'spin_height_inner',
                 'spin_width_ofz', 'spin_Z0_ofz', 'spin_ZE_ofz', 'spin_ARPH_ofz', 'spin_IHSlope_ofz',
@@ -635,17 +641,10 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             
             # NUEVO: Campos de Take-Off Surface que deben mantener valores por defecto
             takeoff_fields = [
-                ('spin_widthApp_takeoff', 150.0),
                 ('spin_widthDep_takeoff', 180.0),
                 ('spin_maxWidthDep_takeoff', 1800.0),
                 ('spin_CWYLength_takeoff', 0.0),
-                ('spin_Z0_takeoff', 2548.0),
-                ('spin_ZE_takeoff', 2546.5),
-                ('spin_ARPH_takeoff', 2548.0),
-                ('spin_IHSlope_takeoff', 33.3),
-                ('spin_L1_takeoff', 3000.0),
-                ('spin_L2_takeoff', 3600.0),
-                ('spin_LH_takeoff', 8400.0)
+                ('spin_Z0_takeoff', 2548.0)
             ]
             
             # Combinar todos los campos críticos
@@ -1244,9 +1243,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_ZE_transitional': '2546.50',
                 'spin_ARPH_transitional': '2548.00',
                 'spin_IHSlope_transitional': '33.30',
-                'spin_L1_transitional': '3000.00',
-                'spin_L2_transitional': '3600.00',
-                'spin_LH_transitional': '8400.00',
                 'spin_Tslope_transitional': '14.30'
             }
             
@@ -1273,10 +1269,10 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 print(f"QOLS: Error setting code: {e}")
                 
             try:
-                self.combo_typeAPP_transitional.setCurrentText('CAT I')
+                self.combo_rwyClassification_transitional.setCurrentText('Precision Approach CAT I')
                 print("QOLS: Set typeAPP = CAT I")
             except AttributeError as e:
-                print(f"QOLS: combo_typeAPP_transitional not found: {e}")
+                print(f"QOLS: combo_rwyClassification_transitional not found: {e}")
                 
             print("QOLS: Transitional defaults forced successfully")
             
@@ -1571,12 +1567,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             if surface_type == "Approach Surface":
                 specific_params = {
                     'code': self.get_code_value('spin_code'),  # QComboBox
-                    'typeAPP': self.combo_typeAPP.currentText(),
+                    'rwyClassification': self.combo_rwyClassification.currentText(),
                     'widthApp': self.get_numeric_value('spin_widthApp'),
                     'Z0': self.get_numeric_value('spin_Z0'),
                     'ZE': self.get_numeric_value('spin_ZE'),
                     'ARPH': self.get_numeric_value('spin_ARPH'),
-                    'IHSlope': self.get_numeric_value('spin_IHSlope') / 100.0,  # Convert to decimal
                     'L1': self.get_numeric_value('spin_L1'),
                     'L2': self.get_numeric_value('spin_L2'),
                     'LH': self.get_numeric_value('spin_LH')
@@ -1600,24 +1595,19 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             elif surface_type == "Take-Off Surface":
                 print(f"QOLS DEBUG: Collecting Take-off Surface parameters...")
                 print(f"QOLS DEBUG: spin_code_takeoff.currentText() = {self.spin_code_takeoff.currentText()}")
-                print(f"QOLS DEBUG: combo_typeAPP_takeoff.currentText() = {self.combo_typeAPP_takeoff.currentText()}")
+                print(f"QOLS DEBUG: combo_rwyClassification_takeoff.currentText() = {self.combo_rwyClassification_takeoff.currentText()}")
                 print(f"QOLS DEBUG: spin_widthDep_takeoff.text() = {self.spin_widthDep_takeoff.text()}")
                 print(f"QOLS DEBUG: spin_maxWidthDep_takeoff.text() = {self.spin_maxWidthDep_takeoff.text()}")
                 
                 specific_params = {
+                    'rwyClassification': self.combo_rwyClassification_takeoff.currentText() if hasattr(self, 'combo_rwyClassification_takeoff') else 'Precision Approach CAT I',
                     'code': self.get_code_value('spin_code_takeoff'),  # QComboBox
-                    'typeAPP': self.combo_typeAPP_takeoff.currentText(),
-                    'widthApp': float(self.spin_widthApp_takeoff.text() or "0"),      # QLineEdit
+                    'widthApp': 150,  # Fixed value - not in UI but used in script
                     'widthDep': float(self.spin_widthDep_takeoff.text() or "0"),     # QLineEdit
                     'maxWidthDep': float(self.spin_maxWidthDep_takeoff.text() or "0"), # QLineEdit
                     'CWYLength': float(self.spin_CWYLength_takeoff.text() or "0"),   # QLineEdit
                     'Z0': float(self.spin_Z0_takeoff.text() or "0"),                 # QLineEdit
-                    'ZE': float(self.spin_ZE_takeoff.text() or "0"),                 # QLineEdit
-                    'ARPH': float(self.spin_ARPH_takeoff.text() or "0"),             # QLineEdit
-                    'IHSlope': float(self.spin_IHSlope_takeoff.text() or "0") / 100.0, # QLineEdit, convert % to decimal
-                    'L1': float(self.spin_L1_takeoff.text() or "0"),                # QLineEdit
-                    'L2': float(self.spin_L2_takeoff.text() or "0"),                # QLineEdit
-                    'LH': float(self.spin_LH_takeoff.text() or "0")                 # QLineEdit
+                    'ZE': 2546.5  # Fixed value - not in UI but used in script calculations
                 }
                 print(f"QOLS DEBUG: Take-off Surface specific_params = {specific_params}")
             elif surface_type == "Transitional Surface" or surface_type == "Transitional":
@@ -1629,18 +1619,20 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 
                 specific_params = {
                     'code': self.get_code_value('spin_code_transitional'),  # QComboBox
-                    'typeAPP': self.combo_typeAPP_transitional.currentText(),
+                    'rwyClassification': self.combo_rwyClassification_transitional.currentText(),
                     'widthApp': float(self.spin_widthApp_transitional.text() or "0"),  # QLineEdit
                     'Z0': float(self.spin_Z0_transitional.text() or "0"),              # QLineEdit
                     'ZE': float(self.spin_ZE_transitional.text() or "0"),              # QLineEdit
                     'ARPH': float(self.spin_ARPH_transitional.text() or "0"),          # QLineEdit
                     'IHSlope': float(self.spin_IHSlope_transitional.text() or "0") / 100.0,  # QLineEdit, convert % to decimal
+                    'Tslope': float(self.spin_Tslope_transitional.text() or "0") / 100.0,   # QLineEdit, convert % to decimal
                     's': s_value  # Special parameter for transitional runway direction
                 }
                 print(f"QOLS DEBUG: Transitional Surface specific_params = {specific_params}")
             elif surface_type == "OFZ":
                 specific_params = {
                     'code': self.get_code_value('spin_code_ofz'),  # QComboBox
+                    'rwyClassification': self.combo_rwyClassification_ofz.currentText(),
                     'width': float(self.spin_width_ofz.text() or "0"),
                     'Z0': float(self.spin_Z0_ofz.text() or "0"),
                     'ZE': float(self.spin_ZE_ofz.text() or "0"),

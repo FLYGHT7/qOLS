@@ -18,12 +18,11 @@ from math import *
 try:
     # Try to get parameters from plugin namespace
     code = globals().get('code', 4)
-    typeAPP = globals().get('typeAPP', 'CAT I')
+    rwyClassification = globals().get('rwyClassification', 'Precision Approach CAT I')
     widthApp = globals().get('widthApp', 280)
     Z0 = globals().get('Z0', 21.7)
     ZE = globals().get('ZE', 21.7)
     ARPH = globals().get('ARPH', 29.3)
-    IHSlope = globals().get('IHSlope', 33.3/100)
     L1 = globals().get('L1', 3000)
     L2 = globals().get('L2', 3600)
     LH = globals().get('LH', 8400)
@@ -36,19 +35,18 @@ try:
     threshold_layer = globals().get('threshold_layer', None)
     use_selected_feature = globals().get('use_selected_feature', True)
     
-    print(f"QOLS: Using parameters - code: {code}, widthApp: {widthApp}, Z0: {Z0}, ZE: {ZE}")
+    print(f"QOLS: Using parameters - code: {code}, rwyClassification: {rwyClassification}, widthApp: {widthApp}, Z0: {Z0}, ZE: {ZE}")
     print(f"QOLS: Direction parameter s: {s}, Use selected: {use_selected_feature}")
     
 except Exception as e:
     print(f"QOLS: Error getting parameters, using defaults: {e}")
     # Fallback to defaults if parameters not provided
     code = 4
-    typeAPP = 'CAT I'
+    rwyClassification = 'Precision Approach CAT I'
     widthApp = 280
     Z0 = 21.7
     ZE = 21.7
     ARPH = 29.3
-    IHSlope = 33.3/100
     L1 = 3000
     L2 = 3600
     LH = 8400
@@ -222,7 +220,7 @@ print(f"QOLS: Generated {len(list_pts)} construction points")
 
 # Creation of the Approach Surfaces
 # Create memory layer
-layer_name = f"RWY_ApproachSurface_{typeAPP}_Code{code}"
+layer_name = f"RWY_ApproachSurface_{rwyClassification}_Code{code}"
 v_layer = QgsVectorLayer("PolygonZ?crs="+map_srid, layer_name, "memory")
 IDField = QgsField('ID', QVariant.String)
 NameField = QgsField('SurfaceName', QVariant.String)
@@ -236,7 +234,7 @@ SurfaceArea = [pt_05R, pt_05L, pt_01AL, pt_01AR]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([6, 'Approach First Section', typeAPP, code])
+seg.setAttributes([6, 'Approach First Section', rwyClassification, code])
 pr.addFeatures([seg])
 
 # Approach - Second Section
@@ -244,7 +242,7 @@ SurfaceArea = [pt_06R, pt_06L, pt_05L, pt_05R]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([7, 'Approach Second Section', typeAPP, code])
+seg.setAttributes([7, 'Approach Second Section', rwyClassification, code])
 pr.addFeatures([seg])
 
 # Approach - Horizontal Section
@@ -252,7 +250,7 @@ SurfaceArea = [pt_07R, pt_07L, pt_06L, pt_06R]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([8, 'Approach Horizontal Section', typeAPP, code])
+seg.setAttributes([8, 'Approach Horizontal Section', rwyClassification, code])
 pr.addFeatures([seg])
 
 # Load PolygonZ Layer to map canvas 
@@ -290,10 +288,10 @@ canvas.zoomScale(sc)
 
 print(f"QOLS: Approach surface calculation completed successfully")
 print(f"QOLS: Created layer: {layer_name}")
-print(f"QOLS: Surface type: {typeAPP}, Code: {code}, Width: {widthApp}m")
+print(f"QOLS: Surface type: {rwyClassification}, Code: {code}, Width: {widthApp}m")
 
 # Success message
-iface.messageBar().pushMessage("QOLS Success", f"Approach Surface ({typeAPP}, Code {code}) calculated successfully", level=Qgis.Success)
+iface.messageBar().pushMessage("QOLS Success", f"Approach Surface ({rwyClassification}, Code {code}) calculated successfully", level=Qgis.Success)
 
 # Clean up globals
 set(globals().keys()).difference(myglobals)

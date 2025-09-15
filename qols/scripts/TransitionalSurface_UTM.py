@@ -17,7 +17,7 @@ from math import *
 try:
     # Try to get parameters from plugin namespace
     code = globals().get('code', 4)
-    typeAPP = globals().get('typeAPP', 'CAT I')
+    rwyClassification = globals().get('rwyClassification', 'Precision Approach CAT I')
     widthApp = globals().get('widthApp', 280)
     Z0 = globals().get('Z0', 2548)
     ZE = globals().get('ZE', 2546.5)
@@ -41,7 +41,7 @@ except Exception as e:
     print(f"TransitionalSurface: Error getting parameters, using defaults: {e}")
     # Fallback to defaults if parameters not provided
     code = 4
-    typeAPP = 'CAT I'
+    rwyClassification = 'Precision Approach CAT I'
     widthApp = 280
     Z0 = 2548
     ZE = 2546.5
