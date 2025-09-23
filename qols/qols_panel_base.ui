@@ -587,7 +587,7 @@ This indicator updates automatically based on your layer selections.</string>
         <item row="3" column="0">
          <widget class="QLabel" name="label_Z0_ofz">
           <property name="text">
-           <string>Initial Elevation Z0 (m):</string>
+          <string>Start Elevation (m):</string>
           </property>
          </widget>
         </item>
@@ -601,7 +601,7 @@ This indicator updates automatically based on your layer selections.</string>
         <item row="4" column="0">
          <widget class="QLabel" name="label_ZE_ofz">
           <property name="text">
-           <string>End Elevation ZE (m):</string>
+          <string>End Elevation (m):</string>
           </property>
          </widget>
         </item>
@@ -868,7 +868,7 @@ This indicator updates automatically based on your layer selections.</string>
         <item row="5" column="0">
          <widget class="QLabel" name="label_Z0_takeoff">
           <property name="text">
-           <string>Initial Elevation Z0 (m):</string>
+          <string>Start Elevation (m):</string>
           </property>
          </widget>
         </item>
@@ -879,6 +879,79 @@ This indicator updates automatically based on your layer selections.</string>
           </property>
          </widget>
         </item>
+    <item row="6" column="0">
+     <widget class="QLabel" name="label_divergence_takeoff">
+      <property name="text">
+       <string>Divergence (%):</string>
+      </property>
+     </widget>
+    </item>
+    <item row="6" column="1">
+     <widget class="QLineEdit" name="spin_divergence_takeoff">
+      <property name="text">
+       <string>12.5</string>
+      </property>
+     </widget>
+    </item>
+    <item row="7" column="0">
+     <widget class="QLabel" name="label_startDistance_takeoff">
+      <property name="text">
+       <string>Start Distance (m):</string>
+      </property>
+     </widget>
+    </item>
+    <item row="7" column="1">
+     <widget class="QLineEdit" name="spin_startDistance_takeoff">
+      <property name="text">
+       <string>60</string>
+      </property>
+     </widget>
+    </item>
+    <item row="8" column="0">
+     <widget class="QLabel" name="label_surfaceLength_takeoff">
+      <property name="text">
+       <string>Surface Length (m):</string>
+      </property>
+     </widget>
+    </item>
+    <item row="8" column="1">
+     <widget class="QLineEdit" name="spin_surfaceLength_takeoff">
+      <property name="text">
+       <string>15000</string>
+      </property>
+     </widget>
+    </item>
+    <item row="9" column="0">
+     <widget class="QLabel" name="label_slope_takeoff">
+      <property name="text">
+       <string>Slope (%):</string>
+      </property>
+     </widget>
+    </item>
+    <item row="9" column="1">
+     <widget class="QLineEdit" name="spin_slope_takeoff">
+      <property name="text">
+       <string>2.0</string>
+      </property>
+     </widget>
+    </item>
+    <item row="10" column="0">
+     <widget class="QLabel" name="label_imc_option_takeoff">
+      <property name="text">
+       <string>IMC/Night VMC > 15° option:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="10" column="1">
+     <widget class="QCheckBox" name="check_imc_heading_takeoff">
+      <property name="text">
+       <string>Use 1 800 m (uncheck → 1 200 m)</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
        </layout>
       </widget>
       
@@ -965,7 +1038,7 @@ This indicator updates automatically based on your layer selections.</string>
         <item row="3" column="0">
          <widget class="QLabel" name="label_Z0_transitional">
           <property name="text">
-           <string>Initial Elevation Z0 (m):</string>
+          <string>Start Elevation (m):</string>
           </property>
          </widget>
         </item>
@@ -977,7 +1050,7 @@ This indicator updates automatically based on your layer selections.</string>
         <item row="4" column="0">
          <widget class="QLabel" name="label_ZE_transitional">
           <property name="text">
-           <string>End Elevation ZE (m):</string>
+          <string>End Elevation (m):</string>
           </property>
          </widget>
         </item>

@@ -11,26 +11,27 @@ from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
 
-# Parameters 
-code = 4
-typeAPP = 'CAT I'
-widthApp = 280
-Z0 = 21.7
-ZE = 21.7
-ARPH = 29.3
-ZIH = 45+ARPH
+# Parameters (use injected values when provided; fall back to defaults)
+code = globals().get('code', 4)
+# Backward compatibility: accept either rwyClassification or typeAPP from globals
+typeAPP = globals().get('rwyClassification', globals().get('typeAPP', 'CAT I'))
+widthApp = globals().get('widthApp', 280)
+Z0 = globals().get('Z0', 21.7)
+ZE = globals().get('ZE', 21.7)
+ARPH = globals().get('ARPH', 29.3)
+ZIH = 45 + ARPH
 #print('ZIH: ',ZIH)
 IHSlope = 33.3/100
-L1 =3000
-L2 = 3600
-LH = 8400
+L1 = globals().get('L1', 3000)
+L2 = globals().get('L2', 3600)
+LH = globals().get('LH', 8400)
 
-#s use 0 for start, -1 for end
-s = 0
+# s: use 0 for Start→End, -1 for End→Start; allow injected override
+s = globals().get('s', 0)
 if s == -1:
     s2 = 180
 else:
-    s2= 0
+    s2 = 0
 #print (s2)
 
 map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()

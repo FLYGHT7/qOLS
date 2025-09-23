@@ -12,25 +12,25 @@ from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
 
-# Parameters 
-code = 4
-typeAPP = 'CAT I'
-widthApp = 150
-widthDep = 180
-maxWidthDep=1800
-CWYLength = 0
-Z0 = 2548
-ZE = 2546.5
-ARPH = 2548
+# Parameters (use injected values when provided; fall back to defaults)
+code = globals().get('code', 4)
+typeAPP = globals().get('rwyClassification', globals().get('typeAPP', 'CAT I'))
+widthApp = globals().get('widthApp', 150)
+widthDep = globals().get('widthDep', 180)
+maxWidthDep = globals().get('maxWidthDep', 1800)
+CWYLength = globals().get('CWYLength', 0)
+Z0 = globals().get('Z0', 2548)
+ZE = globals().get('ZE', 2546.5)
+ARPH = globals().get('ARPH', 2548)
 ZIH = 45+ARPH
-#print('ZIH: ',ZIH)
-IHSlope = 33.3/100
-L1 =3000
-L2 = 3600
-LH = 8400
+# Additional exposed parameters
+divergencePct = globals().get('divergencePct', 12.5)  # percent
+startDistance = globals().get('startDistance', 60.0)  # meters
+surfaceLength = globals().get('surfaceLength', 15000.0)  # meters
+slopePct = globals().get('slopePct', 2.0)  # percent
 
-#s use 0 for start, -1 for end
-s = 0
+# s use 0 for start, -1 for end
+s = globals().get('s', 0)
 if s == -1:
     s2 = 180
 else:
@@ -82,10 +82,9 @@ list_pts = []
 # Origin 
 pt_0D= new_geom
     
-# Distance for surface start 
-
-if CWYLength<=60:
-    dD = 60
+# Distance for surface start: use max(CWYLength, startDistance)
+if CWYLength <= startDistance:
+    dD = startDistance
 else:
     dD = CWYLength
 
@@ -95,16 +94,16 @@ pt_01D.setZ(ZE)
 pt_01DL = pt_01D.project(widthDep/2,bazimuth+90)
 pt_01DR = pt_01D.project(widthDep/2,bazimuth-90)
 
-# Distance to reach maximum width
-
-pt_02D = pt_01D.project(((maxWidthDep/2-widthDep/2)/0.125),bazimuth)
-pt_02D.setZ(ZE+((maxWidthDep/2-widthDep/2)/0.125)*0.02)
+# Distance to reach maximum width: based on divergence percentage
+divergence_rate = divergencePct/100.0  # convert to decimal per unit length per side
+pt_02D = pt_01D.project(((maxWidthDep/2 - widthDep/2) / divergence_rate), bazimuth)
+pt_02D.setZ(ZE + ((maxWidthDep/2 - widthDep/2) / divergence_rate) * (slopePct/100.0))
 pt_02DL = pt_02D.project(maxWidthDep/2,bazimuth+90)
 pt_02DR = pt_02D.project(maxWidthDep/2,bazimuth-90)
 
-# Distance to end of TakeOff Climb SurfaceAboutToBeDestroyed
-pt_03D = pt_01D.project(15000,bazimuth)
-pt_03D.setZ(ZE+15000*0.02)
+# Distance to end of TakeOff Climb Surface
+pt_03D = pt_01D.project(surfaceLength, bazimuth)
+pt_03D.setZ(ZE + surfaceLength * (slopePct/100.0))
 pt_03DL = pt_03D.project(maxWidthDep/2,bazimuth+90)
 pt_03DR = pt_03D.project(maxWidthDep/2,bazimuth-90)
 
