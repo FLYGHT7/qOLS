@@ -38,6 +38,13 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             
             # Setup tooltips for individual dropdown items (AFTER styling to avoid override)
             self.setup_dropdown_tooltips()
+
+            # Wire Take-Off code change to apply defaults from table
+            try:
+                if hasattr(self, 'spin_code_takeoff'):
+                    self.spin_code_takeoff.currentIndexChanged.connect(self.update_takeoff_defaults_from_code)
+            except Exception as e:
+                print(f"QOLS: Could not connect Take-Off code change handler: {e}")
             
             # MÉTODO ADICIONAL: Override showEvent para formatear cada vez que se muestre
             original_showEvent = self.showEvent
@@ -53,9 +60,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             
             # Initialize Take-Off Surface default values immediately
             self.initialize_takeoff_defaults()
-            
-            # Connect Take-Off Surface code change for dynamic values
-            self.setup_dynamic_takeoff_values()
+
             
             # Connect signals for real-time feedback
             self.useSelectedRunwayCheckBox.toggled.connect(self.update_selection_info)
@@ -117,7 +122,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_L_inner', 'spin_height_inner',
                 'spin_width_ofz', 'spin_Z0_ofz', 'spin_ZE_ofz', 'spin_ARPH_ofz', 'spin_IHSlope_ofz',
                 'spin_radius_outer', 'spin_height_outer',
-                'spin_widthApp_takeoff', 'spin_widthDep_takeoff', 'spin_maxWidthDep_takeoff',
+                'spin_widthDep_takeoff', 'spin_maxWidthDep_takeoff',
                 'spin_CWYLength_takeoff', 'spin_Z0_takeoff',
                 'spin_widthApp_transitional', 'spin_Z0_transitional', 'spin_ZE_transitional',
                 'spin_ARPH_transitional', 'spin_IHSlope_transitional', 'spin_Tslope_transitional'
@@ -262,6 +267,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.set_code_value('spin_code_takeoff', 4)
             self.set_code_value('spin_code_outer', 4)
             print("QOLS: Set all code widgets = 4")
+            # Apply defaults from table for initial Take-Off code
+            try:
+                self.update_takeoff_defaults_from_code()
+            except Exception as e:
+                print(f"QOLS: Could not initialize Take-Off defaults: {e}")
             
             # Initialize RWY Classification dropdowns
             try:
@@ -276,76 +286,10 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             except:
                 print("QOLS: combo_rwyClassification_ofz not found")
                 
-            try:
-                self.combo_rwyClassification_takeoff.setCurrentText('Precision Approach CAT I')
-                print("QOLS: Set combo_rwyClassification_takeoff = Precision Approach CAT I")
-            except:
-                print("QOLS: combo_rwyClassification_takeoff not found")
         except Exception as e:
             print(f"QOLS: Error initializing other surface defaults: {e}")
 
-    def setup_dynamic_takeoff_values(self):
-        """Setup dynamic value updates for Take-Off Surface based on aerodrome code."""
-        try:
-            print("QOLS: Setting up dynamic Take-Off Surface values")
-            if hasattr(self, 'spin_code_takeoff'):
-                self.spin_code_takeoff.currentTextChanged.connect(self.update_takeoff_values_by_code)
-                print("QOLS: Connected spin_code_takeoff currentTextChanged signal")
-            else:
-                print("QOLS: Warning - spin_code_takeoff widget not found")
-        except Exception as e:
-            print(f"QOLS: Error setting up dynamic Take-Off values: {e}")
-
-    def update_takeoff_values_by_code(self, code_value):
-        """Update Take-Off Surface values to ICAO standards by code (1-4)."""
-        try:
-            if isinstance(code_value, str):
-                code_value = int(code_value)
-            print(f"QOLS: Updating Take-Off values for code: {code_value}")
-            takeoff_values_by_code = {
-                1: {
-                    'spin_widthApp_takeoff': 60.0,
-                    'spin_widthDep_takeoff': 60.0,
-                    'spin_maxWidthDep_takeoff': 380.0,
-                    'distance_from_runway': 30.0,
-                    'length': 1600.0,
-                    'slope': 5.0
-                },
-                2: {
-                    'spin_widthApp_takeoff': 80.0,
-                    'spin_widthDep_takeoff': 80.0,
-                    'spin_maxWidthDep_takeoff': 580.0,
-                    'distance_from_runway': 60.0,
-                    'length': 2500.0,
-                    'slope': 4.0
-                },
-                3: {
-                    'spin_widthApp_takeoff': 180.0,
-                    'spin_widthDep_takeoff': 180.0,
-                    'spin_maxWidthDep_takeoff': 1200.0,
-                    'distance_from_runway': 60.0,
-                    'length': 15000.0,
-                    'slope': 2.0
-                },
-                4: {
-                    'spin_widthApp_takeoff': 180.0,
-                    'spin_widthDep_takeoff': 180.0,
-                    'spin_maxWidthDep_takeoff': 1800.0,
-                    'distance_from_runway': 60.0,
-                    'length': 15000.0,
-                    'slope': 2.0
-                }
-            }
-            if code_value in takeoff_values_by_code:
-                for widget_name, value in takeoff_values_by_code[code_value].items():
-                    if widget_name.startswith('spin_'):
-                        self.set_numeric_value(widget_name, value)
-                        print(f"QOLS: Updated {widget_name} = {value} for code {code_value}")
-                print(f"QOLS: Take-Off Surface updated to ICAO standards for aerodrome code {code_value}")
-            else:
-                print(f"QOLS: Warning - Unknown aerodrome code: {code_value}")
-        except Exception as e:
-            print(f"QOLS: Error updating Take-Off values: {e}")
+    
 
     def get_numeric_value(self, widget_name):
         """Get numeric value from QLineEdit widget, returns float or 0.0 if invalid."""
@@ -1067,17 +1011,81 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 self.selectionInfoLabel.setText("! Status update error - check console")
             except:
                 pass
-            
+
+    def update_takeoff_defaults_from_code(self):
+        """Apply default values from the ICAO table for Take-Off based on code.
+        If user has already typed values, do not override their inputs; only fill when empty.
+    El ancho final por defecto se toma de la tabla del código y es editable por el usuario.
+        """
+        try:
+            if not hasattr(self, 'spin_code_takeoff'):
+                return
+            code_value = self.get_code_value('spin_code_takeoff')
+
+            # Table values per code
+            table = {
+                1: {
+                    'inner_edge': 60.0,
+                    'distance_from_runway_end': 30.0,
+                    'divergence_pct': 10.0,
+                    'final_width': 380.0,
+                    'length': 1600.0,
+                    'slope_pct': 5.0,
+                },
+                2: {
+                    'inner_edge': 80.0,
+                    'distance_from_runway_end': 60.0,
+                    'divergence_pct': 10.0,
+                    'final_width': 580.0,
+                    'length': 2500.0,
+                    'slope_pct': 4.0,
+                },
+                3: {
+                    'inner_edge': 180.0,
+                    'distance_from_runway_end': 60.0,
+                    'divergence_pct': 12.5,
+                    'final_width': 1800.0,
+                    'length': 15000.0,
+                    'slope_pct': 2.0,
+                },
+                4: {
+                    'inner_edge': 180.0,
+                    'distance_from_runway_end': 60.0,
+                    'divergence_pct': 12.5,
+                    'final_width': 1800.0,
+                    'length': 15000.0,
+                    'slope_pct': 2.0,
+                },
+            }
+
+            t = table.get(code_value)
+            if not t:
+                return
+
+            # Helper to set QLineEdit text, optionally only when empty
+            def set_value(widget_name: str, value: float, only_when_empty: bool = False):
+                w = getattr(self, widget_name, None)
+                if not w:
+                    return
+                current = w.text() if hasattr(w, 'text') else ''
+                if (only_when_empty and (current is None or current.strip() == '')) or (not only_when_empty):
+                    w.setText(f"{value:.1f}")
+
+            # On code change, apply ALL defaults from table (user can edit afterwards)
+            set_value('spin_widthDep_takeoff', t['inner_edge'])
+            set_value('spin_divergence_takeoff', t['divergence_pct'])
+            set_value('spin_startDistance_takeoff', t['distance_from_runway_end'])
+            set_value('spin_surfaceLength_takeoff', t['length'])
+            set_value('spin_slope_takeoff', t['slope_pct'])
+
+            # Update max width por defecto del código (editable)
+            if hasattr(self, 'spin_maxWidthDep_takeoff') and self.spin_maxWidthDep_takeoff:
+                self.spin_maxWidthDep_takeoff.setText(f"{t['final_width']:.1f}")
+
+            print(f"QOLS: Applied Take-Off defaults from table for code {code_value}")
         except Exception as e:
-            print(f"QOLS: Error in update_selection_info: {e}")
-            import traceback
-            traceback.print_exc()
-            
-            # Fallback text in case of error
-            try:
-                self.selectionInfoLabel.setText("! Status update error - check console")
-            except:
-                pass
+            print(f"QOLS: Error applying Take-Off defaults: {e}")
+
 
     def validate_layer_change(self):
         """Validate layers immediately when user changes selection."""
@@ -1565,16 +1573,30 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             
             # Get parameters based on current tab
             if surface_type == "Approach Surface":
+                # Determine direction and map elevations accordingly
+                s_value = 0 if self.direction_start_to_end else -1
+                z0_ui = self.get_numeric_value('spin_Z0')  # UI-labeled Start Elevation (m)
+                ze_ui = self.get_numeric_value('spin_ZE')  # UI-labeled End Elevation (m)
+
+                # For calculations, Z0 should always represent the starting end for the selected direction
+                if s_value == 0:  # Start → End
+                    Z0_calc = z0_ui
+                    ZE_calc = ze_ui
+                else:  # End → Start
+                    Z0_calc = ze_ui
+                    ZE_calc = z0_ui
+
                 specific_params = {
                     'code': self.get_code_value('spin_code'),  # QComboBox
                     'rwyClassification': self.combo_rwyClassification.currentText(),
                     'widthApp': self.get_numeric_value('spin_widthApp'),
-                    'Z0': self.get_numeric_value('spin_Z0'),
-                    'ZE': self.get_numeric_value('spin_ZE'),
+                    'Z0': Z0_calc,
+                    'ZE': ZE_calc,
                     'ARPH': self.get_numeric_value('spin_ARPH'),
                     'L1': self.get_numeric_value('spin_L1'),
                     'L2': self.get_numeric_value('spin_L2'),
-                    'LH': self.get_numeric_value('spin_LH')
+                    'LH': self.get_numeric_value('spin_LH'),
+                    's': s_value
                 }
             elif surface_type == "Conical":
                 specific_params = {
@@ -1595,19 +1617,35 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             elif surface_type == "Take-Off Surface":
                 print(f"QOLS DEBUG: Collecting Take-off Surface parameters...")
                 print(f"QOLS DEBUG: spin_code_takeoff.currentText() = {self.spin_code_takeoff.currentText()}")
-                print(f"QOLS DEBUG: combo_rwyClassification_takeoff.currentText() = {self.combo_rwyClassification_takeoff.currentText()}")
+                # Take-Off RWY Classification removed from UI; no debug for it
                 print(f"QOLS DEBUG: spin_widthDep_takeoff.text() = {self.spin_widthDep_takeoff.text()}")
                 print(f"QOLS DEBUG: spin_maxWidthDep_takeoff.text() = {self.spin_maxWidthDep_takeoff.text()}")
+                print(f"QOLS DEBUG: spin_divergence_takeoff.text() = {getattr(self, 'spin_divergence_takeoff', None).text() if hasattr(self, 'spin_divergence_takeoff') else 'N/A'}")
+                print(f"QOLS DEBUG: spin_startDistance_takeoff.text() = {getattr(self, 'spin_startDistance_takeoff', None).text() if hasattr(self, 'spin_startDistance_takeoff') else 'N/A'}")
+                print(f"QOLS DEBUG: spin_surfaceLength_takeoff.text() = {getattr(self, 'spin_surfaceLength_takeoff', None).text() if hasattr(self, 'spin_surfaceLength_takeoff') else 'N/A'}")
+                print(f"QOLS DEBUG: spin_slope_takeoff.text() = {getattr(self, 'spin_slope_takeoff', None).text() if hasattr(self, 'spin_slope_takeoff') else 'N/A'}")
+                # IMC checkbox eliminado; no aplica log
                 
+                code_value = self.get_code_value('spin_code_takeoff')
+                # Determine default maxWidthDep per code (editable)
+                default_max_width = 1800 if code_value in [3,4] else float(self.spin_maxWidthDep_takeoff.text() or "1800")
+                # Allow user override via spin_maxWidthDep_takeoff if provided
+                user_max_width_text = self.spin_maxWidthDep_takeoff.text() if hasattr(self, 'spin_maxWidthDep_takeoff') else ""
+                max_width_dep = float(user_max_width_text) if user_max_width_text not in ["", None] else default_max_width
+
                 specific_params = {
-                    'rwyClassification': self.combo_rwyClassification_takeoff.currentText() if hasattr(self, 'combo_rwyClassification_takeoff') else 'Precision Approach CAT I',
-                    'code': self.get_code_value('spin_code_takeoff'),  # QComboBox
-                    'widthApp': 150,  # Fixed value - not in UI but used in script
+                    'code': code_value,  # QComboBox
+                    'widthApp': 150,  # Remains constant for take-off width near origin
                     'widthDep': float(self.spin_widthDep_takeoff.text() or "0"),     # QLineEdit
-                    'maxWidthDep': float(self.spin_maxWidthDep_takeoff.text() or "0"), # QLineEdit
-                    'CWYLength': float(self.spin_CWYLength_takeoff.text() or "0"),   # QLineEdit
+                    'maxWidthDep': max_width_dep, # Default from code; user-editable
+                    'CWYLength': float(self.spin_CWYLength_takeoff.text() or "0"),   # QLineEdit (clearway length)
                     'Z0': float(self.spin_Z0_takeoff.text() or "0"),                 # QLineEdit
-                    'ZE': 2546.5  # Fixed value - not in UI but used in script calculations
+                    'ZE': 2546.5,  # Fixed or could be derived; kept as-is per current logic
+                    # Newly exposed parameters
+                    'divergencePct': float(self.spin_divergence_takeoff.text() or "12.5") if hasattr(self, 'spin_divergence_takeoff') else 12.5,
+                    'startDistance': float(self.spin_startDistance_takeoff.text() or "60") if hasattr(self, 'spin_startDistance_takeoff') else 60.0,
+                    'surfaceLength': float(self.spin_surfaceLength_takeoff.text() or "15000") if hasattr(self, 'spin_surfaceLength_takeoff') else 15000.0,
+                    'slopePct': float(self.spin_slope_takeoff.text() or "2.0") if hasattr(self, 'spin_slope_takeoff') else 2.0
                 }
                 print(f"QOLS DEBUG: Take-off Surface specific_params = {specific_params}")
             elif surface_type == "Transitional Surface" or surface_type == "Transitional":
