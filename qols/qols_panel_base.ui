@@ -238,36 +238,36 @@ This indicator updates automatically based on your layer selections.</string>
           
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QComboBox" name="combo_rwyClassification">
-          <property name="minimumHeight">
-           <number>22</number>
-          </property>
-                <property name="toolTip">
-                 <string>For code 3/4: checked sets final width to 1 800 m; unchecked sets 1 200 m.</string>
-                </property>
-          <item>
-           <property name="text">
-            <string>Precision Approach CAT I</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Non-instrument</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Non-precision approach</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Precision Approach CAT II or III</string>
-           </property>
-          </item>
-         </widget>
+      <item row="0" column="1">
+       <widget class="QComboBox" name="combo_rwyClassification">
+        <property name="minimumHeight">
+         <number>22</number>
+        </property>
+        <property name="currentIndex">
+         <number>2</number>
+        </property>
+        <item>
+         <property name="text">
+        <string>Non-instrument</string>
+         </property>
         </item>
+        <item>
+         <property name="text">
+        <string>Non-precision approach</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+        <string>Precision Approach CAT I</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+        <string>Precision Approach CAT II or III</string>
+         </property>
+        </item>
+       </widget>
+      </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_code">
           <property name="text">
@@ -518,30 +518,33 @@ This indicator updates automatically based on your layer selections.</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QComboBox" name="combo_rwyClassification_ofz">
-          <item>
-           <property name="text">
-            <string>Precision Approach CAT I</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Non-instrument</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Non-precision approach</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Precision Approach CAT II or III</string>
-           </property>
-          </item>
-         </widget>
-        </item>
+    <item row="0" column="1">
+     <widget class="QComboBox" name="combo_rwyClassification_ofz">
+      <property name="currentIndex">
+       <number>2</number>
+      </property>
+      <item>
+       <property name="text">
+        <string>Non-instrument</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Non-precision approach</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Precision Approach CAT I</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Precision Approach CAT II or III</string>
+       </property>
+      </item>
+     </widget>
+    </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_code_ofz">
           <property name="text">
@@ -924,30 +927,33 @@ This indicator updates automatically based on your layer selections.</string>
           </property>
          </widget>
         </item>
-        <item row="0" column="1">
-         <widget class="QComboBox" name="combo_rwyClassification_transitional">
-          <item>
-           <property name="text">
-            <string>Precision Approach CAT I</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Non-instrument</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Non-precision approach</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Precision Approach CAT II or III</string>
-           </property>
-          </item>
-         </widget>
-        </item>
+    <item row="0" column="1">
+     <widget class="QComboBox" name="combo_rwyClassification_transitional">
+      <property name="currentIndex">
+       <number>2</number>
+      </property>
+      <item>
+       <property name="text">
+        <string>Non-instrument</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Non-precision approach</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Precision Approach CAT I</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Precision Approach CAT II or III</string>
+       </property>
+      </item>
+     </widget>
+    </item>
         <item row="1" column="0">
          <widget class="QLabel" name="label_code_transitional">
           <property name="text">
@@ -1027,25 +1033,25 @@ This indicator updates automatically based on your layer selections.</string>
 
          </widget>
         </item>
-        <item row="6" column="0">
-         <widget class="QLabel" name="label_IHSlope_transitional">
-          <property name="text">
-           <string>Slope (%):</string>
-          </property>
-         </widget>
-        </item>
+    <item row="6" column="0">
+     <widget class="QLabel" name="label_IHSlope_transitional">
+      <property name="text">
+       <string>IH Slope (%):</string>
+      </property>
+     </widget>
+    </item>
         <item row="6" column="1">
          <widget class="QLineEdit" name="spin_IHSlope_transitional">
 
          </widget>
         </item>
-        <item row="7" column="0">
-         <widget class="QLabel" name="label_Tslope_transitional">
-          <property name="text">
-           <string>Transitional Slope (%):</string>
-          </property>
-         </widget>
-        </item>
+    <item row="7" column="0">
+     <widget class="QLabel" name="label_Tslope_transitional">
+      <property name="text">
+       <string>Slope (%):</string>
+      </property>
+     </widget>
+    </item>
         <item row="7" column="1">
          <widget class="QLineEdit" name="spin_Tslope_transitional">
 
