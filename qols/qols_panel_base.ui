@@ -243,6 +243,9 @@ This indicator updates automatically based on your layer selections.</string>
           <property name="minimumHeight">
            <number>22</number>
           </property>
+                <property name="toolTip">
+                 <string>For code 3/4: checked sets final width to 1 800 m; unchecked sets 1 200 m.</string>
+                </property>
           <item>
            <property name="text">
             <string>Precision Approach CAT I</string>
@@ -758,45 +761,14 @@ This indicator updates automatically based on your layer selections.</string>
         <string>Take-Off Surface</string>
        </attribute>
        <layout class="QFormLayout" name="formLayout_takeoff">
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_rwyClassification_takeoff">
-          <property name="text">
-           <string>RWY Classification:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QComboBox" name="combo_rwyClassification_takeoff">
-          <item>
-           <property name="text">
-            <string>Precision Approach CAT I</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Precision Approach CAT II/III</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Non-Precision Approach</string>
-           </property>
-          </item>
-          <item>
-           <property name="text">
-            <string>Non-Instrument Runway</string>
-           </property>
-          </item>
-         </widget>
-        </item>
-        <item row="1" column="0">
+    <item row="0" column="0">
          <widget class="QLabel" name="label_code_takeoff">
           <property name="text">
            <string>Code:</string>
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
+    <item row="0" column="1">
          <widget class="QComboBox" name="spin_code_takeoff">
           <property name="currentIndex">
            <number>3</number>
@@ -823,56 +795,56 @@ This indicator updates automatically based on your layer selections.</string>
           </item>
          </widget>
         </item>
-        <item row="2" column="0">
+    <item row="1" column="0">
          <widget class="QLabel" name="label_widthDep_takeoff">
           <property name="text">
            <string>Width Dep (m):</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
+    <item row="1" column="1">
          <widget class="QLineEdit" name="spin_widthDep_takeoff">
           <property name="text">
            <string>180.0</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="0">
+    <item row="2" column="0">
          <widget class="QLabel" name="label_maxWidthDep_takeoff">
           <property name="text">
            <string>Max Width Dep (m):</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
+    <item row="2" column="1">
          <widget class="QLineEdit" name="spin_maxWidthDep_takeoff">
           <property name="text">
            <string>1800.0</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="0">
+    <item row="3" column="0">
          <widget class="QLabel" name="label_CWYLength_takeoff">
           <property name="text">
            <string>CWY Length (m):</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
+    <item row="3" column="1">
          <widget class="QLineEdit" name="spin_CWYLength_takeoff">
           <property name="text">
            <string>0.0</string>
           </property>
          </widget>
         </item>
-        <item row="5" column="0">
+    <item row="4" column="0">
          <widget class="QLabel" name="label_Z0_takeoff">
           <property name="text">
           <string>Start Elevation (m):</string>
           </property>
          </widget>
         </item>
-        <item row="5" column="1">
+    <item row="4" column="1">
          <widget class="QLineEdit" name="spin_Z0_takeoff">
           <property name="text">
            <string>2548.0</string>
@@ -935,23 +907,7 @@ This indicator updates automatically based on your layer selections.</string>
       </property>
      </widget>
     </item>
-    <item row="10" column="0">
-     <widget class="QLabel" name="label_imc_option_takeoff">
-      <property name="text">
-       <string>IMC/Night VMC > 15° option:</string>
-      </property>
-     </widget>
-    </item>
-    <item row="10" column="1">
-     <widget class="QCheckBox" name="check_imc_heading_takeoff">
-      <property name="text">
-       <string>Use 1 800 m (uncheck → 1 200 m)</string>
-      </property>
-      <property name="checked">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
+    
        </layout>
       </widget>
       
