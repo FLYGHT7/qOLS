@@ -132,7 +132,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_widthDep_takeoff', 'spin_maxWidthDep_takeoff',
                 'spin_CWYLength_takeoff', 'spin_Z0_takeoff',
                 'spin_widthApp_transitional', 'spin_Z0_transitional', 'spin_ZE_transitional',
-                'spin_ARPH_transitional', 'spin_IHSlope_transitional', 'spin_Tslope_transitional'
+                'spin_ARPH_transitional', 'spin_Tslope_transitional'
             ]
             
             default_values = {
@@ -220,7 +220,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_Z0_transitional': '2548.00',
                 'spin_ZE_transitional': '2546.50',
                 'spin_ARPH_transitional': '2548.00',
-                'spin_IHSlope_transitional': '33.30',
                 'spin_Tslope_transitional': '14.30'
             }
             for widget_name, default_value in transitional_defaults.items():
@@ -1734,7 +1733,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'Z0': float(self.spin_Z0_transitional.text() or "0"),              # QLineEdit
                     'ZE': float(self.spin_ZE_transitional.text() or "0"),              # QLineEdit
                     'ARPH': float(self.spin_ARPH_transitional.text() or "0"),          # QLineEdit
-                    'IHSlope': float(self.spin_IHSlope_transitional.text() or "0") / 100.0,  # QLineEdit, convert % to decimal
                     'Tslope': float(self.spin_Tslope_transitional.text() or "0") / 100.0,   # QLineEdit, convert % to decimal
                     's': s_value  # Special parameter for transitional runway direction
                 }

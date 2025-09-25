@@ -22,7 +22,6 @@ try:
     Z0 = globals().get('Z0', 2548)
     ZE = globals().get('ZE', 2546.5)
     ARPH = globals().get('ARPH', 2548)
-    IHSlope = globals().get('IHSlope', 33.3/100)
     L1 = globals().get('L1', 3000)
     L2 = globals().get('L2', 3600)
     LH = globals().get('LH', 8400)
@@ -46,7 +45,6 @@ except Exception as e:
     Z0 = 2548
     ZE = 2546.5
     ARPH = 2548
-    IHSlope = 33.3/100
     L1 = 3000
     L2 = 3600
     LH = 8400
