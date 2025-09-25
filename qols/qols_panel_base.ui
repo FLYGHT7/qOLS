@@ -854,6 +854,19 @@ This indicator updates automatically based on your layer selections.</string>
           </property>
          </widget>
         </item>
+    <item row="5" column="1">
+     <widget class="QCheckBox" name="check_finalWidth1800_takeoff">
+      <property name="text">
+       <string>Use 1800 m final width (Code 3/4)</string>
+      </property>
+      <property name="toolTip">
+       <string>For Code 3/4: Checked = 1800 m. Unchecked = 1200 m. You can still override the value manually.</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
     <item row="6" column="0">
      <widget class="QLabel" name="label_divergence_takeoff">
       <property name="text">

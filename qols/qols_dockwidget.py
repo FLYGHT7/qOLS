@@ -43,6 +43,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             try:
                 if hasattr(self, 'spin_code_takeoff'):
                     self.spin_code_takeoff.currentIndexChanged.connect(self.update_takeoff_defaults_from_code)
+                if hasattr(self, 'check_finalWidth1800_takeoff'):
+                    # Toggle visibility/behavior on code change
+                    self.spin_code_takeoff.currentIndexChanged.connect(self.update_takeoff_final_width_controls)
+                    # Also react when user toggles the checkbox
+                    self.check_finalWidth1800_takeoff.toggled.connect(self.on_final_width_checkbox_toggled)
             except Exception as e:
                 print(f"QOLS: Could not connect Take-Off code change handler: {e}")
             
@@ -60,6 +65,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             
             # Initialize Take-Off Surface default values immediately
             self.initialize_takeoff_defaults()
+            # Initialize Code-based final width control visibility
+            self.update_takeoff_final_width_controls()
 
             
             # Connect signals for real-time feedback
@@ -199,6 +206,9 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             for widget_name, default_value in takeoff_defaults.items():
                 self.set_numeric_value(widget_name, default_value)
                 print(f"QOLS: Set {widget_name} = {default_value}")
+            # Default checkbox checked
+            if hasattr(self, 'check_finalWidth1800_takeoff'):
+                self.check_finalWidth1800_takeoff.setChecked(True)
         except Exception as e:
             print(f"QOLS: Error initializing Take-Off defaults: {e}")
 
@@ -1080,11 +1090,45 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
 
             # Update max width por defecto del código (editable)
             if hasattr(self, 'spin_maxWidthDep_takeoff') and self.spin_maxWidthDep_takeoff:
-                self.spin_maxWidthDep_takeoff.setText(f"{t['final_width']:.1f}")
+                # If Code 3/4, respect the checkbox setting; otherwise use table value
+                if code_value in [3, 4] and hasattr(self, 'check_finalWidth1800_takeoff') and self.check_finalWidth1800_takeoff.isChecked():
+                    self.spin_maxWidthDep_takeoff.setText("1800.0")
+                elif code_value in [3, 4] and hasattr(self, 'check_finalWidth1800_takeoff') and not self.check_finalWidth1800_takeoff.isChecked():
+                    self.spin_maxWidthDep_takeoff.setText("1200.0")
+                else:
+                    self.spin_maxWidthDep_takeoff.setText(f"{t['final_width']:.1f}")
 
             print(f"QOLS: Applied Take-Off defaults from table for code {code_value}")
+            # Update visibility of checkbox control based on code
+            self.update_takeoff_final_width_controls()
         except Exception as e:
             print(f"QOLS: Error applying Take-Off defaults: {e}")
+
+    def update_takeoff_final_width_controls(self):
+        """Show the 1800/1200 checkbox only for Code 3/4 and apply its value to max width if applicable."""
+        try:
+            if not hasattr(self, 'check_finalWidth1800_takeoff'):
+                return
+            code_value = self.get_code_value('spin_code_takeoff') if hasattr(self, 'spin_code_takeoff') else 4
+            is_code_3_4 = code_value in [3, 4]
+            self.check_finalWidth1800_takeoff.setVisible(is_code_3_4)
+            if is_code_3_4:
+                # Apply current checkbox state to max width without overriding user edits elsewhere
+                if self.check_finalWidth1800_takeoff.isChecked():
+                    self.set_numeric_value('spin_maxWidthDep_takeoff', 1800.0)
+                else:
+                    self.set_numeric_value('spin_maxWidthDep_takeoff', 1200.0)
+        except Exception as e:
+            print(f"QOLS: Error updating take-off final width controls: {e}")
+
+    def on_final_width_checkbox_toggled(self, checked: bool):
+        """When the checkbox is toggled, update the max width for Code 3/4."""
+        try:
+            code_value = self.get_code_value('spin_code_takeoff') if hasattr(self, 'spin_code_takeoff') else 4
+            if code_value in [3, 4]:
+                self.set_numeric_value('spin_maxWidthDep_takeoff', 1800.0 if checked else 1200.0)
+        except Exception as e:
+            print(f"QOLS: Error handling final width checkbox toggle: {e}")
 
 
     def validate_layer_change(self):
@@ -1586,17 +1630,38 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     Z0_calc = ze_ui
                     ZE_calc = z0_ui
 
+                code_value = self.get_code_value('spin_code')
+                rwy_text = self.combo_rwyClassification.currentText()
+                width_value = self.get_numeric_value('spin_widthApp')
+                arph_value = self.get_numeric_value('spin_ARPH')
+                l1_value = self.get_numeric_value('spin_L1')
+                l2_value = self.get_numeric_value('spin_L2')
+                lh_value = self.get_numeric_value('spin_LH')
+
+                # Provide both legacy and pythonic keys for compatibility
                 specific_params = {
-                    'code': self.get_code_value('spin_code'),  # QComboBox
-                    'rwyClassification': self.combo_rwyClassification.currentText(),
-                    'widthApp': self.get_numeric_value('spin_widthApp'),
+                    # Legacy keys (kept)
+                    'code': code_value,
+                    'rwyClassification': rwy_text,
+                    'widthApp': width_value,
                     'Z0': Z0_calc,
                     'ZE': ZE_calc,
-                    'ARPH': self.get_numeric_value('spin_ARPH'),
-                    'L1': self.get_numeric_value('spin_L1'),
-                    'L2': self.get_numeric_value('spin_L2'),
-                    'LH': self.get_numeric_value('spin_LH'),
-                    's': s_value
+                    'ARPH': arph_value,
+                    'L1': l1_value,
+                    'L2': l2_value,
+                    'LH': lh_value,
+                    's': s_value,
+                    # Pythonic/UI-aligned keys (new)
+                    'runway_code': code_value,
+                    'rwy_classification': rwy_text,
+                    'approach_width_m': width_value,
+                    'start_elevation_m': Z0_calc,
+                    'end_elevation_m': ZE_calc,
+                    'arp_elevation_m': arph_value,
+                    'first_section_length_m': l1_value,
+                    'second_section_length_m': l2_value,
+                    'horizontal_section_length_m': lh_value,
+                    'direction': s_value
                 }
             elif surface_type == "Conical":
                 specific_params = {
@@ -1627,11 +1692,17 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 # IMC checkbox eliminado; no aplica log
                 
                 code_value = self.get_code_value('spin_code_takeoff')
-                # Determine default maxWidthDep per code (editable)
-                default_max_width = 1800 if code_value in [3,4] else float(self.spin_maxWidthDep_takeoff.text() or "1800")
+                # Determine default maxWidthDep per code (editable), honoring checkbox for Code 3/4
+                if code_value in [3, 4] and hasattr(self, 'check_finalWidth1800_takeoff'):
+                    default_max_width = 1800.0 if self.check_finalWidth1800_takeoff.isChecked() else 1200.0
+                else:
+                    default_max_width = float(self.spin_maxWidthDep_takeoff.text() or "1800")
                 # Allow user override via spin_maxWidthDep_takeoff if provided
                 user_max_width_text = self.spin_maxWidthDep_takeoff.text() if hasattr(self, 'spin_maxWidthDep_takeoff') else ""
                 max_width_dep = float(user_max_width_text) if user_max_width_text not in ["", None] else default_max_width
+
+                # Direction parameter like Approach
+                s_value = 0 if self.direction_start_to_end else -1
 
                 specific_params = {
                     'code': code_value,  # QComboBox
@@ -1645,7 +1716,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'divergencePct': float(self.spin_divergence_takeoff.text() or "12.5") if hasattr(self, 'spin_divergence_takeoff') else 12.5,
                     'startDistance': float(self.spin_startDistance_takeoff.text() or "60") if hasattr(self, 'spin_startDistance_takeoff') else 60.0,
                     'surfaceLength': float(self.spin_surfaceLength_takeoff.text() or "15000") if hasattr(self, 'spin_surfaceLength_takeoff') else 15000.0,
-                    'slopePct': float(self.spin_slope_takeoff.text() or "2.0") if hasattr(self, 'spin_slope_takeoff') else 2.0
+                    'slopePct': float(self.spin_slope_takeoff.text() or "2.0") if hasattr(self, 'spin_slope_takeoff') else 2.0,
+                    'direction': s_value
                 }
                 print(f"QOLS DEBUG: Take-off Surface specific_params = {specific_params}")
             elif surface_type == "Transitional Surface" or surface_type == "Transitional":
