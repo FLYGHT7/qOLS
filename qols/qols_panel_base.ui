@@ -798,63 +798,63 @@ This indicator updates automatically based on your layer selections.</string>
           </item>
          </widget>
         </item>
-    <item row="1" column="0">
+    <item row="2" column="0">
          <widget class="QLabel" name="label_widthDep_takeoff">
           <property name="text">
            <string>Width Dep (m):</string>
           </property>
          </widget>
         </item>
-    <item row="1" column="1">
+    <item row="2" column="1">
          <widget class="QLineEdit" name="spin_widthDep_takeoff">
           <property name="text">
            <string>180.0</string>
           </property>
          </widget>
         </item>
-    <item row="2" column="0">
+    <item row="3" column="0">
          <widget class="QLabel" name="label_maxWidthDep_takeoff">
           <property name="text">
            <string>Max Width Dep (m):</string>
           </property>
          </widget>
         </item>
-    <item row="2" column="1">
+    <item row="3" column="1">
          <widget class="QLineEdit" name="spin_maxWidthDep_takeoff">
           <property name="text">
            <string>1800.0</string>
           </property>
          </widget>
         </item>
-    <item row="3" column="0">
+    <item row="4" column="0">
          <widget class="QLabel" name="label_CWYLength_takeoff">
           <property name="text">
            <string>CWY Length (m):</string>
           </property>
          </widget>
         </item>
-    <item row="3" column="1">
+    <item row="4" column="1">
          <widget class="QLineEdit" name="spin_CWYLength_takeoff">
           <property name="text">
            <string>0.0</string>
           </property>
          </widget>
         </item>
-    <item row="4" column="0">
+    <item row="5" column="0">
          <widget class="QLabel" name="label_Z0_takeoff">
           <property name="text">
           <string>Start Elevation (m):</string>
           </property>
          </widget>
         </item>
-    <item row="4" column="1">
+    <item row="5" column="1">
          <widget class="QLineEdit" name="spin_Z0_takeoff">
           <property name="text">
            <string>2548.0</string>
           </property>
          </widget>
         </item>
-    <item row="5" column="1">
+    <item row="1" column="1">
      <widget class="QCheckBox" name="check_finalWidth1800_takeoff">
       <property name="text">
        <string>Use 1800 m final width (Code 3/4)</string>
