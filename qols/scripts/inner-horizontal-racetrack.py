@@ -17,6 +17,8 @@ try:
     # Inner horizontal surface parameters from UI
     L = globals().get('radius', 4000)  # Distance L / Radius from UI
     height = globals().get('height', 45.0)  # Height for 3D polygon (new parameter)
+    runway_code = globals().get('code', 4)
+    rwy_classification = globals().get('rwyClassification', 'Precision Approach CAT I')
     
     # Direction parameter
     s = globals().get('direction', 0)  # 0 for start to end, -1 for end to start
@@ -26,7 +28,7 @@ try:
     threshold_layer = globals().get('threshold_layer', None)
     use_selected_feature = globals().get('use_selected_feature', True)
     
-    print(f"InnerHorizontal: Using parameters - radius: {L}m, height: {height}m")
+    print(f"InnerHorizontal: Using parameters - radius: {L}m, height: {height}m, code: {runway_code}, class: {rwy_classification}")
     print(f"InnerHorizontal: Direction parameter s: {s}, Use selected: {use_selected_feature}")
     
 except Exception as e:
@@ -38,6 +40,8 @@ except Exception as e:
     runway_layer = None
     threshold_layer = None
     use_selected_feature = True
+    runway_code = 4
+    rwy_classification = 'Precision Approach CAT I'
 
 print(f"InnerHorizontal: Final values - radius: {L}m, height: {height}m, direction: {s}")
 
@@ -78,7 +82,8 @@ except Exception as e:
     raise
 
 # Create memory layer for 3D polygon (PolygonZ)
-v_layer = QgsVectorLayer(f"PolygonZ?crs={map_srid}", "Inner Horizontal Surface", "memory")
+layer_name = f"InnerHorizontal_{rwy_classification}_Code{runway_code}"
+v_layer = QgsVectorLayer(f"PolygonZ?crs={map_srid}", layer_name, "memory")
 v_layer_provider = v_layer.dataProvider()
 
 # Add attributes for the polygon
@@ -90,7 +95,9 @@ v_layer_provider.addAttributes([
     QgsField("runway_start_y", QVariant.Double),
     QgsField("runway_end_x", QVariant.Double),
     QgsField("runway_end_y", QVariant.Double),
-    QgsField("azimuth", QVariant.Double)
+    QgsField("azimuth", QVariant.Double),
+    QgsField("RWYType", QVariant.String),
+    QgsField("Code", QVariant.Int)
 ])
 v_layer.updateFields()
 
@@ -316,7 +323,9 @@ for feat in selection:
         start_point.y(),
         end_point.x(),
         end_point.y(),
-        azimuth
+        azimuth,
+        rwy_classification,
+        int(runway_code)
     ])
     
     # Add feature to layer

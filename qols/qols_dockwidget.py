@@ -1,5 +1,9 @@
 import os
 import sys
+from .icao_defaults import (
+    get_conical_defaults,
+    get_inner_horizontal_defaults,
+)
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, Qt, QTimer
 from qgis.PyQt.QtWidgets import QDockWidget, QToolTip
@@ -67,6 +71,25 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.initialize_takeoff_defaults()
             # Initialize Code-based final width control visibility
             self.update_takeoff_final_width_controls()
+
+            # Initialize new RWY Classification + Code defaults for Conical and Inner Horizontal
+            try:
+                # Default both to CAT I / Code 4
+                if hasattr(self, 'combo_rwyClassification_conical'):
+                    self.combo_rwyClassification_conical.setCurrentText('Precision Approach CAT I')
+                if hasattr(self, 'spin_code_conical'):
+                    self.set_code_value('spin_code_conical', 4)
+                if hasattr(self, 'combo_rwyClassification_inner'):
+                    self.combo_rwyClassification_inner.setCurrentText('Precision Approach CAT I')
+                if hasattr(self, 'spin_code_inner'):
+                    self.set_code_value('spin_code_inner', 4)
+                # Wire change handlers to prefill defaults from ICAO table
+                self._wire_conical_inner_defaults()
+                # Apply initial defaults based on the selections
+                self.apply_conical_defaults_from_selection()
+                self.apply_inner_defaults_from_selection()
+            except Exception as e:
+                print(f"QOLS: Could not initialize RWY/Code defaults for Conical/Inner: {e}")
 
             
             # Connect signals for real-time feedback
@@ -299,6 +322,43 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             print(f"QOLS: Error initializing other surface defaults: {e}")
 
     
+    def _wire_conical_inner_defaults(self):
+        """Connect change signals to apply defaults when RWY/Code change."""
+        try:
+            if hasattr(self, 'combo_rwyClassification_conical'):
+                self.combo_rwyClassification_conical.currentIndexChanged.connect(self.apply_conical_defaults_from_selection)
+            if hasattr(self, 'spin_code_conical'):
+                self.spin_code_conical.currentIndexChanged.connect(self.apply_conical_defaults_from_selection)
+            if hasattr(self, 'combo_rwyClassification_inner'):
+                self.combo_rwyClassification_inner.currentIndexChanged.connect(self.apply_inner_defaults_from_selection)
+            if hasattr(self, 'spin_code_inner'):
+                self.spin_code_inner.currentIndexChanged.connect(self.apply_inner_defaults_from_selection)
+        except Exception as e:
+            print(f"QOLS: Error wiring defaults for Conical/Inner: {e}")
+
+    # ICAO Table-based defaults for Conical/Inner Horizontal
+    def apply_conical_defaults_from_selection(self):
+        try:
+            rwy = self.combo_rwyClassification_conical.currentText() if hasattr(self, 'combo_rwyClassification_conical') else 'Precision Approach CAT I'
+            code = self.get_code_value('spin_code_conical') if hasattr(self, 'spin_code_conical') else 4
+            d = get_conical_defaults(rwy, code)
+            self.set_numeric_value('spin_L_conical', d['radius_m'])
+            self.set_numeric_value('spin_height_conical', d['height_m'])
+            print(f"QOLS: Conical defaults applied from selection: {rwy}, Code {code} -> L={d['radius_m']}, H={d['height_m']}")
+        except Exception as e:
+            print(f"QOLS: Error applying conical defaults: {e}")
+
+    def apply_inner_defaults_from_selection(self):
+        try:
+            rwy = self.combo_rwyClassification_inner.currentText() if hasattr(self, 'combo_rwyClassification_inner') else 'Precision Approach CAT I'
+            code = self.get_code_value('spin_code_inner') if hasattr(self, 'spin_code_inner') else 4
+            d = get_inner_horizontal_defaults(rwy, code)
+            self.set_numeric_value('spin_L_inner', d['radius_m'])
+            self.set_numeric_value('spin_height_inner', d['height_m'])
+            print(f"QOLS: Inner Horizontal defaults applied from selection: {rwy}, Code {code} -> L={d['radius_m']}, H={d['height_m']}")
+        except Exception as e:
+            print(f"QOLS: Error applying inner defaults: {e}")
+
 
     def get_numeric_value(self, widget_name):
         """Get numeric value from QLineEdit widget, returns float or 0.0 if invalid."""
@@ -1665,12 +1725,16 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             elif surface_type == "Conical":
                 specific_params = {
                     'radius': self.get_numeric_value('spin_L_conical'),        # Distance L is the radius
-                    'height': self.get_numeric_value('spin_height_conical')    # Height for 3D polygon
+                    'height': self.get_numeric_value('spin_height_conical'),   # Height for 3D polygon
+                    'code': self.get_code_value('spin_code_conical') if hasattr(self, 'spin_code_conical') else 4,
+                    'rwyClassification': self.combo_rwyClassification_conical.currentText() if hasattr(self, 'combo_rwyClassification_conical') else 'Precision Approach CAT I'
                 }
             elif surface_type == "Inner Horizontal":
                 specific_params = {
                     'radius': self.get_numeric_value('spin_L_inner'),          # Distance L is the radius
-                    'height': self.get_numeric_value('spin_height_inner')      # Height for 3D polygon
+                    'height': self.get_numeric_value('spin_height_inner'),     # Height for 3D polygon
+                    'code': self.get_code_value('spin_code_inner') if hasattr(self, 'spin_code_inner') else 4,
+                    'rwyClassification': self.combo_rwyClassification_inner.currentText() if hasattr(self, 'combo_rwyClassification_inner') else 'Precision Approach CAT I'
                 }
             elif surface_type == "Outer Horizontal":
                 specific_params = {

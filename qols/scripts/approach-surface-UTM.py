@@ -1,5 +1,5 @@
 '''
-Inner Approach Surface 4 CAT I
+Inner Approach Surface — supports RWY Classification and Code propagation to attributes
 Procedure to be used in Projected Coordinate System Only
 ENHANCED VERSION - Uses dynamic parameters from UI
 ROBUST VERSION - No fallbacks, explicit layer and feature selection required
