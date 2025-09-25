@@ -14,7 +14,7 @@ from qgis.PyQt.QtCore import QVariant
 from qgis.utils import iface
 from math import *
 
-# UI Parameters - Get from plugin or use ORIGINAL defaults
+# UI Parameters - Get from plugin or use defaults (now driven by UI)
 print("TakeOffSurface: Script started - checking for UI parameters...")
 print(f"TakeOffSurface: Available globals keys: {list(globals().keys())}")
 
@@ -33,7 +33,13 @@ try:
     L1 = globals().get('L1', 3000)
     L2 = globals().get('L2', 3600)
     LH = globals().get('LH', 8400)
-    s = globals().get('direction', 0)  # FIXED: Use 'direction' like other scripts
+    s = globals().get('direction', 0)  # Use 'direction' like other scripts
+
+    # Newly exposed Take-Off parameters (percent values expected for divergence/slope)
+    divergencePct = globals().get('divergencePct', 12.5)
+    startDistance = globals().get('startDistance', 60.0)
+    surfaceLength = globals().get('surfaceLength', 15000.0)
+    slopePct = globals().get('slopePct', 2.0)
     
     # Layer parameters from UI
     runway_layer = globals().get('runway_layer')
@@ -41,6 +47,7 @@ try:
     
     print(f"TakeOffSurface: Using UI parameters - code={code}, direction={s}")
     print(f"TakeOffSurface: Z0={Z0}, ZE={ZE}, widthDep={widthDep}, maxWidthDep={maxWidthDep}")
+    print(f"TakeOffSurface: divergencePct={divergencePct}%, startDistance={startDistance} m, surfaceLength={surfaceLength} m, slopePct={slopePct}%")
     print(f"TakeOffSurface: runway_layer={runway_layer}, threshold_layer={threshold_layer}")
     print(f"TakeOffSurface: Direction parameter s={s} ({'End to Start' if s == -1 else 'Start to End'})")
     
@@ -63,6 +70,10 @@ except Exception as e:
     L2 = 3600
     LH = 8400
     s = 0
+    divergencePct = 12.5
+    startDistance = 60.0
+    surfaceLength = 15000.0
+    slopePct = 2.0
     runway_layer = None
     threshold_layer = None
 
@@ -123,8 +134,8 @@ except Exception as e:
     iface.messageBar().pushMessage("TakeOffSurface Error", f"Runway layer error: {str(e)}", level=Qgis.Critical)
     raise
 
-# ORIGINAL ZIHs calculation
-ZIHs = ((Z0-((Z0-ZE)/rwy_length)*1800))
+# ORIGINAL ZIHs calculation (kept for compatibility; not used in geometry below)
+ZIHs = ((Z0 - ((Z0 - ZE) / rwy_length) * 1800))
 
 # Get the azimuth of the line - FIXED: Simplified consistent logic like other scripts
 for feat in selection:
@@ -208,11 +219,13 @@ list_pts = []
 # Origin - EXACTLY as original
 pt_0D = new_geom
 
-# Distance for surface start - EXACTLY as original
-if CWYLength <= 60:
-    dD = 60
-else:
-    dD = CWYLength
+# Distance for surface start - now uses UI parameter startDistance and CWY interaction
+# Start distance is the minimum; if CWYLength is longer, use CWYLength
+dD = max(startDistance, CWYLength)
+
+# Convert percentages to decimal ratios for geometry calculations
+divergence_ratio = float(divergencePct) / 100.0
+slope_ratio = float(slopePct) / 100.0
 
 # ORIGINAL surface calculation - Point by point exactly as original
 pt_01D = new_geom.project(dD, bazimuth)
@@ -220,15 +233,16 @@ pt_01D.setZ(ZE)
 pt_01DL = pt_01D.project(widthDep/2, bazimuth+90)
 pt_01DR = pt_01D.project(widthDep/2, bazimuth-90)
 
-# Distance to reach maximum width - EXACTLY as original
-pt_02D = pt_01D.project(((maxWidthDep/2-widthDep/2)/0.125), bazimuth)
-pt_02D.setZ(ZE+((maxWidthDep/2-widthDep/2)/0.125)*0.02)
+# Distance to reach maximum width - uses divergence ratio from UI
+distance_to_max_width = ((maxWidthDep / 2.0 - widthDep / 2.0) / divergence_ratio) if divergence_ratio != 0 else 0.0
+pt_02D = pt_01D.project(distance_to_max_width, bazimuth)
+pt_02D.setZ(ZE + distance_to_max_width * slope_ratio)
 pt_02DL = pt_02D.project(maxWidthDep/2, bazimuth+90)
 pt_02DR = pt_02D.project(maxWidthDep/2, bazimuth-90)
 
-# Distance to end of TakeOff Climb Surface - EXACTLY as original
-pt_03D = pt_01D.project(15000, bazimuth)
-pt_03D.setZ(ZE+15000*0.02)
+# Distance to end of TakeOff Climb Surface - uses UI surfaceLength and slope
+pt_03D = pt_01D.project(surfaceLength, bazimuth)
+pt_03D.setZ(ZE + surfaceLength * slope_ratio)
 pt_03DL = pt_03D.project(maxWidthDep/2, bazimuth+90)
 pt_03DR = pt_03D.project(maxWidthDep/2, bazimuth-90)
 
