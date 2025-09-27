@@ -5,6 +5,14 @@ Obstacle Limitation Surfaces Creation in accordance with Annex 14 Vol I and Vol 
 - Single runway systems only at the moment, if you need more than one runway you will need to analyze separately.
 - Projected Coordinate Systems used, no geodetic calculations. (Simplifies calculations)
 
+# Installation
+While this plugin is added to the official repository the correct way to install is by using the Releases
+<img width="1292" height="636" alt="Image" src="https://github.com/user-attachments/assets/dcc9d005-b603-4778-8a3f-475e54666f0d" />
+then
+<img width="1212" height="194" alt="Image" src="https://github.com/user-attachments/assets/bd01fead-0fef-4b5b-a90b-b6759d30645f" />
+it should look like this then
+<img width="1039" height="710" alt="Image" src="https://github.com/user-attachments/assets/247035c1-b0cd-4a2a-a6a9-dc353cd25e39" />
+
 # Roadmap
 - Initial areas hard coded current OLS.
 - Areas designed based on runway classification and values read from file based on ICAO standard values.
