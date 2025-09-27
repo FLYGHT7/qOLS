@@ -4,6 +4,7 @@ from .icao_defaults import (
     get_conical_defaults,
     get_inner_horizontal_defaults,
 )
+from .approach_defaults import get_approach_defaults
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, Qt, QTimer
 from qgis.PyQt.QtWidgets import QDockWidget, QToolTip
@@ -72,6 +73,22 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Initialize Code-based final width control visibility
             self.update_takeoff_final_width_controls()
 
+            # Wire Approach classification/code changes to apply defaults
+            try:
+                if hasattr(self, 'combo_rwyClassification'):
+                    self.combo_rwyClassification.currentIndexChanged.connect(self.apply_approach_defaults_from_selection)
+                if hasattr(self, 'spin_code'):
+                    self.spin_code.currentIndexChanged.connect(self.apply_approach_defaults_from_selection)
+            except Exception as e:
+                print(f"QOLS: Could not connect Approach defaults handlers: {e}")
+
+            # Wire OFZ classification changes to visibility logic (Issue #51)
+            try:
+                if hasattr(self, 'combo_rwyClassification_ofz'):
+                    self.combo_rwyClassification_ofz.currentIndexChanged.connect(self.update_ofz_visibility)
+            except Exception as e:
+                print(f"QOLS: Could not connect OFZ visibility handler: {e}")
+
             # Initialize new RWY Classification + Code defaults for Conical and Inner Horizontal
             try:
                 # Default both to CAT I / Code 4
@@ -90,6 +107,23 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 self.apply_inner_defaults_from_selection()
             except Exception as e:
                 print(f"QOLS: Could not initialize RWY/Code defaults for Conical/Inner: {e}")
+
+            # Wire recalculation of conical radius when slope/height or inner radius changes
+            try:
+                if hasattr(self, 'spin_conical_slope'):
+                    self.spin_conical_slope.editingFinished.connect(self.recalculate_conical_radius)
+                if hasattr(self, 'spin_height_conical'):
+                    self.spin_height_conical.editingFinished.connect(self.recalculate_conical_radius)
+                if hasattr(self, 'spin_L_inner'):
+                    self.spin_L_inner.editingFinished.connect(self.recalculate_conical_radius)
+            except Exception as e:
+                print(f"QOLS: Could not connect conical radius recalculation signals: {e}")
+
+            # Apply initial Approach defaults (after initial numeric defaults so they override)
+            try:
+                self.apply_approach_defaults_from_selection()
+            except Exception as e:
+                print(f"QOLS: Could not apply initial Approach defaults: {e}")
 
             
             # Connect signals for real-time feedback
@@ -121,6 +155,12 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.update_selection_info()
 
             print("QOLS: QolsDockWidget initialized successfully")
+
+            # Apply initial OFZ visibility state after UI setup
+            try:
+                self.update_ofz_visibility()
+            except Exception as e:
+                print(f"QOLS: Could not apply initial OFZ visibility: {e}")
             
         except Exception as e:
             print(f"QOLS: Error initializing QolsDockWidget: {e}")
@@ -342,9 +382,14 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             rwy = self.combo_rwyClassification_conical.currentText() if hasattr(self, 'combo_rwyClassification_conical') else 'Precision Approach CAT I'
             code = self.get_code_value('spin_code_conical') if hasattr(self, 'spin_code_conical') else 4
             d = get_conical_defaults(rwy, code)
-            self.set_numeric_value('spin_L_conical', d['radius_m'])
+            # Height default
             self.set_numeric_value('spin_height_conical', d['height_m'])
-            print(f"QOLS: Conical defaults applied from selection: {rwy}, Code {code} -> L={d['radius_m']}, H={d['height_m']}")
+            # Slope default currently 5% for all (future: per code mapping). Avoid overwriting user custom if already changed? For now always set if field exists.
+            if hasattr(self, 'spin_conical_slope'):
+                self.set_numeric_value('spin_conical_slope', 5.0)
+            # Radius will be recalculated dynamically using current inner horizontal radius
+            self.recalculate_conical_radius()
+            print(f"QOLS: Conical defaults applied: {rwy}, Code {code} -> Height={d['height_m']} (slope 5%), radius recomputed")
         except Exception as e:
             print(f"QOLS: Error applying conical defaults: {e}")
 
@@ -356,8 +401,88 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.set_numeric_value('spin_L_inner', d['radius_m'])
             self.set_numeric_value('spin_height_inner', d['height_m'])
             print(f"QOLS: Inner Horizontal defaults applied from selection: {rwy}, Code {code} -> L={d['radius_m']}, H={d['height_m']}")
+            # After updating inner horizontal radius, recalc conical radius if conical tab prepared
+            self.recalculate_conical_radius()
         except Exception as e:
             print(f"QOLS: Error applying inner defaults: {e}")
+
+    # Issue #51: Hide OFZ parameters when RWY Classification is Non-instrument or Non-precision approach
+    def update_ofz_visibility(self):
+        try:
+            if not hasattr(self, 'combo_rwyClassification_ofz'):
+                return
+            classification = self.combo_rwyClassification_ofz.currentText().strip()
+            not_applicable = classification in [
+                'Non-instrument',
+                'Non-precision approach'
+            ]
+
+            param_widgets = [
+                'label_code_ofz','spin_code_ofz',
+                'label_width_ofz','spin_width_ofz',
+                'label_Z0_ofz','spin_Z0_ofz',
+                'label_ZE_ofz','spin_ZE_ofz',
+                'label_ARPH_ofz','spin_ARPH_ofz',
+                'label_IHSlope_ofz','spin_IHSlope_ofz'
+            ]
+
+            # Show/hide parameter widgets
+            for name in param_widgets:
+                w = getattr(self, name, None)
+                if w:
+                    w.setVisible(not not_applicable)
+
+            # Show/hide notice label
+            if hasattr(self, 'label_not_applicable_ofz'):
+                self.label_not_applicable_ofz.setVisible(not_applicable)
+
+            print(f"QOLS: OFZ visibility updated - classification='{classification}', not_applicable={not_applicable}")
+        except Exception as e:
+            print(f"QOLS: Error updating OFZ visibility: {e}")
+
+    def recalculate_conical_radius(self):
+        """Compute Conical Radius = Height / Slope + Inner Horizontal Radius.
+        Slope entered as percent. Falls back safely if fields missing.
+        """
+        try:
+            if not (hasattr(self, 'spin_L_conical') and hasattr(self, 'spin_height_conical')):
+                return
+            height = self.get_numeric_value('spin_height_conical')
+            slope_pct = self.get_numeric_value('spin_conical_slope') if hasattr(self, 'spin_conical_slope') else 5.0
+            slope = slope_pct / 100.0 if slope_pct else 0.05
+            inner_radius = self.get_numeric_value('spin_L_inner') if hasattr(self, 'spin_L_inner') else 0.0
+            if slope <= 0:
+                # Avoid division by zero; leave radius untouched
+                print("QOLS: Conical slope <= 0, cannot compute radius")
+                return
+            computed_radius = height / slope + inner_radius
+            self.set_numeric_value('spin_L_conical', computed_radius)
+            print(f"QOLS: Recalculated conical radius = {computed_radius} (height={height}, slope%={slope_pct}, inner={inner_radius})")
+        except Exception as e:
+            print(f"QOLS: Error recalculating conical radius: {e}")
+
+    # Approach defaults (new)
+    def apply_approach_defaults_from_selection(self):
+        try:
+            if not (hasattr(self, 'combo_rwyClassification') and hasattr(self, 'spin_code')):
+                return
+            rwy = self.combo_rwyClassification.currentText()
+            code = self.get_code_value('spin_code')
+            d = get_approach_defaults(rwy, code)
+            # Only override if user hasn't changed (or always override? adopting always override when classification/code changed)
+            self.set_numeric_value('spin_widthApp', d['width_m'])
+            self.set_numeric_value('spin_L1', d['L1_m'])
+            self.set_numeric_value('spin_L2', d['L2_m'])
+            self.set_numeric_value('spin_LH', d['LH_m'])
+            # Additional dynamic fields (not yet exposed in UI) stored for script usage via globals injection
+            # We can stash them in attributes for later retrieval
+            self._approach_threshold_offset = d['threshold_offset_m']
+            self._approach_divergence_ratio = d['divergence_ratio']
+            self._approach_slope1 = d['first_section_slope']
+            self._approach_slope2 = d['second_section_slope']
+            print(f"QOLS: Approach defaults applied: {rwy} Code {code} -> width={d['width_m']} L1={d['L1_m']} L2={d['L2_m']} LH={d['LH_m']} div={d['divergence_ratio']} thrOff={d['threshold_offset_m']}")
+        except Exception as e:
+            print(f"QOLS: Error applying approach defaults: {e}")
 
 
     def get_numeric_value(self, widget_name):
@@ -1057,13 +1182,14 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             else:
                 threshold_icon = "❌"
             
-            combined_status = f"Status: Runway: {runway_icon} {runway_status} | Threshold: {threshold_icon} {threshold_status}"
-            
+            # Update per-layer labels (Issue #52 UI change)
             try:
-                self.selectionInfoLabel.setText(combined_status)
-                print(f"QOLS: selectionInfoLabel updated: {combined_status}")
+                if hasattr(self, 'runwaySelectionStatusLabel'):
+                    self.runwaySelectionStatusLabel.setText(f"{runway_icon} {runway_status}")
+                if hasattr(self, 'thresholdSelectionStatusLabel'):
+                    self.thresholdSelectionStatusLabel.setText(f"{threshold_icon} {threshold_status}")
             except Exception as e:
-                print(f"QOLS: Error updating selectionInfoLabel: {e}")
+                print(f"QOLS: Error updating per-layer selection labels: {e}")
             
             # Update dropdown tooltips with current layer info
             self.update_dropdown_item_tooltips()
@@ -1076,8 +1202,12 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             traceback.print_exc()
             
             # Fallback text in case of error
+            # Attempt to mark error on per-layer labels
             try:
-                self.selectionInfoLabel.setText("! Status update error - check console")
+                if hasattr(self, 'runwaySelectionStatusLabel'):
+                    self.runwaySelectionStatusLabel.setText("❌ Error")
+                if hasattr(self, 'thresholdSelectionStatusLabel'):
+                    self.thresholdSelectionStatusLabel.setText("❌ Error")
             except:
                 pass
 
@@ -1720,7 +1850,12 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'first_section_length_m': l1_value,
                     'second_section_length_m': l2_value,
                     'horizontal_section_length_m': lh_value,
-                    'direction': s_value
+                    'direction': s_value,
+                    # Additional derived defaults (if available from apply_approach_defaults_from_selection)
+                    'divergence_ratio': getattr(self, '_approach_divergence_ratio', 0.15),
+                    'first_section_slope': getattr(self, '_approach_slope1', 0.02),
+                    'second_section_slope': getattr(self, '_approach_slope2', 0.025),
+                    'threshold_offset_m': getattr(self, '_approach_threshold_offset', 60.0)
                 }
             elif surface_type == "Conical":
                 specific_params = {
