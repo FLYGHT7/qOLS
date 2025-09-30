@@ -13,10 +13,10 @@ then
 it should look like this then
 <img width="1039" height="710" alt="Image" src="https://github.com/user-attachments/assets/247035c1-b0cd-4a2a-a6a9-dc353cd25e39" />
 
-Make sure the plugins toolbar is enable
-<img width="283" height="280" alt="image" src="https://github.com/user-attachments/assets/21751f3a-34fc-4d80-b2e4-baa34c2b427a" />
-or you can enable from Plugins > QOLS
-<img width="548" height="190" alt="image" src="https://github.com/user-attachments/assets/9b56fa7c-0478-4a40-96c1-0eef8de424e2" />
+Make sure the plugins toolbar is enabled  
+<img width="283" height="280" alt="image" src="https://github.com/user-attachments/assets/21751f3a-34fc-4d80-b2e4-baa34c2b427a" />  
+or you can enable from Plugins > QOLS  
+<img width="548" height="190" alt="image" src="https://github.com/user-attachments/assets/9b56fa7c-0478-4a40-96c1-0eef8de424e2" />  
 
 # Roadmap
 - Initial areas hard coded current OLS.
