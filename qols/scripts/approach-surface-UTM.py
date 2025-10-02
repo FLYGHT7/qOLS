@@ -188,38 +188,100 @@ print(f"QOLS: Direction change handled by azimuth rotation (180°), not threshol
 
 construction_points = []
 
-# Origin 
+"""Dynamic section geometry
+This block replaces previous hardcoded distances (3000, 6600, 15000) with UI-provided
+first_section_length_m (L1), second_section_length_m (L2), horizontal_section_length_m (LH).
+Additional dynamic parameters (with safe defaults if the UI does not yet expose them):
+ - first_section_slope (default 0.02)
+ - second_section_slope (default 0.025)
+ - divergence_ratio (default 0.15) -> lateral growth per metre (both sides)
+ - threshold_offset_m (default 60) -> distance from THR to section origin
+Sections are omitted if their length is 0. Horizontal section starts after second (or first if second omitted).
+"""
+
+first_section_slope = globals().get('first_section_slope', globals().get('slope1', 0.02))
+second_section_slope = globals().get('second_section_slope', globals().get('slope2', 0.025))
+divergence_ratio = globals().get('divergence_ratio', globals().get('divergence', 0.15))
+threshold_offset_m = globals().get('threshold_offset_m', globals().get('thr_offset', 60))
+
+print(f"QOLS: Dynamic Approach Params -> L1={first_section_length_m} L2={second_section_length_m} LH={horizontal_section_length_m} slope1={first_section_slope} slope2={second_section_slope} div={divergence_ratio} thr_off={threshold_offset_m}")
+
+# Guard against negative lengths
+first_section_length_m = max(0, float(first_section_length_m))
+second_section_length_m = max(0, float(second_section_length_m))
+horizontal_section_length_m = max(0, float(horizontal_section_length_m))
+
+# Origin (threshold point with elevation)
 pt_0 = new_geom
-    
-# Distance prior from THR (60 m)
-pt_01 = new_geom.project(60, azimuth)
+
+# Point after threshold offset
+pt_01 = new_geom.project(threshold_offset_m, azimuth)
 pt_01.addZValue(start_elevation_m)
-pt_01AL = pt_01.project(approach_width_m/2, azimuth+90)
-pt_01AR = pt_01.project(approach_width_m/2, azimuth-90)
+pt_01AL = pt_01.project(approach_width_m / 2, azimuth + 90)
+pt_01AR = pt_01.project(approach_width_m / 2, azimuth - 90)
 
-# First Section Points 
-pt_05 = pt_01.project(3000, azimuth)
-pt_05.setZ(start_elevation_m + 3000*0.02)
-pt_05L = pt_05.project(approach_width_m/2 + (3000*.15), azimuth+90)
-pt_05R = pt_05.project(approach_width_m/2 + (3000*.15), azimuth-90)
+construction_points.extend((pt_0, pt_01, pt_01AL, pt_01AR))
 
-construction_points.extend((pt_0, pt_01, pt_01AL, pt_01AR, pt_05, pt_05L, pt_05R))
+features_to_create = []  # (id, name, [farRight, farLeft, nearLeft, nearRight])
+next_id = 6
 
-# Second Section Points 
-pt_06 = pt_01.project(6600, azimuth)
-pt_06.setZ(start_elevation_m + 3000*0.02 + 3600*0.025)
-pt_06L = pt_06.project(approach_width_m/2 + (6600*.15), azimuth+90)
-pt_06R = pt_06.project(approach_width_m/2 + (6600*.15), azimuth-90)
+def lateral_offset(distance_from_offset: float) -> float:
+    """Compute half-width at a given distance from pt_01 considering divergence."""
+    return (approach_width_m / 2) + (distance_from_offset * divergence_ratio)
 
-# Horizontal Section Points 
-pt_07 = pt_01.project(15000, azimuth)
-pt_07.setZ(start_elevation_m + 3000*0.02 + 3600*0.025)
-pt_07L = pt_07.project(approach_width_m/2 + (15000*.15), azimuth+90)
-pt_07R = pt_07.project(approach_width_m/2 + (15000*.15), azimuth-90)
+# --- First Section (always created if L1 > 0) ---
+if first_section_length_m > 0:
+    dist_first_end = first_section_length_m
+    height_first_end = start_elevation_m + first_section_length_m * first_section_slope
+    pt_05 = pt_01.project(dist_first_end, azimuth)
+    pt_05.setZ(height_first_end)
+    half_w_first_end = lateral_offset(dist_first_end)
+    pt_05L = pt_05.project(half_w_first_end, azimuth + 90)
+    pt_05R = pt_05.project(half_w_first_end, azimuth - 90)
+    construction_points.extend((pt_05, pt_05L, pt_05R))
+    features_to_create.append((next_id, 'Approach First Section', [pt_05R, pt_05L, pt_01AL, pt_01AR]))
+    next_id += 1
+else:
+    # If L1 = 0 treat pt_05 as the origin of later sections
+    dist_first_end = 0
+    height_first_end = start_elevation_m
+    pt_05 = pt_01  # reuse
+    pt_05L = pt_01AL
+    pt_05R = pt_01AR
 
-construction_points.extend((pt_06, pt_06L, pt_06R, pt_07, pt_07L, pt_07R))
+# --- Second Section (optional) ---
+if second_section_length_m > 0:
+    dist_second_end = dist_first_end + second_section_length_m
+    height_second_end = height_first_end + second_section_length_m * second_section_slope
+    pt_06 = pt_01.project(dist_second_end, azimuth)
+    pt_06.setZ(height_second_end)
+    half_w_second_end = lateral_offset(dist_second_end)
+    pt_06L = pt_06.project(half_w_second_end, azimuth + 90)
+    pt_06R = pt_06.project(half_w_second_end, azimuth - 90)
+    construction_points.extend((pt_06, pt_06L, pt_06R))
+    features_to_create.append((next_id, 'Approach Second Section', [pt_06R, pt_06L, pt_05L, pt_05R]))
+    next_id += 1
+else:
+    # If omitted, second section end coincides with first section end for horizontal start
+    dist_second_end = dist_first_end
+    height_second_end = height_first_end
+    pt_06 = pt_05
+    pt_06L = pt_05L
+    pt_06R = pt_05R
 
-print(f"QOLS: Generated {len(construction_points)} construction points")
+# --- Horizontal Section (optional; only if second section exists) ---
+if second_section_length_m > 0 and horizontal_section_length_m > 0:
+    dist_horizontal_end = dist_second_end + horizontal_section_length_m
+    pt_07 = pt_01.project(dist_horizontal_end, azimuth)
+    pt_07.setZ(height_second_end)  # constant height
+    half_w_horizontal_end = lateral_offset(dist_horizontal_end)
+    pt_07L = pt_07.project(half_w_horizontal_end, azimuth + 90)
+    pt_07R = pt_07.project(half_w_horizontal_end, azimuth - 90)
+    construction_points.extend((pt_07, pt_07L, pt_07R))
+    features_to_create.append((next_id, 'Approach Horizontal Section', [pt_07R, pt_07L, pt_06L, pt_06R]))
+    next_id += 1
+
+print(f"QOLS: Generated {len(construction_points)} construction points; sections created: {len(features_to_create)}")
 
 # Creation of the Approach Surfaces
 # Create memory layer
@@ -232,29 +294,12 @@ code_field = QgsField('Code', QVariant.Int)
 approach_layer.dataProvider().addAttributes([id_field, name_field, type_field, code_field])
 approach_layer.updateFields()
 
-# Approach - First Section
-surface_area = [pt_05R, pt_05L, pt_01AL, pt_01AR]
 provider = approach_layer.dataProvider()
-feature = QgsFeature()
-feature.setGeometry(QgsPolygon(QgsLineString(surface_area), rings=[]))
-feature.setAttributes([6, 'Approach First Section', rwy_classification, runway_code])
-provider.addFeatures([feature])
-
-# Approach - Second Section
-surface_area = [pt_06R, pt_06L, pt_05L, pt_05R]
-provider = approach_layer.dataProvider()
-feature = QgsFeature()
-feature.setGeometry(QgsPolygon(QgsLineString(surface_area), rings=[]))
-feature.setAttributes([7, 'Approach Second Section', rwy_classification, runway_code])
-provider.addFeatures([feature])
-
-# Approach - Horizontal Section
-surface_area = [pt_07R, pt_07L, pt_06L, pt_06R]
-provider = approach_layer.dataProvider()
-feature = QgsFeature()
-feature.setGeometry(QgsPolygon(QgsLineString(surface_area), rings=[]))
-feature.setAttributes([8, 'Approach Horizontal Section', rwy_classification, runway_code])
-provider.addFeatures([feature])
+for fid, name, surface_area in features_to_create:
+    feature = QgsFeature()
+    feature.setGeometry(QgsPolygon(QgsLineString(surface_area), rings=[]))
+    feature.setAttributes([fid, name, rwy_classification, runway_code])
+    provider.addFeatures([feature])
 
 # Load PolygonZ Layer to map canvas 
 QgsProject.instance().addMapLayers([approach_layer])
