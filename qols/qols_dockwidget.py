@@ -24,6 +24,10 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         super(QolsDockWidget, self).__init__(parent)
         self.iface = iface
         
+        # Track connected layers for selection signals (Issue #59)
+        self.connected_runway_layer = None
+        self.connected_threshold_layer = None
+        
         try:
             print("QOLS: Initializing QolsDockWidget")
             self.setupUi(self)
@@ -91,20 +95,15 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
 
             # Initialize new RWY Classification + Code defaults for Conical and Inner Horizontal
             try:
-                # Default both to CAT I / Code 4
-                if hasattr(self, 'combo_rwyClassification_conical'):
-                    self.combo_rwyClassification_conical.setCurrentText('Precision Approach CAT I')
-                if hasattr(self, 'spin_code_conical'):
-                    self.set_code_value('spin_code_conical', 4)
-                if hasattr(self, 'combo_rwyClassification_inner'):
-                    self.combo_rwyClassification_inner.setCurrentText('Precision Approach CAT I')
-                if hasattr(self, 'spin_code_inner'):
-                    self.set_code_value('spin_code_inner', 4)
+                # Default combined Inner Horizontal & Conical tab to CAT I / Code 4
+                if hasattr(self, 'combo_rwyClassification_inner_conical'):
+                    self.combo_rwyClassification_inner_conical.setCurrentText('Precision Approach CAT I')
+                if hasattr(self, 'spin_code_inner_conical'):
+                    self.set_code_value('spin_code_inner_conical', 4)
                 # Wire change handlers to prefill defaults from ICAO table
-                self._wire_conical_inner_defaults()
+                self._wire_combined_inner_conical_defaults()
                 # Apply initial defaults based on the selections
-                self.apply_conical_defaults_from_selection()
-                self.apply_inner_defaults_from_selection()
+                self.apply_combined_inner_conical_defaults_from_selection()
             except Exception as e:
                 print(f"QOLS: Could not initialize RWY/Code defaults for Conical/Inner: {e}")
 
@@ -131,6 +130,10 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.useSelectedThresholdCheckBox.toggled.connect(self.update_selection_info)
             self.runwayLayerCombo.layerChanged.connect(self.update_selection_info)
             self.thresholdLayerCombo.layerChanged.connect(self.update_selection_info)
+            
+            # Connect to layer changes for selection signal management (Issue #59)
+            self.runwayLayerCombo.layerChanged.connect(self.connect_layer_selection_signals)
+            self.thresholdLayerCombo.layerChanged.connect(self.connect_layer_selection_signals)
             
             # SAFETY: Connect to layer combo changes for immediate validation
             self.runwayLayerCombo.layerChanged.connect(self.validate_layer_change)
@@ -161,6 +164,12 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 self.update_ofz_visibility()
             except Exception as e:
                 print(f"QOLS: Could not apply initial OFZ visibility: {e}")
+                
+            # Initialize selection signal connections (Issue #59)
+            try:
+                self.connect_layer_selection_signals()
+            except Exception as e:
+                print(f"QOLS: Could not initialize selection signal connections: {e}")
             
         except Exception as e:
             print(f"QOLS: Error initializing QolsDockWidget: {e}")
@@ -362,49 +371,42 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             print(f"QOLS: Error initializing other surface defaults: {e}")
 
     
-    def _wire_conical_inner_defaults(self):
-        """Connect change signals to apply defaults when RWY/Code change."""
+    def _wire_combined_inner_conical_defaults(self):
+        """Connect change signals to apply defaults when RWY/Code change in combined tab."""
         try:
-            if hasattr(self, 'combo_rwyClassification_conical'):
-                self.combo_rwyClassification_conical.currentIndexChanged.connect(self.apply_conical_defaults_from_selection)
-            if hasattr(self, 'spin_code_conical'):
-                self.spin_code_conical.currentIndexChanged.connect(self.apply_conical_defaults_from_selection)
-            if hasattr(self, 'combo_rwyClassification_inner'):
-                self.combo_rwyClassification_inner.currentIndexChanged.connect(self.apply_inner_defaults_from_selection)
-            if hasattr(self, 'spin_code_inner'):
-                self.spin_code_inner.currentIndexChanged.connect(self.apply_inner_defaults_from_selection)
+            if hasattr(self, 'combo_rwyClassification_inner_conical'):
+                self.combo_rwyClassification_inner_conical.currentIndexChanged.connect(self.apply_combined_inner_conical_defaults_from_selection)
+            if hasattr(self, 'spin_code_inner_conical'):
+                self.spin_code_inner_conical.currentIndexChanged.connect(self.apply_combined_inner_conical_defaults_from_selection)
         except Exception as e:
-            print(f"QOLS: Error wiring defaults for Conical/Inner: {e}")
+            print(f"QOLS: Error wiring defaults for combined Inner/Conical: {e}")
 
-    # ICAO Table-based defaults for Conical/Inner Horizontal
-    def apply_conical_defaults_from_selection(self):
+    # ICAO Table-based defaults for Combined Inner Horizontal & Conical
+    def apply_combined_inner_conical_defaults_from_selection(self):
+        """Apply defaults to both Inner Horizontal and Conical using shared classification/code."""
         try:
-            rwy = self.combo_rwyClassification_conical.currentText() if hasattr(self, 'combo_rwyClassification_conical') else 'Precision Approach CAT I'
-            code = self.get_code_value('spin_code_conical') if hasattr(self, 'spin_code_conical') else 4
-            d = get_conical_defaults(rwy, code)
-            # Height default
-            self.set_numeric_value('spin_height_conical', d['height_m'])
-            # Slope default currently 5% for all (future: per code mapping). Avoid overwriting user custom if already changed? For now always set if field exists.
+            rwy = self.combo_rwyClassification_inner_conical.currentText() if hasattr(self, 'combo_rwyClassification_inner_conical') else 'Precision Approach CAT I'
+            code = self.get_code_value('spin_code_inner_conical') if hasattr(self, 'spin_code_inner_conical') else 4
+            
+            # Apply Inner Horizontal defaults
+            inner_defaults = get_inner_horizontal_defaults(rwy, code)
+            self.set_numeric_value('spin_L_inner', inner_defaults['radius_m'])
+            self.set_numeric_value('spin_height_inner', inner_defaults['height_m'])
+            print(f"QOLS: Inner Horizontal defaults applied: {rwy}, Code {code} -> Radius={inner_defaults['radius_m']}, Height={inner_defaults['height_m']}")
+            
+            # Apply Conical defaults
+            conical_defaults = get_conical_defaults(rwy, code)
+            self.set_numeric_value('spin_height_conical', conical_defaults['height_m'])
+            # Slope default currently 5% for all (future: per code mapping)
             if hasattr(self, 'spin_conical_slope'):
                 self.set_numeric_value('spin_conical_slope', 5.0)
-            # Radius will be recalculated dynamically using current inner horizontal radius
+            print(f"QOLS: Conical defaults applied: {rwy}, Code {code} -> Height={conical_defaults['height_m']}, Slope=5%")
+            
+            # Recalculate conical radius using updated inner horizontal radius
             self.recalculate_conical_radius()
-            print(f"QOLS: Conical defaults applied: {rwy}, Code {code} -> Height={d['height_m']} (slope 5%), radius recomputed")
+            
         except Exception as e:
-            print(f"QOLS: Error applying conical defaults: {e}")
-
-    def apply_inner_defaults_from_selection(self):
-        try:
-            rwy = self.combo_rwyClassification_inner.currentText() if hasattr(self, 'combo_rwyClassification_inner') else 'Precision Approach CAT I'
-            code = self.get_code_value('spin_code_inner') if hasattr(self, 'spin_code_inner') else 4
-            d = get_inner_horizontal_defaults(rwy, code)
-            self.set_numeric_value('spin_L_inner', d['radius_m'])
-            self.set_numeric_value('spin_height_inner', d['height_m'])
-            print(f"QOLS: Inner Horizontal defaults applied from selection: {rwy}, Code {code} -> L={d['radius_m']}, H={d['height_m']}")
-            # After updating inner horizontal radius, recalc conical radius if conical tab prepared
-            self.recalculate_conical_radius()
-        except Exception as e:
-            print(f"QOLS: Error applying inner defaults: {e}")
+            print(f"QOLS: Error applying combined Inner/Conical defaults: {e}")
 
     # Issue #51: Hide OFZ parameters when RWY Classification is Non-instrument or Non-precision approach
     def update_ofz_visibility(self):
@@ -439,6 +441,53 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             print(f"QOLS: OFZ visibility updated - classification='{classification}', not_applicable={not_applicable}")
         except Exception as e:
             print(f"QOLS: Error updating OFZ visibility: {e}")
+
+    # Issue #59: Dynamic selection signal management for true live status
+    def connect_layer_selection_signals(self):
+        """Connect to selectionChanged signals of current layers for live status updates."""
+        try:
+            # Disconnect from previously connected layers
+            self.disconnect_layer_selection_signals()
+            
+            runway_layer = self.runwayLayerCombo.currentLayer()
+            threshold_layer = self.thresholdLayerCombo.currentLayer()
+            
+            # Connect to runway layer selection changes
+            if runway_layer and isinstance(runway_layer, QgsVectorLayer):
+                runway_layer.selectionChanged.connect(self.update_selection_info)
+                self.connected_runway_layer = runway_layer
+                print(f"QOLS: Connected to runway layer selection signals: {runway_layer.name()}")
+            
+            # Connect to threshold layer selection changes  
+            if threshold_layer and isinstance(threshold_layer, QgsVectorLayer):
+                threshold_layer.selectionChanged.connect(self.update_selection_info)
+                self.connected_threshold_layer = threshold_layer
+                print(f"QOLS: Connected to threshold layer selection signals: {threshold_layer.name()}")
+                
+        except Exception as e:
+            print(f"QOLS: Error connecting layer selection signals: {e}")
+    
+    def disconnect_layer_selection_signals(self):
+        """Disconnect from previously connected layer selection signals."""
+        try:
+            if self.connected_runway_layer:
+                try:
+                    self.connected_runway_layer.selectionChanged.disconnect(self.update_selection_info)
+                    print(f"QOLS: Disconnected from runway layer: {self.connected_runway_layer.name()}")
+                except:
+                    pass  # Signal might not be connected
+                self.connected_runway_layer = None
+                
+            if self.connected_threshold_layer:
+                try:
+                    self.connected_threshold_layer.selectionChanged.disconnect(self.update_selection_info)
+                    print(f"QOLS: Disconnected from threshold layer: {self.connected_threshold_layer.name()}")
+                except:
+                    pass  # Signal might not be connected
+                self.connected_threshold_layer = None
+                
+        except Exception as e:
+            print(f"QOLS: Error disconnecting layer selection signals: {e}")
 
     def recalculate_conical_radius(self):
         """Compute Conical Radius = Height / Slope + Inner Horizontal Radius.
@@ -1861,15 +1910,36 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 specific_params = {
                     'radius': self.get_numeric_value('spin_L_conical'),        # Distance L is the radius
                     'height': self.get_numeric_value('spin_height_conical'),   # Height for 3D polygon
-                    'code': self.get_code_value('spin_code_conical') if hasattr(self, 'spin_code_conical') else 4,
-                    'rwyClassification': self.combo_rwyClassification_conical.currentText() if hasattr(self, 'combo_rwyClassification_conical') else 'Precision Approach CAT I'
+                    'code': self.get_code_value('spin_code_inner_conical') if hasattr(self, 'spin_code_inner_conical') else 4,
+                    'rwyClassification': self.combo_rwyClassification_inner_conical.currentText() if hasattr(self, 'combo_rwyClassification_inner_conical') else 'Precision Approach CAT I'
                 }
             elif surface_type == "Inner Horizontal":
                 specific_params = {
                     'radius': self.get_numeric_value('spin_L_inner'),          # Distance L is the radius
                     'height': self.get_numeric_value('spin_height_inner'),     # Height for 3D polygon
-                    'code': self.get_code_value('spin_code_inner') if hasattr(self, 'spin_code_inner') else 4,
-                    'rwyClassification': self.combo_rwyClassification_inner.currentText() if hasattr(self, 'combo_rwyClassification_inner') else 'Precision Approach CAT I'
+                    'code': self.get_code_value('spin_code_inner_conical') if hasattr(self, 'spin_code_inner_conical') else 4,
+                    'rwyClassification': self.combo_rwyClassification_inner_conical.currentText() if hasattr(self, 'combo_rwyClassification_inner_conical') else 'Precision Approach CAT I'
+                }
+            elif surface_type == "Inner Horizontal & Conical":
+                # Para el tab combinado, preparamos parámetros para ambas superficies
+                inner_params = {
+                    'radius': self.get_numeric_value('spin_L_inner'),          # Inner Horizontal radius
+                    'height': self.get_numeric_value('spin_height_inner'),     # Inner Horizontal height
+                    'code': self.get_code_value('spin_code_inner_conical') if hasattr(self, 'spin_code_inner_conical') else 4,
+                    'rwyClassification': self.combo_rwyClassification_inner_conical.currentText() if hasattr(self, 'combo_rwyClassification_inner_conical') else 'Precision Approach CAT I'
+                }
+                conical_params = {
+                    'radius': self.get_numeric_value('spin_L_conical'),        # Conical radius (calculated from inner)
+                    'height': self.get_numeric_value('spin_height_conical'),   # Conical height
+                    'slope': self.get_numeric_value('spin_conical_slope') if hasattr(self, 'spin_conical_slope') else 5.0,  # Conical slope %
+                    'code': self.get_code_value('spin_code_inner_conical') if hasattr(self, 'spin_code_inner_conical') else 4,
+                    'rwyClassification': self.combo_rwyClassification_inner_conical.currentText() if hasattr(self, 'combo_rwyClassification_inner_conical') else 'Precision Approach CAT I'
+                }
+                # Empaquetar ambos conjuntos de parámetros
+                specific_params = {
+                    'inner_horizontal': inner_params,
+                    'conical': conical_params,
+                    'combined_execution': True  # Flag para identificar ejecución combinada
                 }
             elif surface_type == "Outer Horizontal":
                 specific_params = {
@@ -1983,6 +2053,10 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 self.thresholdLayerCombo.layerChanged.disconnect(self.update_selection_info)
                 self.runwayLayerCombo.layerChanged.disconnect(self.validate_layer_change)
                 self.thresholdLayerCombo.layerChanged.disconnect(self.validate_layer_change)
+                # Disconnect layer selection signals (Issue #59)
+                self.runwayLayerCombo.layerChanged.disconnect(self.connect_layer_selection_signals)
+                self.thresholdLayerCombo.layerChanged.disconnect(self.connect_layer_selection_signals)
+                self.disconnect_layer_selection_signals()
             except:
                 pass  # Signals might not be connected
             

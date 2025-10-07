@@ -91,54 +91,81 @@
          
          <layout class="QVBoxLayout" name="runwayCompactLayout">
           <property name="spacing">
-           <number>6</number>
+           <number>4</number>
           </property>
           <property name="margin">
            <number>4</number>
           </property>
+          
+          <!-- Title Row -->
           <item>
            <widget class="QLabel" name="runwayTitleLabel">
             <property name="text">
-             <string>✈️ Runway Layer</string>
+             <string>Runway Layer</string>
             </property>
-            
-           </widget>
-          </item>
-          <item>
-           <widget class="QgsMapLayerComboBox" name="runwayLayerCombo">
-            <property name="minimumHeight">
-             <number>24</number>
-            </property>
-            <property name="maximumHeight">
-             <number>28</number>
-            </property>
-            <property name="toolTip">
-             <string>🛩️ Select the runway layer from your project. This layer should contain line features representing runway centerlines.</string>
+            <property name="styleSheet">
+             <string>QLabel { font-weight: bold; }</string>
             </property>
            </widget>
           </item>
+          
+          <!-- Horizontal Control Row -->
           <item>
-           <widget class="QCheckBox" name="useSelectedRunwayCheckBox">
+           <layout class="QHBoxLayout" name="runwayControlLayout">
+            <property name="spacing">
+             <number>8</number>
+            </property>
+            <item>
+             <widget class="QgsMapLayerComboBox" name="runwayLayerCombo">
+              <property name="minimumHeight">
+               <number>24</number>
+              </property>
+              <property name="maximumHeight">
+               <number>28</number>
+              </property>
+              <property name="toolTip">
+               <string>Select the runway layer from your project. This layer should contain line features representing runway centerlines.</string>
+              </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="useSelectedRunwayCheckBox">
+              <property name="text">
+               <string>Selected Only</string>
+              </property>
+              <property name="toolTip">
+               <string>Check to use only selected runway features instead of all features in the layer</string>
+              </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          
+          <!-- Status Row -->
+          <item>
+           <widget class="QLabel" name="runwaySelectionStatusLabel">
             <property name="text">
-             <string>Selected Only</string>
+             <string>No selection</string>
             </property>
-            <property name="toolTip">
-             <string>✅ Check to use only selected runway features instead of all features in the layer</string>
+            <property name="styleSheet">
+             <string>QLabel { color: #b71c1c; font-weight: bold; font-size: 11px; }</string>
             </property>
+            <property name="minimumHeight"><number>16</number></property>
+            <property name="maximumHeight"><number>16</number></property>
            </widget>
           </item>
-         <!-- Per-layer live status label for Runway (Issue #52) -->
-         <item>
-          <widget class="QLabel" name="runwaySelectionStatusLabel">
-           <property name="text">
-            <string>⚠️ No selection</string>
-           </property>
-           <property name="styleSheet">
-            <string>QLabel { color: #b71c1c; font-weight: bold; }</string>
-           </property>
-           <property name="minimumHeight"><number>18</number></property>
-          </widget>
-         </item>
          </layout>
         </widget>
        </item>
@@ -152,54 +179,81 @@
          
          <layout class="QVBoxLayout" name="thresholdCompactLayout">
           <property name="spacing">
-           <number>6</number>
+           <number>4</number>
           </property>
           <property name="margin">
            <number>4</number>
           </property>
+          
+          <!-- Title Row -->
           <item>
            <widget class="QLabel" name="thresholdTitleLabel">
             <property name="text">
-             <string>🚩 Threshold Layer</string>
+             <string>Threshold Layer</string>
             </property>
-            
-           </widget>
-          </item>
-          <item>
-           <widget class="QgsMapLayerComboBox" name="thresholdLayerCombo">
-            <property name="minimumHeight">
-             <number>24</number>
-            </property>
-            <property name="maximumHeight">
-             <number>28</number>
-            </property>
-            <property name="toolTip">
-             <string>🎯 Select the threshold layer from your project. This layer should contain point features representing runway thresholds or ARP points.</string>
+            <property name="styleSheet">
+             <string>QLabel { font-weight: bold; }</string>
             </property>
            </widget>
           </item>
+          
+          <!-- Horizontal Control Row -->
           <item>
-           <widget class="QCheckBox" name="useSelectedThresholdCheckBox">
+           <layout class="QHBoxLayout" name="thresholdControlLayout">
+            <property name="spacing">
+             <number>8</number>
+            </property>
+            <item>
+             <widget class="QgsMapLayerComboBox" name="thresholdLayerCombo">
+              <property name="minimumHeight">
+               <number>24</number>
+              </property>
+              <property name="maximumHeight">
+               <number>28</number>
+              </property>
+              <property name="toolTip">
+               <string>Select the threshold layer from your project. This layer should contain point features representing runway thresholds or ARP points.</string>
+              </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="useSelectedThresholdCheckBox">
+              <property name="text">
+               <string>Selected Only</string>
+              </property>
+              <property name="toolTip">
+               <string>Check to use only selected threshold features instead of all features in the layer</string>
+              </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          
+          <!-- Status Row -->
+          <item>
+           <widget class="QLabel" name="thresholdSelectionStatusLabel">
             <property name="text">
-             <string>Selected Only</string>
+             <string>No selection</string>
             </property>
-            <property name="toolTip">
-             <string>⚠️ Check to use only selected threshold features instead of all features in the layer</string>
+            <property name="styleSheet">
+             <string>QLabel { color: #b71c1c; font-weight: bold; font-size: 11px; }</string>
             </property>
+            <property name="minimumHeight"><number>16</number></property>
+            <property name="maximumHeight"><number>16</number></property>
            </widget>
           </item>
-         <!-- Per-layer live status label for Threshold (Issue #52) -->
-         <item>
-          <widget class="QLabel" name="thresholdSelectionStatusLabel">
-           <property name="text">
-            <string>⚠️ No selection</string>
-           </property>
-           <property name="styleSheet">
-            <string>QLabel { color: #b71c1c; font-weight: bold; }</string>
-           </property>
-           <property name="minimumHeight"><number>18</number></property>
-          </widget>
-         </item>
          </layout>
         </widget>
        </item>
@@ -414,252 +468,216 @@
        </layout>
       </widget>
       
-      <!-- CONICAL TAB -->
-            <widget class="QWidget" name="tab_conical">
+      <!-- COMBINED INNER HORIZONTAL & CONICAL TAB -->
+            <widget class="QWidget" name="tab_inner_conical">
        <attribute name="title">
-        <string>Conical</string>
+        <string>Inner Horizontal &amp; Conical</string>
        </attribute>
-       <layout class="QFormLayout" name="formLayout_conical">
-                <item row="0" column="0">
-                 <widget class="QLabel" name="label_rwyClassification_conical">
-                    <property name="text">
-                     <string>RWY Classification:</string>
-                    </property>
-                 </widget>
-                </item>
-                <item row="0" column="1">
-                 <widget class="QComboBox" name="combo_rwyClassification_conical">
-                    <property name="currentIndex">
-                     <number>2</number>
-                    </property>
-                    <item>
-                     <property name="text">
-                        <string>Non-instrument</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                        <string>Non-precision approach</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                        <string>Precision Approach CAT I</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                        <string>Precision Approach CAT II or III</string>
-                     </property>
-                    </item>
-                 </widget>
-                </item>
-                <item row="1" column="0">
-                 <widget class="QLabel" name="label_code_conical">
-                    <property name="text">
-                     <string>Code:</string>
-                    </property>
-                 </widget>
-                </item>
-                <item row="1" column="1">
-                 <widget class="QComboBox" name="spin_code_conical">
-                    <item>
-                     <property name="text">
-                        <string>1</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                        <string>2</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                        <string>3</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                        <string>4</string>
-                     </property>
-                    </item>
-                 </widget>
-                </item>
-        <item row="2" column="0">
-     <widget class="QLabel" name="label_height_conical">
-      <property name="text">
-       <string>Height (m):</string>
-      </property>
-     </widget>
-    </item>
-        <item row="2" column="1">
-     <widget class="QLineEdit" name="spin_height_conical">
-      <property name="text">
-       <string>60.00</string>
-      </property>
-      <property name="toolTip">
-       <string>Height for 3D PolygonZ surface (input). Radius will be auto-calculated from Height / Slope + Inner Horizontal Radius.</string>
-      </property>
-     </widget>
-    </item>
-        <item row="3" column="0">
-     <widget class="QLabel" name="label_conical_slope">
-      <property name="text">
-       <string>Slope (%):</string>
-      </property>
-     </widget>
-    </item>
-        <item row="3" column="1">
-     <widget class="QLineEdit" name="spin_conical_slope">
-      <property name="text">
-       <string>5.00</string>
-      </property>
-      <property name="toolTip">
-       <string>Nominal conical slope in percent (editable per code to future-proof regulations).</string>
-      </property>
-     </widget>
-    </item>
-        <item row="4" column="0">
-     <widget class="QLabel" name="label_L_conical">
-      <property name="text">
-       <string>Radius (m):</string>
-      </property>
-     </widget>
-    </item>
-        <item row="4" column="1">
-     <widget class="QLineEdit" name="spin_L_conical">
-      <property name="text">
-       <string>6000.00</string>
-      </property>
-      <property name="toolTip">
-       <string>Computed as Height / Slope + Inner Horizontal Radius. Read-only; edit Slope or Height to change.</string>
-      </property>
-      <property name="readOnly">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-       </layout>
-      </widget>
-      
-      <!-- INNER HORIZONTAL TAB -->
-            <widget class="QWidget" name="tab_inner_horizontal">
-       <attribute name="title">
-        <string>Inner Horizontal</string>
-       </attribute>
-       <layout class="QFormLayout" name="formLayout_inner_horizontal">
-                <item row="0" column="0">
-                 <widget class="QLabel" name="label_rwyClassification_inner">
-                    <property name="text">
-                     <string>RWY Classification:</string>
-                    </property>
-                 </widget>
-                </item>
-                <item row="0" column="1">
-                 <widget class="QComboBox" name="combo_rwyClassification_inner">
-                    <property name="currentIndex">
-                     <number>2</number>
-                    </property>
-                    <item>
-                     <property name="text">
-                        <string>Non-instrument</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                        <string>Non-precision approach</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                        <string>Precision Approach CAT I</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                        <string>Precision Approach CAT II or III</string>
-                     </property>
-                    </item>
-                 </widget>
-                </item>
-                <item row="1" column="0">
-                 <widget class="QLabel" name="label_code_inner">
-                    <property name="text">
-                     <string>Code:</string>
-                    </property>
-                 </widget>
-                </item>
-                <item row="1" column="1">
-                 <widget class="QComboBox" name="spin_code_inner">
-                    <item>
-                     <property name="text">
-                        <string>1</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                        <string>2</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                        <string>3</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                        <string>4</string>
-                     </property>
-                    </item>
-                 </widget>
-                </item>
-      <item row="2" column="0">
-    <widget class="QLabel" name="label_height_inner">
-     <property name="text">
-      <string>Height (m):</string>
-     </property>
-    </widget>
-   </item>
-      <item row="2" column="1">
-    <widget class="QLineEdit" name="spin_height_inner">
-     <property name="text">
-      <string>45.00</string>
-     </property>
-     <property name="toolTip">
-      <string>Height for 3D polygon surface (PolygonZ)</string>
-     </property>
-    </widget>
-   </item>
-      <item row="3" column="0">
-    <widget class="QLabel" name="label_L_inner">
-     <property name="text">
-      <string>Radius (m):</string>
-     </property>
-    </widget>
-   </item>
-      <item row="3" column="1">
-    <widget class="QLineEdit" name="spin_L_inner">
-     <property name="text">
-      <string>4000.00</string>
-     </property>
-    </widget>
-   </item>
-      <item row="4" column="0" colspan="2">
-         <widget class="QLabel" name="label_info_inner">
-          <property name="text">
-           <string>📍 Inner Horizontal Surface: Racetrack-shaped 3D polygon
-• Distance L: Perpendicular distance from runway centerline
-• Height: Elevation for 3D polygon surface (PolygonZ)
-• Output: Unified 3D polygon instead of separate lines</string>
+       <layout class="QVBoxLayout" name="verticalLayout_inner_conical">
+        
+        <!-- SHARED RWY CLASSIFICATION & CODE SECTION -->
+        <item>
+         <widget class="QGroupBox" name="groupBox_shared_classification">
+          <property name="title">
+           <string>Runway Classification &amp; Code (Shared)</string>
           </property>
-          
+          <layout class="QFormLayout" name="formLayout_shared_classification">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_rwyClassification_inner_conical">
+             <property name="text">
+              <string>RWY Classification:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="combo_rwyClassification_inner_conical">
+             <property name="currentIndex">
+              <number>2</number>
+             </property>
+             <item>
+              <property name="text">
+               <string>Non-instrument</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Non-precision approach</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Precision Approach CAT I</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Precision Approach CAT II or III</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_code_inner_conical">
+             <property name="text">
+              <string>Code:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QComboBox" name="spin_code_inner_conical">
+             <item>
+              <property name="text">
+               <string>1</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>2</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>3</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>4</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        
+        <!-- INNER HORIZONTAL SECTION -->
+        <item>
+         <widget class="QGroupBox" name="groupBox_inner_horizontal">
+          <property name="title">
+           <string>Inner Horizontal Surface</string>
+          </property>
+          <layout class="QFormLayout" name="formLayout_inner_horizontal_section">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_height_inner">
+             <property name="text">
+              <string>Height (m):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="spin_height_inner">
+             <property name="text">
+              <string>45.00</string>
+             </property>
+             <property name="toolTip">
+              <string>Height for 3D polygon surface (PolygonZ)</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_L_inner">
+             <property name="text">
+              <string>Radius (m):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="spin_L_inner">
+             <property name="text">
+              <string>4000.00</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        
+        <!-- CONICAL SECTION -->
+        <item>
+         <widget class="QGroupBox" name="groupBox_conical">
+          <property name="title">
+           <string>Conical Surface</string>
+          </property>
+          <layout class="QFormLayout" name="formLayout_conical_section">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_height_conical">
+             <property name="text">
+              <string>Height (m):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="spin_height_conical">
+             <property name="text">
+              <string>60.00</string>
+             </property>
+             <property name="toolTip">
+              <string>Height for 3D PolygonZ surface (input). Radius will be auto-calculated from Height / Slope + Inner Horizontal Radius.</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_conical_slope">
+             <property name="text">
+              <string>Slope (%):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="spin_conical_slope">
+             <property name="text">
+              <string>5.00</string>
+             </property>
+             <property name="toolTip">
+              <string>Nominal conical slope in percent (editable per code to future-proof regulations).</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_L_conical">
+             <property name="text">
+              <string>Radius (m):</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLineEdit" name="spin_L_conical">
+             <property name="text">
+              <string>6000.00</string>
+             </property>
+             <property name="toolTip">
+              <string>Computed as Height / Slope + Inner Horizontal Radius. Read-only; edit Slope or Height to change.</string>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        
+        <!-- COMBINED INFORMATION SECTION -->
+        <item>
+         <widget class="QLabel" name="label_info_inner_conical">
+          <property name="text">
+           <string>Workflow: Configure Inner Horizontal first, then Conical (uses Inner Horizontal radius for calculation)
+- Inner Horizontal: Racetrack-shaped 3D polygon at specified height and radius
+- Conical: 3D cone surface, radius auto-calculated from Height / Slope + Inner Horizontal Radius
+- Both surfaces use shared RWY Classification and Code for ICAO defaults</string>
+          </property>
           <property name="wordWrap">
            <bool>true</bool>
+          </property>
+          <property name="styleSheet">
+           <string>QLabel { background: #f0f8ff; padding: 8px; border: 1px solid #b0c4de; border-radius: 4px; }</string>
           </property>
          </widget>
         </item>
        </layout>
       </widget>
+
       
       <!-- OFZ TAB -->
       <widget class="QWidget" name="tab_ofz">
@@ -917,10 +935,10 @@
         <item row="3" column="0" colspan="2">
          <widget class="QLabel" name="label_info_outer">
           <property name="text">
-           <string>📋 Outer Horizontal Surface: 15,000m circle centered on ARP
-• Code 3 or 4 airports only (DOC 9137 Part 6)
-• Requires Aerodrome Reference Point (ARP)
-• Fixed radius for obstacle limitation</string>
+           <string>Outer Horizontal Surface: 15,000m circle centered on ARP
+- Code 3 or 4 airports only (DOC 9137 Part 6)
+- Requires Aerodrome Reference Point (ARP)
+- Fixed radius for obstacle limitation</string>
           </property>
           
           <property name="wordWrap">

@@ -176,6 +176,8 @@ class QOLS:
                 self.execute_conical_surface(params)
             elif surface_type == 'Inner Horizontal':
                 self.execute_inner_horizontal_surface(params)
+            elif surface_type == 'Inner Horizontal & Conical':
+                self.execute_combined_inner_conical_surface(params)
             elif surface_type == 'OFZ':
                 self.execute_ofz_surface(params)
             elif surface_type == 'Outer Horizontal':
@@ -235,6 +237,56 @@ class QOLS:
         """Execute the transitional surface calculation script with parameters"""
         script_path = os.path.join(self.plugin_dir, 'scripts', 'TransitionalSurface_UTM.py')
         self.execute_script(script_path, params)
+
+    def execute_combined_inner_conical_surface(self, params):
+        """Execute both Inner Horizontal and Conical surfaces sequentially using specific parameters for each"""
+        try:
+            print("QOLS: Executing combined Inner Horizontal & Conical surfaces")
+            
+            # Extraer parámetros específicos de cada superficie
+            specific_params = params.get('specific_params', {})
+            
+            if specific_params.get('combined_execution', False):
+                # Usar parámetros específicos separados
+                inner_params = specific_params.get('inner_horizontal', {})
+                conical_params = specific_params.get('conical', {})
+                print(f"QOLS DEBUG: Using separate parameters - Inner: {inner_params.keys()}, Conical: {conical_params.keys()}")
+            else:
+                # Fallback: usar los mismos parámetros para ambos (compatibilidad)
+                inner_params = specific_params
+                conical_params = specific_params
+                print("QOLS DEBUG: Using shared parameters for both surfaces (fallback mode)")
+            
+            # Preparar parámetros completos para Inner Horizontal
+            inner_full_params = params.copy()
+            inner_full_params['specific_params'] = inner_params
+            
+            # Execute Inner Horizontal surface first (workflow requirement)
+            print(f"QOLS: Step 1/2 - Executing Inner Horizontal surface with radius={inner_params.get('radius')}m, height={inner_params.get('height')}m")
+            inner_script_path = os.path.join(self.plugin_dir, 'scripts', 'inner-horizontal-racetrack.py')
+            self.execute_script(inner_script_path, inner_full_params)
+            
+            # Preparar parámetros completos para Conical
+            conical_full_params = params.copy()
+            conical_full_params['specific_params'] = conical_params
+            
+            # Execute Conical surface second (depends on Inner Horizontal)
+            print(f"QOLS: Step 2/2 - Executing Conical surface with radius={conical_params.get('radius')}m, height={conical_params.get('height')}m, slope={conical_params.get('slope', 5.0)}%")
+            conical_script_path = os.path.join(self.plugin_dir, 'scripts', 'conical.py')
+            self.execute_script(conical_script_path, conical_full_params)
+            
+            print("QOLS: Combined Inner Horizontal & Conical surfaces execution completed successfully")
+            
+        except Exception as e:
+            print(f"QOLS: Error in combined Inner Horizontal & Conical execution: {e}")
+            import traceback
+            traceback.print_exc()
+            self.iface.messageBar().pushMessage(
+                "QOLS Error", 
+                f"Combined surface execution error: {str(e)}", 
+                level=Qgis.Critical
+            )
+            raise
 
     def execute_script(self, script_path, params=None):
         """Execute a script with dynamic parameters and robust validation."""
