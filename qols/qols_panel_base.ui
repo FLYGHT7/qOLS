@@ -473,193 +473,202 @@
        <attribute name="title">
         <string>Inner Horizontal &amp; Conical</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_inner_conical">
+       <layout class="QFormLayout" name="formLayout_inner_conical">
+        <property name="fieldGrowthPolicy">
+         <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+        </property>
+        <property name="labelAlignment">
+         <set>Qt::AlignRight|Qt::AlignVCenter</set>
+        </property>
+        <property name="horizontalSpacing">
+         <number>15</number>
+        </property>
+        <property name="verticalSpacing">
+         <number>6</number>
+        </property>
         
-        <!-- SHARED RWY CLASSIFICATION & CODE SECTION -->
-        <item>
-         <widget class="QGroupBox" name="groupBox_shared_classification">
-          <property name="title">
-           <string>Runway Classification &amp; Code (Shared)</string>
+        <!-- SHARED RWY CLASSIFICATION & CODE - Direct FormLayout -->
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_rwyClassification_inner_conical">
+          <property name="text">
+           <string>RWY Classification:</string>
           </property>
-          <layout class="QFormLayout" name="formLayout_shared_classification">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_rwyClassification_inner_conical">
-             <property name="text">
-              <string>RWY Classification:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QComboBox" name="combo_rwyClassification_inner_conical">
-             <property name="currentIndex">
-              <number>2</number>
-             </property>
-             <item>
-              <property name="text">
-               <string>Non-instrument</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Non-precision approach</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Precision Approach CAT I</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>Precision Approach CAT II or III</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_code_inner_conical">
-             <property name="text">
-              <string>Code:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QComboBox" name="spin_code_inner_conical">
-             <item>
-              <property name="text">
-               <string>1</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>2</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>3</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>4</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-          </layout>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QComboBox" name="combo_rwyClassification_inner_conical">
+          <property name="currentIndex">
+           <number>2</number>
+          </property>
+          <item>
+           <property name="text">
+            <string>Non-instrument</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Non-precision approach</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Precision Approach CAT I</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Precision Approach CAT II or III</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_code_inner_conical">
+          <property name="text">
+           <string>Code:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QComboBox" name="spin_code_inner_conical">
+          <item>
+           <property name="text">
+            <string>1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>2</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>3</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>4</string>
+           </property>
+          </item>
          </widget>
         </item>
         
-        <!-- INNER HORIZONTAL SECTION -->
-        <item>
-         <widget class="QGroupBox" name="groupBox_inner_horizontal">
-          <property name="title">
+        <!-- INNER HORIZONTAL SURFACE SECTION HEADER -->
+        <item row="2" column="0" colspan="2">
+         <widget class="QLabel" name="label_section_inner_horizontal">
+          <property name="text">
            <string>Inner Horizontal Surface</string>
           </property>
-          <layout class="QFormLayout" name="formLayout_inner_horizontal_section">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_height_inner">
-             <property name="text">
-              <string>Height (m):</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLineEdit" name="spin_height_inner">
-             <property name="text">
-              <string>45.00</string>
-             </property>
-             <property name="toolTip">
-              <string>Height for 3D polygon surface (PolygonZ)</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_L_inner">
-             <property name="text">
-              <string>Radius (m):</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QLineEdit" name="spin_L_inner">
-             <property name="text">
-              <string>4000.00</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
+          <property name="styleSheet">
+           <string>QLabel { font-weight: bold; color: #2e3440; padding-top: 12px; padding-bottom: 4px; border-bottom: 1px solid #d8dce6; }</string>
+          </property>
          </widget>
         </item>
         
-        <!-- CONICAL SECTION -->
-        <item>
-         <widget class="QGroupBox" name="groupBox_conical">
-          <property name="title">
+        <!-- INNER HORIZONTAL SURFACE CONTROLS -->
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_height_inner">
+          <property name="text">
+           <string>Height (m):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLineEdit" name="spin_height_inner">
+          <property name="text">
+           <string>45.00</string>
+          </property>
+          <property name="toolTip">
+           <string>Height for 3D polygon surface (PolygonZ)</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_L_inner">
+          <property name="text">
+           <string>Radius (m):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLineEdit" name="spin_L_inner">
+          <property name="text">
+           <string>4000.00</string>
+          </property>
+         </widget>
+        </item>
+        
+        <!-- CONICAL SURFACE SECTION HEADER -->
+        <item row="5" column="0" colspan="2">
+         <widget class="QLabel" name="label_section_conical">
+          <property name="text">
            <string>Conical Surface</string>
           </property>
-          <layout class="QFormLayout" name="formLayout_conical_section">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_height_conical">
-             <property name="text">
-              <string>Height (m):</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLineEdit" name="spin_height_conical">
-             <property name="text">
-              <string>60.00</string>
-             </property>
-             <property name="toolTip">
-              <string>Height for 3D PolygonZ surface (input). Radius will be auto-calculated from Height / Slope + Inner Horizontal Radius.</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_conical_slope">
-             <property name="text">
-              <string>Slope (%):</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QLineEdit" name="spin_conical_slope">
-             <property name="text">
-              <string>5.00</string>
-             </property>
-             <property name="toolTip">
-              <string>Nominal conical slope in percent (editable per code to future-proof regulations).</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_L_conical">
-             <property name="text">
-              <string>Radius (m):</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QLineEdit" name="spin_L_conical">
-             <property name="text">
-              <string>6000.00</string>
-             </property>
-             <property name="toolTip">
-              <string>Computed as Height / Slope + Inner Horizontal Radius. Read-only; edit Slope or Height to change.</string>
-             </property>
-             <property name="readOnly">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-          </layout>
+          <property name="styleSheet">
+           <string>QLabel { font-weight: bold; color: #2e3440; padding-top: 12px; padding-bottom: 4px; border-bottom: 1px solid #d8dce6; }</string>
+          </property>
          </widget>
         </item>
         
-        <!-- COMBINED INFORMATION SECTION -->
-        <item>
+        <!-- CONICAL SURFACE CONTROLS -->
+        <item row="6" column="0">
+         <widget class="QLabel" name="label_height_conical">
+          <property name="text">
+           <string>Height (m):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="6" column="1">
+         <widget class="QLineEdit" name="spin_height_conical">
+          <property name="text">
+           <string>60.00</string>
+          </property>
+          <property name="toolTip">
+           <string>Height for 3D PolygonZ surface (input). Radius will be auto-calculated from Height / Slope + Inner Horizontal Radius.</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="0">
+         <widget class="QLabel" name="label_conical_slope">
+          <property name="text">
+           <string>Slope (%):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="7" column="1">
+         <widget class="QLineEdit" name="spin_conical_slope">
+          <property name="text">
+           <string>5.00</string>
+          </property>
+          <property name="toolTip">
+           <string>Nominal conical slope in percent (editable per code to future-proof regulations).</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="0">
+         <widget class="QLabel" name="label_L_conical">
+          <property name="text">
+           <string>Radius (m):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="8" column="1">
+         <widget class="QLineEdit" name="spin_L_conical">
+          <property name="text">
+           <string>6000.00</string>
+          </property>
+          <property name="toolTip">
+           <string>Computed as Height / Slope + Inner Horizontal Radius. Read-only; edit Slope or Height to change.</string>
+          </property>
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        
+        <!-- WORKFLOW INFORMATION -->
+        <item row="9" column="0" colspan="2">
          <widget class="QLabel" name="label_info_inner_conical">
           <property name="text">
            <string>Workflow: Configure Inner Horizontal first, then Conical (uses Inner Horizontal radius for calculation)
@@ -671,7 +680,7 @@
            <bool>true</bool>
           </property>
           <property name="styleSheet">
-           <string>QLabel { background: #f0f8ff; padding: 8px; border: 1px solid #b0c4de; border-radius: 4px; }</string>
+           <string>QLabel { color: #666666; font-size: 11px; padding-top: 8px; }</string>
           </property>
          </widget>
         </item>
