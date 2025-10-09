@@ -62,6 +62,7 @@ v_layer_provider.addAttributes([
     QgsField("code", QVariant.Int),
     QgsField("radius_m", QVariant.Double),
     QgsField("height_m", QVariant.Double),
+    QgsField("rule_set", QVariant.String),
     QgsField("arp_x", QVariant.Double),
     QgsField("arp_y", QVariant.Double)
 ])
@@ -97,6 +98,7 @@ for feat in selection:
         code,
         radius,
         height,
+        globals().get('active_rule_set', None),
         arp_x,
         arp_y
     ])

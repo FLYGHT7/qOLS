@@ -291,14 +291,15 @@ id_field = QgsField('ID', QVariant.String)
 name_field = QgsField('SurfaceName', QVariant.String)
 type_field = QgsField('SurfaceType', QVariant.String)
 code_field = QgsField('Code', QVariant.Int)
-approach_layer.dataProvider().addAttributes([id_field, name_field, type_field, code_field])
+rule_field = QgsField('rule_set', QVariant.String)
+approach_layer.dataProvider().addAttributes([id_field, name_field, type_field, code_field, rule_field])
 approach_layer.updateFields()
 
 provider = approach_layer.dataProvider()
 for fid, name, surface_area in features_to_create:
     feature = QgsFeature()
     feature.setGeometry(QgsPolygon(QgsLineString(surface_area), rings=[]))
-    feature.setAttributes([fid, name, rwy_classification, runway_code])
+    feature.setAttributes([fid, name, rwy_classification, runway_code, globals().get('active_rule_set', None)])
     provider.addFeatures([feature])
 
 # Load PolygonZ Layer to map canvas 

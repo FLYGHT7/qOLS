@@ -27,7 +27,8 @@ try:
     maxWidthDep = globals().get('maxWidthDep', 1800)
     CWYLength = globals().get('CWYLength', 0)
     Z0 = globals().get('Z0', 2548)
-    ZE = globals().get('ZE', 2546.5)
+    # Per Issue #64: Use DER (Z0) as ZE by default to avoid hardcoded values and direction ambiguity
+    ZE = globals().get('ZE', Z0)
     ARPH = globals().get('ARPH', 2548)
     IHSlope = globals().get('IHSlope', 33.3/100)
     L1 = globals().get('L1', 3000)
@@ -63,7 +64,7 @@ except Exception as e:
     maxWidthDep = 1800
     CWYLength = 0
     Z0 = 2548
-    ZE = 2546.5
+    ZE = Z0  # Use DER as datum in fallback as well (no hardcoded ZE)
     ARPH = 2548
     IHSlope = 33.3/100
     L1 = 3000
@@ -253,8 +254,10 @@ list_pts.extend((pt_0D,pt_01D,pt_01DL,pt_01DR,pt_02D,pt_02DL,pt_02DR,pt_03D,pt_0
 v_layer = QgsVectorLayer("PolygonZ?crs="+map_srid, "RWY_TakeOffClimbSurface", "memory")
 IDField = QgsField( 'ID', QVariant.String)
 NameField = QgsField( 'SurfaceName', QVariant.String)
+RuleField = QgsField( 'rule_set', QVariant.String)
 v_layer.dataProvider().addAttributes([IDField])
 v_layer.dataProvider().addAttributes([NameField])
+v_layer.dataProvider().addAttributes([RuleField])
 v_layer.updateFields()
 
 # Take Off Climb Surface Creation - EXACTLY as original
@@ -262,7 +265,7 @@ SurfaceArea = [pt_03DR,pt_03DL,pt_02DL,pt_01DL,pt_01DR,pt_02DR]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([13,'TakeOff Climb Surface'])
+seg.setAttributes([13,'TakeOff Climb Surface', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
 
 #Load PolygonZ Layer to map canvas - EXACTLY as original

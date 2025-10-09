@@ -259,8 +259,10 @@ list_pts.extend((pt_0,pt_01,pt_01AL,pt_01AR,pt_01TL,pt_01TR,pt_08,pt_08L,pt_08R,
 v_layer = QgsVectorLayer("PolygonZ?crs="+map_srid, "RWY_Transition Surface", "memory")
 IDField = QgsField( 'ID', QVariant.String)
 NameField = QgsField( 'SurfaceName', QVariant.String)
+RuleField = QgsField( 'rule_set', QVariant.String)
 v_layer.dataProvider().addAttributes([IDField])
 v_layer.dataProvider().addAttributes([NameField])
+v_layer.dataProvider().addAttributes([RuleField])
 v_layer.updateFields()
 
 # Left Transition Surface
@@ -268,7 +270,7 @@ SurfaceArea = [pt_08L,pt_01TL,pt_02TL,pt_02L,pt_01AL]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([10,'Left Transitional Surface'])
+seg.setAttributes([10,'Left Transitional Surface', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
 
 # Right Transition Surface
@@ -276,7 +278,7 @@ SurfaceArea = [pt_08R,pt_01TR,pt_02TR,pt_02R,pt_01AR]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([11,'Right Transitional Surface'])
+seg.setAttributes([11,'Right Transitional Surface', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
 
 QgsProject.instance().addMapLayers([v_layer])

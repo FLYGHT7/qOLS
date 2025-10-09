@@ -1,0 +1,36 @@
+Rule sets for QOLS
+
+- Place one JSON file per rule set in this folder.
+- Each file defines dimensions and defaults for surfaces (Inner Horizontal, Conical, etc.).
+- Users can create/copy/paste JSON files with any name; the plugin will list them by file name.
+- Use any text editor (Notepad, Notepad++, VS Code) to edit JSON.
+
+Schema (minimal example):
+{
+"name": "ICAO Annex 14",
+"description": "Standard ICAO rules per Annex 14 Vol 1",
+"inner_horizontal": {
+"height_m": 45.0,
+"radius_m": {
+"Non-instrument": {"1": 2000, "2": 2500, "3": 4000, "4": 4000},
+"Non-precision approach": {"1": 3000, "2": 3000, "3": 4000, "4": 4000},
+"Precision Approach CAT I": {"1": 3500, "2": 3500, "3": 4000, "4": 4000},
+"Precision Approach CAT II or III": {"1": 3500, "2": 3500, "3": 4000, "4": 4000}
+}
+},
+"conical": {
+"slope_pct": 5.0,
+"height_m": {
+"Non-instrument": {"1": 35, "2": 55, "3": 75, "4": 100},
+"Non-precision approach": {"1": 60, "2": 60, "3": 75, "4": 100},
+"Precision Approach CAT I": {"1": 60, "2": 60, "3": 100, "4": 100},
+"Precision Approach CAT II or III": {"1": 60, "2": 60, "3": 100, "4": 100}
+},
+"default_radius_m": 6000
+}
+}
+
+Notes:
+
+- Keys for runway classification must match the UI texts exactly, or include an alias map.
+- If a field is missing, the plugin will fall back to built-in defaults.
