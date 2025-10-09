@@ -247,8 +247,10 @@ p_layer.updateFields()
 v_layer = QgsVectorLayer("PolygonZ?crs="+map_srid, "RWY_ObstacleFreeZone", "memory")
 IDField = QgsField( 'ID', QVariant.String)
 NameField = QgsField( 'SurfaceName', QVariant.String)
+RuleField = QgsField( 'rule_set', QVariant.String)
 v_layer.dataProvider().addAttributes([IDField])
 v_layer.dataProvider().addAttributes([NameField])
+v_layer.dataProvider().addAttributes([RuleField])
 v_layer.updateFields()
 
 # Runway Inner Strip Surface Polygon
@@ -256,7 +258,7 @@ SurfaceArea = [pt_03,pt_03L,pt_0L,pt_01L,pt_01,pt_01R,pt_0R,pt_03R]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([1,'Runway Inner Strip'])
+seg.setAttributes([1,'Runway Inner Strip', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
 
 # Inner Approach Surface Polygon
@@ -264,7 +266,7 @@ SurfaceArea = [pt_01,pt_01L,pt_02L,pt_02,pt_02R,pt_01R]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([2,'Inner Approach Surface'])
+seg.setAttributes([2,'Inner Approach Surface', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
 
 # Balked Landing Surface Polygon
@@ -272,7 +274,7 @@ SurfaceArea = [pt_04,pt_04L,pt_03L,pt_03,pt_03R,pt_04R]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([3,'Balked Landing Surface'])
+seg.setAttributes([3,'Balked Landing Surface', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
 
 # Inner Transitional Right Surface Polygon
@@ -280,7 +282,7 @@ SurfaceArea = [pt_04R,pt_03R,pt_0R,pt_01R,pt_02R,pt_I02R,pt_I01R,pt_I0R,pt_I03R]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([4,'Inner Transitional Surface - Right Side'])
+seg.setAttributes([4,'Inner Transitional Surface - Right Side', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
 
 # Inner Transitional Left Surface Polygon
@@ -288,7 +290,7 @@ SurfaceArea = [pt_04L,pt_03L,pt_0L,pt_01L,pt_02L,pt_I02L,pt_I01L,pt_I0L,pt_I03L]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([5,'Inner Transitional Surface - Left Side'])
+seg.setAttributes([5,'Inner Transitional Surface - Left Side', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
 
 QgsProject.instance().addMapLayers([v_layer])

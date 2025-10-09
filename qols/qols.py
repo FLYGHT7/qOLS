@@ -3,7 +3,7 @@ import sys
 import math
 from qgis.PyQt.QtCore import QCoreApplication, Qt, QVariant
 from qgis.PyQt.QtGui import QIcon, QColor
-from qgis.PyQt.QtWidgets import QAction
+from qgis.PyQt.QtWidgets import QAction, QInputDialog
 from qgis.core import (QgsProject, QgsMessageLog, Qgis, QgsVectorLayer, 
                       QgsFeature, QgsGeometry, QgsPoint, QgsField, 
                       QgsPolygon, QgsLineString, QgsFillSymbol,
@@ -11,6 +11,8 @@ from qgis.core import (QgsProject, QgsMessageLog, Qgis, QgsVectorLayer,
                       QgsCoordinateReferenceSystem)
 
 from .qols_dockwidget import QolsDockWidget
+from .settings_dialog import RulesSettingsDialog
+from . import rules_manager as rule_mgr
 
 class QOLS:
     """QGIS Plugin Implementation."""
@@ -22,6 +24,11 @@ class QOLS:
         self.menu = self.tr(u'&QOLS')
         self.first_start = True
         self.panel = None
+        # Ensure rule sets are discoverable on startup
+        try:
+            _ = rule_mgr.list_rule_sets()
+        except Exception:
+            pass
 
     def tr(self, message):
         return QCoreApplication.translate('QOLS', message)
@@ -81,6 +88,36 @@ class QOLS:
                 parent=self.iface.mainWindow())
             print("QOLS: Action added successfully")
             self.first_start = True
+
+            # Add menu entry for Rule Set selection (Issue #65)
+            try:
+                rules_action = QAction(self.tr('Select Rule Set…'), self.iface.mainWindow())
+                rules_action.triggered.connect(self.on_select_rule_set)
+                self.iface.addPluginToMenu(self.menu, rules_action)
+                self.actions.append(rules_action)
+                print("QOLS: Added 'Select Rule Set…' menu action")
+            except Exception as e:
+                print(f"QOLS: Error adding 'Select Rule Set…' action: {e}")
+
+            # Optional: Reload rule files action
+            try:
+                reload_action = QAction(self.tr('Reload Rule Files'), self.iface.mainWindow())
+                reload_action.triggered.connect(self.on_reload_rule_files)
+                self.iface.addPluginToMenu(self.menu, reload_action)
+                self.actions.append(reload_action)
+                print("QOLS: Added 'Reload Rule Files' menu action")
+            except Exception as e:
+                print(f"QOLS: Error adding 'Reload Rule Files' action: {e}")
+
+            # Settings dialog action (like QPANSOPY style)
+            try:
+                settings_action = QAction(self.tr('Settings'), self.iface.mainWindow())
+                settings_action.triggered.connect(self.on_open_settings)
+                self.iface.addPluginToMenu(self.menu, settings_action)
+                self.actions.append(settings_action)
+                print("QOLS: Added 'Settings' menu action")
+            except Exception as e:
+                print(f"QOLS: Error adding 'Settings' action: {e}")
         except Exception as e:
             print(f"QOLS: Error in initGui: {e}")
             import traceback
@@ -152,6 +189,67 @@ class QOLS:
         if self.panel:
             self.panel.hide()
             # Don't set to None to keep the panel for reuse
+
+    def on_select_rule_set(self):
+        """Show a simple input dialog to select the active rule set and persist the choice."""
+        try:
+            registry = rule_mgr.list_rule_sets()
+            names = sorted(list(registry.keys()))
+            if not names:
+                self.iface.messageBar().pushMessage("QOLS", "No rule files found in qols/rules", level=Qgis.Warning, duration=4)
+                return
+            current = rule_mgr.get_active_rule_set_name() or ''
+            # Display selection dialog
+            name, ok = QInputDialog.getItem(self.iface.mainWindow(), self.tr('Select Rule Set'), self.tr('Active Rule Set:'), names, max(0, names.index(current)) if current in names else 0, False)
+            if not ok:
+                return
+            rule_mgr.set_active_rule_set_name(name)
+            # Notify user
+            self.iface.messageBar().pushMessage("QOLS", f"Active rule set: {name}", level=Qgis.Info, duration=3)
+            # Refresh defaults in panel if open
+            if self.panel and self.panel.isVisible():
+                try:
+                    # Re-apply defaults on combined tab if widgets exist
+                    if hasattr(self.panel, 'apply_combined_inner_conical_defaults_from_selection'):
+                        self.panel.apply_combined_inner_conical_defaults_from_selection()
+                except Exception as e:
+                    print(f"QOLS: Error refreshing panel defaults after rule change: {e}")
+        except Exception as e:
+            print(f"QOLS: Error selecting rule set: {e}")
+
+    def on_reload_rule_files(self):
+        """Force reload of rule JSON files and refresh panel defaults."""
+        try:
+            rule_mgr.reload_rules()
+            self.iface.messageBar().pushMessage("QOLS", "Rule files reloaded", level=Qgis.Info, duration=3)
+            # Refresh defaults if panel open
+            if self.panel and self.panel.isVisible():
+                try:
+                    if hasattr(self.panel, 'apply_combined_inner_conical_defaults_from_selection'):
+                        self.panel.apply_combined_inner_conical_defaults_from_selection()
+                except Exception as e:
+                    print(f"QOLS: Error refreshing panel after rule reload: {e}")
+        except Exception as e:
+            print(f"QOLS: Error reloading rule files: {e}")
+
+    def on_open_settings(self):
+        """Open the QOLS Settings dialog (QPANSOPY-like minimal settings)."""
+        try:
+            dlg = RulesSettingsDialog(self.iface.mainWindow())
+            if dlg.exec_() == dlg.Accepted:
+                name = dlg.selected_rule_set()
+                if name:
+                    rule_mgr.set_active_rule_set_name(name)
+                    self.iface.messageBar().pushMessage("QOLS", f"Active rule set: {name}", level=Qgis.Info, duration=3)
+                    # Refresh defaults if panel is open
+                    if self.panel and self.panel.isVisible():
+                        try:
+                            if hasattr(self.panel, 'apply_combined_inner_conical_defaults_from_selection'):
+                                self.panel.apply_combined_inner_conical_defaults_from_selection()
+                        except Exception as e:
+                            print(f"QOLS: Error refreshing panel after settings update: {e}")
+        except Exception as e:
+            print(f"QOLS: Error opening settings dialog: {e}")
 
     def on_calculate(self):
         """Execute the selected surface calculation script with parameters"""
@@ -395,6 +493,8 @@ class QOLS:
                 'math': math,
                 # Map UI parameter names to script parameter names
                 'use_selected_feature': params.get('use_threshold_selected', False),
+                # Active rule set name for attribution in outputs
+                'active_rule_set': rule_mgr.get_active_rule_set_name(),
                 **params,  # Add all parameters
                 **specific_params  # Add specific parameters directly
             }

@@ -1,9 +1,10 @@
 import os
 import sys
 from .icao_defaults import (
-    get_conical_defaults,
-    get_inner_horizontal_defaults,
+    get_conical_defaults as icao_get_conical_defaults,
+    get_inner_horizontal_defaults as icao_get_inner_horizontal_defaults,
 )
+from . import rules_manager as rule_mgr
 from .approach_defaults import get_approach_defaults
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, Qt, QTimer
@@ -170,12 +171,29 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 self.connect_layer_selection_signals()
             except Exception as e:
                 print(f"QOLS: Could not initialize selection signal connections: {e}")
+
+            # Update active rule set label (if present)
+            try:
+                self.update_active_rule_set_label()
+            except Exception as e:
+                print(f"QOLS: Could not update active rule set label: {e}")
             
         except Exception as e:
             print(f"QOLS: Error initializing QolsDockWidget: {e}")
             import traceback
             traceback.print_exc()
             raise
+
+    def update_active_rule_set_label(self):
+        try:
+            label = getattr(self, 'activeRuleSetLabel', None)
+            if not label:
+                return
+            from . import rules_manager as rule_mgr
+            name = rule_mgr.get_active_rule_set_name() or 'ICAO (built-in)'
+            label.setText(name)
+        except Exception as e:
+            print(f"QOLS: Error updating active rule set label: {e}")
 
     def apply_modern_stylesheet(self):
         """Use native Qt styling for maximum compatibility and performance."""
@@ -389,21 +407,44 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             code = self.get_code_value('spin_code_inner_conical') if hasattr(self, 'spin_code_inner_conical') else 4
             
             # Apply Inner Horizontal defaults
-            inner_defaults = get_inner_horizontal_defaults(rwy, code)
-            self.set_numeric_value('spin_L_inner', inner_defaults['radius_m'])
-            self.set_numeric_value('spin_height_inner', inner_defaults['height_m'])
-            print(f"QOLS: Inner Horizontal defaults applied: {rwy}, Code {code} -> Radius={inner_defaults['radius_m']}, Height={inner_defaults['height_m']}")
+            # Try rules first, fallback to ICAO
+            inner_rule = rule_mgr.get_inner_horizontal_defaults(rwy, code)
+            if inner_rule is None:
+                inner_defaults = icao_get_inner_horizontal_defaults(rwy, code)
+            else:
+                # Merge with ICAO to fill missing keys
+                base = icao_get_inner_horizontal_defaults(rwy, code)
+                inner_defaults = {**base, **inner_rule}
+            self.set_numeric_value('spin_L_inner', inner_defaults.get('radius_m', 4000.0))
+            self.set_numeric_value('spin_height_inner', inner_defaults.get('height_m', 45.0))
+            print(f"QOLS: Inner Horizontal defaults applied: {rwy}, Code {code} -> Radius={inner_defaults.get('radius_m')}, Height={inner_defaults.get('height_m')}")
             
             # Apply Conical defaults
-            conical_defaults = get_conical_defaults(rwy, code)
-            self.set_numeric_value('spin_height_conical', conical_defaults['height_m'])
-            # Slope default currently 5% for all (future: per code mapping)
+            con_rule = rule_mgr.get_conical_defaults(rwy, code)
+            if con_rule is None:
+                conical_defaults = icao_get_conical_defaults(rwy, code)
+            else:
+                base = icao_get_conical_defaults(rwy, code)
+                conical_defaults = {**base, **{k: con_rule[k] for k in con_rule if con_rule[k] is not None}}
+            self.set_numeric_value('spin_height_conical', conical_defaults.get('height_m', 60.0))
+            # Slope default: from rules if provided, else 5%
             if hasattr(self, 'spin_conical_slope'):
-                self.set_numeric_value('spin_conical_slope', 5.0)
-            print(f"QOLS: Conical defaults applied: {rwy}, Code {code} -> Height={conical_defaults['height_m']}, Slope=5%")
+                slope_pct = con_rule.get('slope_pct') if con_rule else 5.0
+                if slope_pct is None:
+                    slope_pct = 5.0
+                self.set_numeric_value('spin_conical_slope', slope_pct)
+            # If rules define default radius for conical, set it directly; otherwise compute from height/slope+inner
+            con_radius = con_rule.get('radius_m') if con_rule else None
+            if hasattr(self, 'spin_L_conical') and con_radius is not None:
+                self.set_numeric_value('spin_L_conical', con_radius)
+                skip_recalc = True
+            else:
+                skip_recalc = False
+            print(f"QOLS: Conical defaults applied: {rwy}, Code {code} -> Height={conical_defaults.get('height_m')}, Slope={getattr(self, 'spin_conical_slope', None).text() if hasattr(self, 'spin_conical_slope') else 'N/A'}%")
             
-            # Recalculate conical radius using updated inner horizontal radius
-            self.recalculate_conical_radius()
+            # Recalculate conical radius using updated inner horizontal radius unless radius was explicit in rules
+            if not skip_recalc:
+                self.recalculate_conical_radius()
             
         except Exception as e:
             print(f"QOLS: Error applying combined Inner/Conical defaults: {e}")
@@ -1972,14 +2013,16 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 # Direction parameter like Approach
                 s_value = 0 if self.direction_start_to_end else -1
 
+                # For Take-Off: per Issue #64, DER Elevation (Z0) is the datum and should be used regardless of direction.
+                # We therefore set ZE equal to Z0 to avoid the previous hardcoded ZE and remove ambiguity.
                 specific_params = {
                     'code': code_value,  # QComboBox
                     'widthApp': 150,  # Remains constant for take-off width near origin
                     'widthDep': float(self.spin_widthDep_takeoff.text() or "0"),     # QLineEdit
                     'maxWidthDep': max_width_dep, # Default from code; user-editable
                     'CWYLength': float(self.spin_CWYLength_takeoff.text() or "0"),   # QLineEdit (clearway length)
-                    'Z0': float(self.spin_Z0_takeoff.text() or "0"),                 # QLineEdit
-                    'ZE': 2546.5,  # Fixed or could be derived; kept as-is per current logic
+                    'Z0': float(self.spin_Z0_takeoff.text() or "0"),                 # DER Elevation (m)
+                    'ZE': float(self.spin_Z0_takeoff.text() or "0"),                 # Use DER (Z0) as ZE datum per spec
                     # Newly exposed parameters
                     'divergencePct': float(self.spin_divergence_takeoff.text() or "12.5") if hasattr(self, 'spin_divergence_takeoff') else 12.5,
                     'startDistance': float(self.spin_startDistance_takeoff.text() or "60") if hasattr(self, 'spin_startDistance_takeoff') else 60.0,

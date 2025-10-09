@@ -66,6 +66,48 @@
         <property name="margin">
          <number>6</number>
         </property>
+
+    <!-- ACTIVE RULE SET STATUS -->
+    <item>
+     <layout class="QHBoxLayout" name="activeRuleSetRow">
+      <property name="spacing">
+       <number>6</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="activeRuleSetTitleLabel">
+        <property name="text">
+         <string>Active Rule Set:</string>
+        </property>
+        <property name="styleSheet">
+         <string>QLabel { font-weight: bold; }</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="activeRuleSetLabel">
+        <property name="text">
+         <string>—</string>
+        </property>
+        <property name="toolTip">
+         <string>Shows the currently selected rule set for default values</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="activeRuleSetSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
     
     <!-- LAYER SELECTION SECTION - IMPROVED READABILITY -->
     <item>
@@ -680,7 +722,7 @@
            <bool>true</bool>
           </property>
           <property name="styleSheet">
-           <string>QLabel { color: #666666; font-size: 11px; padding-top: 8px; }</string>
+              <string>QLabel { background-color: #e8f2ff; color: #1f4e79; font-size: 11px; border: 1px solid #c5d9f2; border-radius: 4px; padding: 8px; }</string>
           </property>
          </widget>
         </item>
@@ -1212,7 +1254,7 @@ QPushButton:checked:hover {
       <item row="5" column="0">
           <widget class="QLabel" name="label_Z0_takeoff">
            <property name="text">
-           <string>Start Elevation (m):</string>
+           <string>DER Elevation (m):</string>
            </property>
           </widget>
          </item>
