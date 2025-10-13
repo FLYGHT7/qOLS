@@ -32,6 +32,16 @@ try:
     threshold_layer = globals().get('threshold_layer', None)
     use_selected_feature = globals().get('use_selected_feature', True)
     
+    # Optional rule-driven parameters injected from UI
+    IA_width = globals().get('IA_width', None)
+    IA_distance_from_thr = globals().get('IA_distance_from_thr', None)
+    IA_length = globals().get('IA_length', None)
+    IA_slope = globals().get('IA_slope', None)  # ratio
+    BL_width = globals().get('BL_width', None)
+    BL_distance_from_thr = globals().get('BL_distance_from_thr', None)
+    BL_divergence = globals().get('BL_divergence', None)  # ratio
+    BL_slope = globals().get('BL_slope', None)  # ratio
+
     print(f"OFZ: Using parameters - code: {code}, width: {width}, Z0: {Z0}, ZE: {ZE}")
     print(f"OFZ: Direction parameter s: {s}, Use selected: {use_selected_feature}")
     
@@ -173,21 +183,25 @@ print (pt_0)
 pt_0L = new_geom.project(width/2,azimuth+90)
 pt_0R = new_geom.project(width/2,azimuth-90)
     
-# Distance prior from THR (60 m)
-pt_01= new_geom.project(60,azimuth)
+# Distance prior from THR (use IA rule distance if available, else 60 m)
+dist_thr = IA_distance_from_thr if IA_distance_from_thr is not None else 60
+pt_01= new_geom.project(dist_thr,azimuth)
 pt_01L = pt_01.project(width/2,azimuth+90)
 pt_01R = pt_01.project(width/2,azimuth-90)
 
-# Inner Approach Length Point 
-pt_02= pt_01.project(900,azimuth)
-pt_02.setZ(Z0+18)
+# Inner Approach Length Point
+ia_len = IA_length if IA_length is not None else 900
+ia_slope = IA_slope if IA_slope is not None else 0.02  # 2%
+pt_02= pt_01.project(ia_len,azimuth)
+pt_02.setZ(Z0 + ia_len*ia_slope)
 pt_02L = pt_02.project(width/2,azimuth+90)
 pt_02R = pt_02.project(width/2,azimuth-90)
 
 list_pts.extend((pt_0,pt_0L,pt_0R,pt_01,pt_01L,pt_01R,pt_02,pt_02L,pt_02R))
 
 # Balked Landing start Distance from THR
-pt_03= pt_0.project(1800,azimuth-180)
+bl_dist_thr = BL_distance_from_thr if BL_distance_from_thr is not None else 1800
+pt_03= pt_0.project(bl_dist_thr,azimuth-180)
 pt_03.setZ(ZIHs)
 pt_03L = pt_03.project(width/2,azimuth+90)
 pt_03R = pt_03.project(width/2,azimuth-90)
@@ -205,10 +219,10 @@ pt_I01R.setZ(ZIH)
 
 list_pts.extend ((pt_03,pt_03L,pt_03R,pt_I0L,pt_I0R,pt_I01L,pt_I01R))
 
-# Inner Approach Side at End 
-pt_I02L = pt_02L.project((ZIH-(Z0+900*0.02))/IHSlope,azimuth+90)
+# Inner Approach Side at End
+pt_I02L = pt_02L.project((ZIH-(Z0+ia_len*ia_slope))/IHSlope,azimuth+90)
 pt_I02L.setZ(ZIH)
-pt_I02R = pt_02R.project((ZIH-(Z0+900*0.02))/IHSlope,azimuth-90)
+pt_I02R = pt_02R.project((ZIH-(Z0+ia_len*ia_slope))/IHSlope,azimuth-90)
 pt_I02R.setZ(ZIH)
 
 # Balked Landing Side at Start
@@ -218,10 +232,12 @@ pt_I03R = pt_03R.project((ZIH-(Z0-((Z0-ZE)/rwy_length)*1800))/IHSlope,azimuth-90
 pt_I03R.setZ(ZIH)
 
 # Balked Landing at End
-pt_04= pt_03.project((ZIH-(Z0-((Z0-ZE)/rwy_length)*1800))/(3.33/100),azimuth-180)
+bl_slope = BL_slope if BL_slope is not None else (3.33/100)
+pt_04= pt_03.project((ZIH-(Z0-((Z0-ZE)/rwy_length)*bl_dist_thr))/bl_slope,azimuth-180)
 pt_04.setZ(ZIH)
-pt_04L= pt_04.project(((ZIH-(Z0-((Z0-ZE)/rwy_length)*1800))/(3.33/100))*.10+60,azimuth+90)
-pt_04R= pt_04.project(((ZIH-(Z0-((Z0-ZE)/rwy_length)*1800))/(3.33/100))*.10+60,azimuth-90)
+bl_div = BL_divergence if BL_divergence is not None else 0.10  # 10%
+pt_04L= pt_04.project(((ZIH-(Z0-((Z0-ZE)/rwy_length)*bl_dist_thr))/bl_slope)*bl_div + dist_thr,azimuth+90)
+pt_04R= pt_04.project(((ZIH-(Z0-((Z0-ZE)/rwy_length)*bl_dist_thr))/bl_slope)*bl_div + dist_thr,azimuth-90)
 
 
 list_pts.extend ((pt_I02L,pt_I02R,pt_I03L,pt_I03R,pt_04,pt_04L,pt_04R))

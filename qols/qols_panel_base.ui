@@ -667,17 +667,17 @@
            <string>60.00</string>
           </property>
           <property name="toolTip">
-           <string>Height for 3D PolygonZ surface (input). Radius will be auto-calculated from Height / Slope + Inner Horizontal Radius.</string>
+                     <string>Height for 3D PolygonZ surface (input). Radius will be auto-calculated from Height / Slope + Inner Horizontal Radius.</string>
           </property>
          </widget>
         </item>
-        <item row="7" column="0">
-         <widget class="QLabel" name="label_conical_slope">
-          <property name="text">
-           <string>Slope (%):</string>
-          </property>
-         </widget>
-        </item>
+                <item row="7" column="0">
+                 <widget class="QLabel" name="label_conical_slope">
+                    <property name="text">
+                     <string>Slope (%):</string>
+                    </property>
+                 </widget>
+                </item>
         <item row="7" column="1">
          <widget class="QLineEdit" name="spin_conical_slope">
           <property name="text">
@@ -735,7 +735,19 @@
        <attribute name="title">
         <string>OFZ</string>
        </attribute>
-       <layout class="QFormLayout" name="formLayout_ofz">
+    <layout class="QFormLayout" name="formLayout_ofz">
+     <property name="fieldGrowthPolicy">
+      <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+     </property>
+     <property name="labelAlignment">
+      <set>Qt::AlignRight|Qt::AlignVCenter</set>
+     </property>
+     <property name="horizontalSpacing">
+      <number>15</number>
+     </property>
+     <property name="verticalSpacing">
+      <number>6</number>
+     </property>
         <item row="0" column="0">
          <widget class="QLabel" name="label_rwyClassification_ofz">
           <property name="text">
@@ -983,10 +995,10 @@
           </property>
          </widget>
         </item>
-        <item row="3" column="0" colspan="2">
-         <widget class="QLabel" name="label_info_outer">
-          <property name="text">
-           <string>Outer Horizontal Surface: 15,000m circle centered on ARP
+                <item row="3" column="0" colspan="2">
+                 <widget class="QLabel" name="label_info_outer">
+                    <property name="text">
+                     <string>Outer Horizontal Surface: 15,000 m circle centered on ARP
 - Code 3 or 4 airports only (DOC 9137 Part 6)
 - Requires Aerodrome Reference Point (ARP)
 - Fixed radius for obstacle limitation</string>
@@ -995,6 +1007,9 @@
           <property name="wordWrap">
            <bool>true</bool>
           </property>
+                    <property name="styleSheet">
+                     <string>QLabel { background-color: #e8f2ff; color: #1f4e79; font-size: 11px; border: 1px solid #c5d9f2; border-radius: 4px; padding: 8px; }</string>
+                    </property>
          </widget>
         </item>
        </layout>
@@ -1005,7 +1020,19 @@
        <attribute name="title">
         <string>Transitional</string>
        </attribute>
-       <layout class="QFormLayout" name="formLayout_transitional">
+    <layout class="QFormLayout" name="formLayout_transitional">
+     <property name="fieldGrowthPolicy">
+      <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+     </property>
+     <property name="labelAlignment">
+      <set>Qt::AlignRight|Qt::AlignVCenter</set>
+     </property>
+     <property name="horizontalSpacing">
+      <number>15</number>
+     </property>
+     <property name="verticalSpacing">
+      <number>6</number>
+     </property>
         <item row="0" column="0">
          <widget class="QLabel" name="label_rwyClassification_transitional">
           <property name="text">
@@ -1174,7 +1201,19 @@ QPushButton:checked:hover {
          <attribute name="title">
          <string>Take-Off Surface</string>
          </attribute>
-         <layout class="QFormLayout" name="formLayout_takeoff">
+            <layout class="QFormLayout" name="formLayout_takeoff">
+        <property name="fieldGrowthPolicy">
+         <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+        </property>
+        <property name="labelAlignment">
+         <set>Qt::AlignRight|Qt::AlignVCenter</set>
+        </property>
+        <property name="horizontalSpacing">
+         <number>15</number>
+        </property>
+        <property name="verticalSpacing">
+         <number>6</number>
+        </property>
       <item row="0" column="0">
           <widget class="QLabel" name="label_code_takeoff">
            <property name="text">

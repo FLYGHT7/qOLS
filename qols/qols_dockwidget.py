@@ -5,7 +5,7 @@ from .icao_defaults import (
     get_inner_horizontal_defaults as icao_get_inner_horizontal_defaults,
 )
 from . import rules_manager as rule_mgr
-from .approach_defaults import get_approach_defaults
+from .approach_defaults import get_approach_defaults as icao_get_approach_defaults
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, Qt, QTimer
 from qgis.PyQt.QtWidgets import QDockWidget, QToolTip
@@ -91,6 +91,9 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             try:
                 if hasattr(self, 'combo_rwyClassification_ofz'):
                     self.combo_rwyClassification_ofz.currentIndexChanged.connect(self.update_ofz_visibility)
+                    self.combo_rwyClassification_ofz.currentIndexChanged.connect(self.apply_ofz_defaults_from_selection)
+                if hasattr(self, 'spin_code_ofz'):
+                    self.spin_code_ofz.currentIndexChanged.connect(self.apply_ofz_defaults_from_selection)
             except Exception as e:
                 print(f"QOLS: Could not connect OFZ visibility handler: {e}")
 
@@ -119,11 +122,22 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             except Exception as e:
                 print(f"QOLS: Could not connect conical radius recalculation signals: {e}")
 
+            # Wire Transitional classification/code changes to apply defaults
+            try:
+                if hasattr(self, 'combo_rwyClassification_transitional'):
+                    self.combo_rwyClassification_transitional.currentIndexChanged.connect(self.apply_transitional_defaults_from_selection)
+                if hasattr(self, 'spin_code_transitional'):
+                    self.spin_code_transitional.currentIndexChanged.connect(self.apply_transitional_defaults_from_selection)
+            except Exception as e:
+                print(f"QOLS: Could not connect Transitional defaults handlers: {e}")
+
             # Apply initial Approach defaults (after initial numeric defaults so they override)
             try:
                 self.apply_approach_defaults_from_selection()
+                self.apply_ofz_defaults_from_selection()
+                self.apply_transitional_defaults_from_selection()
             except Exception as e:
-                print(f"QOLS: Could not apply initial Approach defaults: {e}")
+                print(f"QOLS: Could not apply initial defaults: {e}")
 
             
             # Connect signals for real-time feedback
@@ -551,14 +565,27 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         except Exception as e:
             print(f"QOLS: Error recalculating conical radius: {e}")
 
-    # Approach defaults (new)
+    # Approach defaults (rules-aware)
     def apply_approach_defaults_from_selection(self):
         try:
             if not (hasattr(self, 'combo_rwyClassification') and hasattr(self, 'spin_code')):
                 return
             rwy = self.combo_rwyClassification.currentText()
             code = self.get_code_value('spin_code')
-            d = get_approach_defaults(rwy, code)
+            rd = rule_mgr.get_approach_defaults(rwy, code)
+            if rd is None:
+                d = icao_get_approach_defaults(rwy, code)
+            else:
+                base = icao_get_approach_defaults(rwy, code)
+                d = dict(base)
+                if 'width_m' in rd: d['width_m'] = rd['width_m']
+                if 'threshold_offset_m' in rd: d['threshold_offset_m'] = rd['threshold_offset_m']
+                if 'divergence_ratio' in rd: d['divergence_ratio'] = rd['divergence_ratio']
+                if 'L1_m' in rd: d['L1_m'] = rd['L1_m']
+                if 'slope1_ratio' in rd: d['first_section_slope'] = rd['slope1_ratio']
+                if 'L2_m' in rd: d['L2_m'] = rd['L2_m']
+                if 'slope2_ratio' in rd: d['second_section_slope'] = rd['slope2_ratio']
+                if 'LH_m' in rd: d['LH_m'] = rd['LH_m']
             # Only override if user hasn't changed (or always override? adopting always override when classification/code changed)
             self.set_numeric_value('spin_widthApp', d['width_m'])
             self.set_numeric_value('spin_L1', d['L1_m'])
@@ -573,6 +600,45 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             print(f"QOLS: Approach defaults applied: {rwy} Code {code} -> width={d['width_m']} L1={d['L1_m']} L2={d['L2_m']} LH={d['LH_m']} div={d['divergence_ratio']} thrOff={d['threshold_offset_m']}")
         except Exception as e:
             print(f"QOLS: Error applying approach defaults: {e}")
+
+    # Transitional defaults (rules-aware)
+    def apply_transitional_defaults_from_selection(self):
+        try:
+            if not (hasattr(self, 'combo_rwyClassification_transitional') and hasattr(self, 'spin_code_transitional')):
+                return
+            rwy = self.combo_rwyClassification_transitional.currentText()
+            code = self.get_code_value('spin_code_transitional')
+            rd = rule_mgr.get_transitional_defaults(rwy, code)
+            if rd and 'slope_pct' in rd:
+                self.set_numeric_value('spin_Tslope_transitional', rd['slope_pct'])
+        except Exception as e:
+            print(f"QOLS: Error applying transitional defaults: {e}")
+
+    # OFZ defaults (rules-aware)
+    def apply_ofz_defaults_from_selection(self):
+        try:
+            if not (hasattr(self, 'combo_rwyClassification_ofz') and hasattr(self, 'spin_code_ofz')):
+                return
+            rwy = self.combo_rwyClassification_ofz.currentText()
+            code = self.get_code_value('spin_code_ofz')
+            rd = rule_mgr.get_ofz_defaults(rwy, code)
+            if rd is None:
+                return
+            if 'width_m' in rd:
+                self.set_numeric_value('spin_width_ofz', rd['width_m'])
+            if 'ih_slope_pct' in rd and hasattr(self, 'spin_IHSlope_ofz'):
+                self.set_numeric_value('spin_IHSlope_ofz', rd['ih_slope_pct'])
+            # Cache inner approach / balked landing defaults for OFZ script
+            try:
+                ia = rule_mgr.get_inner_approach_defaults(rwy, code) or {}
+                bl = rule_mgr.get_balked_landing_defaults(rwy, code) or {}
+                self._ia_defaults = ia
+                self._bl_defaults = bl
+                print(f"QOLS: Cached IA defaults: {ia}; BL defaults: {bl}")
+            except Exception as e:
+                print(f"QOLS: Warning caching IA/BL rules for OFZ: {e}")
+        except Exception as e:
+            print(f"QOLS: Error applying OFZ defaults: {e}")
 
 
     def get_numeric_value(self, widget_name):
@@ -2059,6 +2125,22 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'ARPH': float(self.spin_ARPH_ofz.text() or "0"),
                     'IHSlope': float(self.spin_IHSlope_ofz.text() or "0") / 100.0  # Convert percentage to decimal
                 }
+                # Inject IA/BL params if available from rules
+                try:
+                    ia = getattr(self, '_ia_defaults', {}) or {}
+                    bl = getattr(self, '_bl_defaults', {}) or {}
+                    if ia:
+                        specific_params['IA_width'] = ia.get('width_m')
+                        specific_params['IA_distance_from_thr'] = ia.get('distance_from_threshold_m')
+                        specific_params['IA_length'] = ia.get('length_m')
+                        specific_params['IA_slope'] = ia.get('slope_ratio')
+                    if bl:
+                        specific_params['BL_width'] = bl.get('width_m')
+                        specific_params['BL_distance_from_thr'] = bl.get('distance_from_threshold_m')
+                        specific_params['BL_divergence'] = bl.get('divergence_ratio')
+                        specific_params['BL_slope'] = bl.get('slope_ratio')
+                except Exception as e:
+                    print(f"QOLS: Warning injecting IA/BL params for OFZ: {e}")
             else:
                 specific_params = {}
             
