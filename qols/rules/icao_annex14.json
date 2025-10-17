@@ -5,7 +5,7 @@
     "height_m": 45.0,
     "radius_m": {
       "Non-instrument": { "1": 2000, "2": 2500, "3": 4000, "4": 4000 },
-      "Non-precision approach": { "1": 3000, "2": 3000, "3": 4000, "4": 4000 },
+      "Non-precision approach": { "1": 3500, "2": 3500, "3": 4000, "4": 4000 },
       "Precision Approach CAT I": {
         "1": 3500,
         "2": 3500,
@@ -34,5 +34,164 @@
       }
     },
     "default_radius_m": 6000
+  },
+  "approach": {
+    "width_m": {
+      "Non-instrument": { "1": 60, "2": 80, "3": 150, "4": 150 },
+      "Non-precision approach": { "1": 140, "2": 140, "3": 280, "4": 280 },
+      "Precision Approach CAT I": { "1": 140, "2": 140, "3": 280, "4": 280 },
+      "Precision Approach CAT II or III": {
+        "1": 140,
+        "2": 140,
+        "3": 280,
+        "4": 280
+      }
+    },
+    "threshold_offset_m": {
+      "Non-instrument": { "1": 30, "2": 60, "3": 60, "4": 60 },
+      "Non-precision approach": { "1": 60, "2": 60, "3": 60, "4": 60 },
+      "Precision Approach CAT I": { "1": 60, "2": 60, "3": 60, "4": 60 },
+      "Precision Approach CAT II or III": { "1": 60, "2": 60, "3": 60, "4": 60 }
+    },
+    "divergence_pct": {
+      "Non-instrument": { "1": 10, "2": 10, "3": 10, "4": 10 },
+      "Non-precision approach": { "1": 15, "2": 15, "3": 15, "4": 15 },
+      "Precision Approach CAT I": { "1": 15, "2": 15, "3": 15, "4": 15 },
+      "Precision Approach CAT II or III": { "1": 15, "2": 15, "3": 15, "4": 15 }
+    },
+    "L1_m": {
+      "Non-instrument": { "1": 1600, "2": 2500, "3": 3000, "4": 3000 },
+      "Non-precision approach": { "1": 2500, "2": 2500, "3": 3000, "4": 3000 },
+      "Precision Approach CAT I": {
+        "1": 3000,
+        "2": 3000,
+        "3": 3000,
+        "4": 3000
+      },
+      "Precision Approach CAT II or III": {
+        "1": 3000,
+        "2": 3000,
+        "3": 3000,
+        "4": 3000
+      }
+    },
+    "slope1_pct": {
+      "Non-instrument": { "1": 5, "2": 4, "3": 3.33, "4": 2.5 },
+      "Non-precision approach": { "1": 3.33, "2": 3.33, "3": 2, "4": 2 },
+      "Precision Approach CAT I": { "1": 2.5, "2": 2.5, "3": 2, "4": 2 },
+      "Precision Approach CAT II or III": { "1": 2.5, "2": 2.5, "3": 2, "4": 2 }
+    },
+    "L2_m": {
+      "Non-instrument": { "1": 0, "2": 0, "3": 0, "4": 0 },
+      "Non-precision approach": { "1": 0, "2": 0, "3": 3600, "4": 3600 },
+      "Precision Approach CAT I": {
+        "1": 12000,
+        "2": 12000,
+        "3": 3600,
+        "4": 3600
+      },
+      "Precision Approach CAT II or III": {
+        "1": 0,
+        "2": 0,
+        "3": 3600,
+        "4": 3600
+      }
+    },
+    "slope2_pct": {
+      "Non-instrument": { "1": 0, "2": 0, "3": 0, "4": 0 },
+      "Non-precision approach": { "1": 0, "2": 0, "3": 2.5, "4": 2.5 },
+      "Precision Approach CAT I": { "1": 3, "2": 3, "3": 2.5, "4": 2.5 },
+      "Precision Approach CAT II or III": { "1": 0, "2": 0, "3": 2.5, "4": 2.5 }
+    },
+    "LH_m": {
+      "Non-instrument": { "1": 0, "2": 0, "3": 0, "4": 0 },
+      "Non-precision approach": { "1": 0, "2": 0, "3": 8400, "4": 8400 },
+      "Precision Approach CAT I": { "1": 0, "2": 0, "3": 8400, "4": 8400 },
+      "Precision Approach CAT II or III": {
+        "1": 0,
+        "2": 0,
+        "3": 8400,
+        "4": 8400
+      }
+    }
+  },
+  "transitional": {
+    "slope_pct": {
+      "Non-instrument": { "1": 20, "2": 20, "3": 14.3, "4": 14.3 },
+      "Non-precision approach": { "1": 20, "2": 20, "3": 14.3, "4": 14.3 },
+      "Precision Approach CAT I": {
+        "1": 14.3,
+        "2": 14.3,
+        "3": 14.3,
+        "4": 14.3
+      },
+      "Precision Approach CAT II or III": {
+        "1": 14.3,
+        "2": 14.3,
+        "3": 14.3,
+        "4": 14.3
+      }
+    }
+  },
+  "ofz": {
+    "width_m": {
+      "Precision Approach CAT I": { "1": 90, "2": 90, "3": 120, "4": 120 },
+      "Precision Approach CAT II or III": {
+        "1": 90,
+        "2": 90,
+        "3": 120,
+        "4": 120
+      }
+    },
+    "ih_slope_pct": {
+      "Precision Approach CAT I": { "1": 40, "2": 40, "3": 33.3, "4": 33.3 },
+      "Precision Approach CAT II or III": {
+        "1": 40,
+        "2": 40,
+        "3": 33.3,
+        "4": 33.3
+      }
+    }
+  },
+  "inner_approach": {
+    "width_m": {
+      "Precision Approach CAT I": { "1": 90, "2": 90, "3": 120, "4": 120 },
+      "Precision Approach CAT II or III": { "3": 120, "4": 120 }
+    },
+    "distance_from_threshold_m": {
+      "Precision Approach CAT I": { "1": 60, "2": 60, "3": 60, "4": 60 },
+      "Precision Approach CAT II or III": { "3": 60, "4": 60 }
+    },
+    "length_m": {
+      "Precision Approach CAT I": { "1": 900, "2": 900, "3": 900, "4": 900 },
+      "Precision Approach CAT II or III": { "3": 900, "4": 900 }
+    },
+    "slope_pct": {
+      "Precision Approach CAT I": { "1": 2.5, "2": 2.5, "3": 2.0, "4": 2.0 },
+      "Precision Approach CAT II or III": { "3": 2.0, "4": 2.0 }
+    }
+  },
+  "balked_landing": {
+    "width_m": {
+      "Precision Approach CAT I": { "1": 90, "2": 90, "3": 120, "4": 120 },
+      "Precision Approach CAT II or III": { "3": 120, "4": 120 }
+    },
+    "distance_from_threshold_m": {
+      "Precision Approach CAT I": {
+        "1": 1800,
+        "2": 1800,
+        "3": 1800,
+        "4": 1800
+      },
+      "Precision Approach CAT II or III": { "3": 1800, "4": 1800 }
+    },
+    "divergence_pct": {
+      "Precision Approach CAT I": { "1": 10, "2": 10, "3": 10, "4": 10 },
+      "Precision Approach CAT II or III": { "3": 10, "4": 10 }
+    },
+    "slope_pct": {
+      "Precision Approach CAT I": { "1": 4.0, "2": 4.0, "3": 3.33, "4": 3.33 },
+      "Precision Approach CAT II or III": { "3": 3.33, "4": 3.33 }
+    }
   }
 }
