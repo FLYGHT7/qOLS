@@ -11,7 +11,6 @@ from PyQt5.QtGui import *
 from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
-from qols.geom_utils import get_polyline_points
 
 # Parameters - FROM UI
 try:
@@ -107,7 +106,7 @@ features_created = 0
 
 # Process each runway feature
 for feat in selection:
-    geom = get_polyline_points(feat.geometry())
+    geom = feat.geometry().asPolyline()
     print(f"InnerHorizontal: Geometry points count: {len(geom)}")
     
     # Get runway endpoints - convert QgsPointXY to QgsPoint
