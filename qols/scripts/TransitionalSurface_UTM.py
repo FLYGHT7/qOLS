@@ -256,6 +256,7 @@ list_pts.extend((pt_0,pt_01,pt_01AL,pt_01AR,pt_01TL,pt_01TR,pt_08,pt_08L,pt_08R,
 
 # Creation of the Transitional Surfaces
 #Create memory layer
+
 v_layer = QgsVectorLayer("PolygonZ?crs="+map_srid, "RWY_Transition Surface", "memory")
 IDField = QgsField( 'ID', QVariant.String)
 NameField = QgsField( 'SurfaceName', QVariant.String)
