@@ -12,7 +12,6 @@ from PyQt5.QtGui import *
 from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
-from qols.geom_utils import get_polyline_points
 
 """Parameter extraction
 Prefers pythonic, UI-aligned names with backward-compatible fallbacks to legacy keys.
@@ -105,21 +104,42 @@ except Exception as e:
 zih_at_start_m = (start_elevation_m - ((start_elevation_m - end_elevation_m) / rwy_length) * 1800)
 print(f"QOLS: ZIH at start (m): {zih_at_start_m}")
 
-# Get the azimuth of the runway line (first→last) and cache endpoints
+# Get the azimuth of the line - SIMPLIFIED LOGIC
 for feat in selection:
-    geom = get_polyline_points(feat.geometry())
+    geom = feat.geometry().asPolyline()
     print(f"QOLS: Geometry points count: {len(geom)}")
-
-    start_point = QgsPoint(geom[0])   # First vertex of the runway line
-    end_point = QgsPoint(geom[-1])    # Last vertex of the runway line
+    
+    # Always use the same points regardless of direction
+    # Direction change is handled by azimuth rotation only
+    start_point = QgsPoint(geom[0])   # Always first point
+    end_point = QgsPoint(geom[-1])    # Always last point
     base_azimuth_deg = start_point.azimuth(end_point)
-
-    print("QOLS: Runway endpoints cached for azimuth computation")
-    print("QOLS: start_point = geom[0] (first point)")
-    print("QOLS: end_point = geom[-1] (last point)")
+    
+    print(f"QOLS: Using consistent points regardless of direction")
+    print(f"QOLS: start_point = geom[0] (first point)")
+    print(f"QOLS: end_point = geom[-1] (last point)")
     print(f"QOLS: Start point: {start_point.x()}, {start_point.y()}")
     print(f"QOLS: End point: {end_point.x()}, {end_point.y()}")
-    print(f"QOLS: Base runway azimuth (deg) first→last: {base_azimuth_deg}")
+    print(f"QOLS: Base azimuth (deg): {base_azimuth_deg}")
+
+# Initial true azimuth data - FIXED LOGIC FOR PROPER DIRECTION CHANGE
+# Always use the same points but change the azimuth by exactly 180 degrees
+if direction == -1:
+    # For reverse direction, use the opposite direction (180 degrees from normal)
+    azimuth = base_azimuth_deg + 180
+    if azimuth >= 360:
+        azimuth -= 360
+    print(f"QOLS: REVERSE direction - using base_azimuth + 180 = {base_azimuth_deg} + 180 = {azimuth}")
+else:
+    # For normal direction, use the forward azimuth as-is
+    azimuth = base_azimuth_deg
+    print(f"QOLS: NORMAL direction - using base_azimuth = {azimuth}")
+
+print(f"QOLS: Using direction={direction}")
+print(f"QOLS: Base azimuth: {base_azimuth_deg}")
+print(f"QOLS: Final azimuth: {azimuth}")
+print(f"QOLS: Expected difference between directions: 180°")
+print(f"QOLS: Direction interpretation - direction={direction} means {'End to Start' if direction == -1 else 'Start to End'}")
 
 # ENHANCED THRESHOLD SELECTION - Use threshold layer from UI
 try:
@@ -164,32 +184,7 @@ new_geom = QgsPoint(threshold_geom)
 new_geom.addZValue(start_elevation_m)
 
 print(f"QOLS: Threshold point: {new_geom.x()}, {new_geom.y()}, {new_geom.z()}")
-print("QOLS: Determining approach direction relative to the selected threshold end…")
-
-# Robust azimuth: orient outward from the selected threshold end.
-# If the selected threshold is closer to the runway start, approach goes opposite the line (base + 180).
-# If it's closer to the runway end, approach goes along the line (base).
-thr_point = QgsPoint(threshold_geom)
-dist_to_start = thr_point.distance(start_point)
-dist_to_end = thr_point.distance(end_point)
-thr_is_start = dist_to_start <= dist_to_end
-print(f"QOLS: Distance THR→start: {dist_to_start:.3f}, THR→end: {dist_to_end:.3f}, thr_is_start={thr_is_start}")
-
-azimuth_outward = (base_azimuth_deg + 180) % 360 if thr_is_start else base_azimuth_deg
-print(f"QOLS: Outward azimuth from selected THR: {azimuth_outward} (deg)")
-
-# Apply UI direction toggle as a 180° flip around the outward direction
-if direction == -1:
-    azimuth = (azimuth_outward + 180) % 360
-    print(f"QOLS: UI direction = End→Start (flip 180): final azimuth = {azimuth}")
-else:
-    azimuth = azimuth_outward
-    print(f"QOLS: UI direction = Start→End (no flip): final azimuth = {azimuth}")
-
-print(f"QOLS: Using direction={direction}")
-print(f"QOLS: Final approach azimuth (deg): {azimuth}")
-print("QOLS: Expected difference between directions: 180°")
-print(f"QOLS: Direction interpretation - direction={direction} means {'End to Start' if direction == -1 else 'Start to End'}")
+print(f"QOLS: Direction change handled by azimuth rotation (180°), not threshold position")
 
 construction_points = []
 

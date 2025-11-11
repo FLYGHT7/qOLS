@@ -12,7 +12,6 @@ from PyQt5.QtGui import *
 from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
-from qols.geom_utils import get_polyline_points
 
 # Parameters - NOW COME FROM UI INSTEAD OF HARDCODED
 try:
@@ -109,7 +108,7 @@ print(f"OFZ: ZIHs calculated: {ZIHs}")
 
 # Get the azimuth of the line - SIMPLIFIED LOGIC
 for feat in selection:
-    geom = get_polyline_points(feat.geometry())
+    geom = feat.geometry().asPolyline()
     print(f"OFZ: Geometry points count: {len(geom)}")
     
     # Always use the same points regardless of direction

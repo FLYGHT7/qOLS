@@ -12,7 +12,6 @@ from PyQt5.QtGui import *
 from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
-from qols.geom_utils import get_polyline_points
 from qgis.utils import iface
 
 # Parameters - NOW COME FROM UI INSTEAD OF HARDCODED
@@ -86,7 +85,7 @@ except Exception as e:
 
 # Get the azimuth of the line - USING ORIGINAL CALCULATION LOGIC
 for feat in selection:
-    geom = get_polyline_points(feat.geometry())
+    geom = feat.geometry().asPolyline()
     print(f"Conical: Geometry points count: {len(geom)}")
     
     # Use original logic - always first to last point

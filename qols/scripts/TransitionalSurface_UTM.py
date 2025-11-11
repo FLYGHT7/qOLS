@@ -11,7 +11,6 @@ from PyQt5.QtGui import *
 from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
-from qols.geom_utils import get_polyline_points
 
 # Parameters - NOW COME FROM UI INSTEAD OF HARDCODED
 # These parameters will be injected by the plugin
@@ -109,7 +108,7 @@ print(f"TransitionalSurface: ZIHs calculated: {ZIHs}")
         
 #Get the azimuth of the line - ORIGINAL SIMPLE LOGIC
 for feat in selection:
-    geom = get_polyline_points(feat.geometry())
+    geom = feat.geometry().asPolyline()
     print(f"TransitionalSurface: Geometry points count: {len(geom)}")
     
     # ORIGINAL LOGIC - SIMPLE AND WORKING
