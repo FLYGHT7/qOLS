@@ -13,6 +13,7 @@ from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from qgis.utils import iface
 from math import *
+from qols.geom_utils import get_polyline_points
 
 # UI Parameters - Get from plugin or use defaults (now driven by UI)
 print("TakeOffSurface: Script started - checking for UI parameters...")
@@ -140,7 +141,7 @@ ZIHs = ((Z0 - ((Z0 - ZE) / rwy_length) * 1800))
 
 # Get the azimuth of the line - FIXED: Simplified consistent logic like other scripts
 for feat in selection:
-    geom = feat.geometry().asPolyline()
+    geom = get_polyline_points(feat.geometry())
     print(f"TakeOffSurface: Geometry points count: {len(geom)}")
     
     # FIXED: Always use the same points regardless of direction
