@@ -111,10 +111,10 @@ print(f"OFZ: ZIHs calculated: {ZIHs}")
 for feat in selection:
     geom = get_polyline_points(feat.geometry())
     print(f"OFZ: Geometry points count: {len(geom)}")
-    
-    # Always use the same points regardless of direction
-    start_point = QgsPoint(geom[0])   # Always first point
-    end_point = QgsPoint(geom[-1])    # Always last point
+
+    # Use existing QgsPoint objects directly (avoid redundant wrapping)
+    start_point = geom[0]   # Always first point
+    end_point = geom[-1]    # Always last point
     angle0 = start_point.azimuth(end_point)
     
     print(f"OFZ: Using consistent points regardless of direction")
@@ -170,8 +170,7 @@ if len(threshold_selection) >= 1:
 else:
     raise Exception("No threshold features found")
 
-new_geom = QgsPoint(threshold_geom)
-new_geom.addZValue(Z0)
+new_geom = QgsPoint(threshold_geom.x(), threshold_geom.y(), Z0)
 
 print(f"OFZ: Threshold point: {new_geom.x()}, {new_geom.y()}, {new_geom.z()}")
 print(f"OFZ: Direction change handled by azimuth rotation (180°), not threshold position")
@@ -187,8 +186,11 @@ pt_0R = new_geom.project(width/2,azimuth-90)
 # Distance prior from THR (use IA rule distance if available, else 60 m)
 dist_thr = IA_distance_from_thr if IA_distance_from_thr is not None else 60
 pt_01= new_geom.project(dist_thr,azimuth)
+pt_01.setZ(Z0)
 pt_01L = pt_01.project(width/2,azimuth+90)
+pt_01L.setZ(Z0)
 pt_01R = pt_01.project(width/2,azimuth-90)
+pt_01R.setZ(Z0)
 
 # Inner Approach Length Point
 ia_len = IA_length if IA_length is not None else 900
@@ -274,41 +276,62 @@ v_layer.updateFields()
 SurfaceArea = [pt_03,pt_03L,pt_0L,pt_01L,pt_01,pt_01R,pt_0R,pt_03R]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
-seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
+from qols.geom_utils import polygonz_geometry_from_points
+seg.setGeometry(polygonz_geometry_from_points(SurfaceArea))
 seg.setAttributes([1,'Runway Inner Strip', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
+try:
+    print(f"OFZ: 'Runway Inner Strip' geometry type: {QgsWkbTypes.displayString(seg.geometry().wkbType())}")
+except Exception:
+    pass
 
 # Inner Approach Surface Polygon
 SurfaceArea = [pt_01,pt_01L,pt_02L,pt_02,pt_02R,pt_01R]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
-seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
+seg.setGeometry(polygonz_geometry_from_points(SurfaceArea))
 seg.setAttributes([2,'Inner Approach Surface', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
+try:
+    print(f"OFZ: 'Inner Approach Surface' geometry type: {QgsWkbTypes.displayString(seg.geometry().wkbType())}")
+except Exception:
+    pass
 
 # Balked Landing Surface Polygon
 SurfaceArea = [pt_04,pt_04L,pt_03L,pt_03,pt_03R,pt_04R]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
-seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
+seg.setGeometry(polygonz_geometry_from_points(SurfaceArea))
 seg.setAttributes([3,'Balked Landing Surface', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
+try:
+    print(f"OFZ: 'Balked Landing Surface' geometry type: {QgsWkbTypes.displayString(seg.geometry().wkbType())}")
+except Exception:
+    pass
 
 # Inner Transitional Right Surface Polygon
 SurfaceArea = [pt_04R,pt_03R,pt_0R,pt_01R,pt_02R,pt_I02R,pt_I01R,pt_I0R,pt_I03R]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
-seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
+seg.setGeometry(polygonz_geometry_from_points(SurfaceArea))
 seg.setAttributes([4,'Inner Transitional Surface - Right Side', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
+try:
+    print(f"OFZ: 'Inner Transitional Surface - Right Side' geometry type: {QgsWkbTypes.displayString(seg.geometry().wkbType())}")
+except Exception:
+    pass
 
 # Inner Transitional Left Surface Polygon
 SurfaceArea = [pt_04L,pt_03L,pt_0L,pt_01L,pt_02L,pt_I02L,pt_I01L,pt_I0L,pt_I03L]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
-seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
+seg.setGeometry(polygonz_geometry_from_points(SurfaceArea))
 seg.setAttributes([5,'Inner Transitional Surface - Left Side', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
+try:
+    print(f"OFZ: 'Inner Transitional Surface - Left Side' geometry type: {QgsWkbTypes.displayString(seg.geometry().wkbType())}")
+except Exception:
+    pass
 
 QgsProject.instance().addMapLayers([v_layer])
 
@@ -340,6 +363,7 @@ canvas.zoomScale(sc)
 iface.messageBar().pushMessage("QPANSOPY:", "OFZ Calculation Finished", level=Qgis.Success)
 
 print("OFZ: Script completed successfully")
+print("OFZ: Version 2025-11-11Z geometry fix applied")
 
 
 set(globals().keys()).difference(myglobals)

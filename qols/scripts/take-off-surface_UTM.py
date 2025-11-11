@@ -144,10 +144,10 @@ for feat in selection:
     geom = get_polyline_points(feat.geometry())
     print(f"TakeOffSurface: Geometry points count: {len(geom)}")
     
-    # FIXED: Always use the same points regardless of direction
+    # FIXED: Use existing points directly to avoid constructor issues
     # Direction change is handled by azimuth rotation only (like approach-surface)
-    start_point = QgsPoint(geom[0])   # Always first point
-    end_point = QgsPoint(geom[-1])    # Always last point
+    start_point = geom[0]   # Always first point
+    end_point = geom[-1]    # Always last point
     angle0 = start_point.azimuth(end_point)
     
     print(f"TakeOffSurface: Using consistent points regardless of direction")
@@ -213,8 +213,8 @@ except Exception as e:
 
 # Get x,y from threshold - EXACTLY as original
 for feat in threshold_selection:
-    new_geom = QgsPoint(feat.geometry().asPoint())
-    new_geom.addZValue(Z0)
+    thr_pt = feat.geometry().asPoint()
+    new_geom = QgsPoint(thr_pt.x(), thr_pt.y(), Z0)
 
 list_pts = []
 
@@ -233,20 +233,26 @@ slope_ratio = float(slopePct) / 100.0
 pt_01D = new_geom.project(dD, bazimuth)
 pt_01D.setZ(ZE)
 pt_01DL = pt_01D.project(widthDep/2, bazimuth+90)
+pt_01DL.setZ(ZE)
 pt_01DR = pt_01D.project(widthDep/2, bazimuth-90)
+pt_01DR.setZ(ZE)
 
 # Distance to reach maximum width - uses divergence ratio from UI
 distance_to_max_width = ((maxWidthDep / 2.0 - widthDep / 2.0) / divergence_ratio) if divergence_ratio != 0 else 0.0
 pt_02D = pt_01D.project(distance_to_max_width, bazimuth)
 pt_02D.setZ(ZE + distance_to_max_width * slope_ratio)
 pt_02DL = pt_02D.project(maxWidthDep/2, bazimuth+90)
+pt_02DL.setZ(ZE + distance_to_max_width * slope_ratio)
 pt_02DR = pt_02D.project(maxWidthDep/2, bazimuth-90)
+pt_02DR.setZ(ZE + distance_to_max_width * slope_ratio)
 
 # Distance to end of TakeOff Climb Surface - uses UI surfaceLength and slope
 pt_03D = pt_01D.project(surfaceLength, bazimuth)
 pt_03D.setZ(ZE + surfaceLength * slope_ratio)
 pt_03DL = pt_03D.project(maxWidthDep/2, bazimuth+90)
+pt_03DL.setZ(ZE + surfaceLength * slope_ratio)
 pt_03DR = pt_03D.project(maxWidthDep/2, bazimuth-90)
+pt_03DR.setZ(ZE + surfaceLength * slope_ratio)
 
 list_pts.extend((pt_0D,pt_01D,pt_01DL,pt_01DR,pt_02D,pt_02DL,pt_02DR,pt_03D,pt_03DL,pt_03DR))
 
@@ -264,10 +270,15 @@ v_layer.updateFields()
 # Take Off Climb Surface Creation - EXACTLY as original
 SurfaceArea = [pt_03DR,pt_03DL,pt_02DL,pt_01DL,pt_01DR,pt_02DR]
 pr = v_layer.dataProvider()
+from qols.geom_utils import polygonz_geometry_from_points
 seg = QgsFeature()
-seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
+seg.setGeometry(polygonz_geometry_from_points(SurfaceArea))
 seg.setAttributes([13,'TakeOff Climb Surface', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
+try:
+    print(f"TakeOff: 'TakeOff Climb Surface' geometry type: {QgsWkbTypes.displayString(seg.geometry().wkbType())}")
+except Exception:
+    pass
 
 #Load PolygonZ Layer to map canvas - EXACTLY as original
 QgsProject.instance().addMapLayers([v_layer])
@@ -307,3 +318,4 @@ for var in (newglobals - myglobals):
             pass
 
 print(f"TakeOffSurface: Globals cleanup completed")
+print("TakeOffSurface: Version 2025-11-11Z geometry fix applied")

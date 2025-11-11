@@ -12,7 +12,7 @@ from PyQt5.QtGui import *
 from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
-from qols.geom_utils import get_polyline_points
+from qols.geom_utils import get_polyline_points, polygonz_geometry_from_points
 
 """Parameter extraction
 Prefers pythonic, UI-aligned names with backward-compatible fallbacks to legacy keys.
@@ -110,8 +110,9 @@ for feat in selection:
     geom = get_polyline_points(feat.geometry())
     print(f"QOLS: Geometry points count: {len(geom)}")
 
-    start_point = QgsPoint(geom[0])   # First vertex of the runway line
-    end_point = QgsPoint(geom[-1])    # Last vertex of the runway line
+    # Use points directly (already QgsPoint) to avoid constructor type issues
+    start_point = geom[0]   # First vertex of the runway line
+    end_point = geom[-1]    # Last vertex of the runway line
     base_azimuth_deg = start_point.azimuth(end_point)
 
     print("QOLS: Runway endpoints cached for azimuth computation")
@@ -160,8 +161,7 @@ if len(threshold_selection) >= 1:
 else:
     raise Exception("No threshold features found")
 
-new_geom = QgsPoint(threshold_geom)
-new_geom.addZValue(start_elevation_m)
+new_geom = QgsPoint(threshold_geom.x(), threshold_geom.y(), start_elevation_m)
 
 print(f"QOLS: Threshold point: {new_geom.x()}, {new_geom.y()}, {new_geom.z()}")
 print("QOLS: Determining approach direction relative to the selected threshold end…")
@@ -169,7 +169,7 @@ print("QOLS: Determining approach direction relative to the selected threshold e
 # Robust azimuth: orient outward from the selected threshold end.
 # If the selected threshold is closer to the runway start, approach goes opposite the line (base + 180).
 # If it's closer to the runway end, approach goes along the line (base).
-thr_point = QgsPoint(threshold_geom)
+thr_point = QgsPoint(threshold_geom.x(), threshold_geom.y(), start_elevation_m)
 dist_to_start = thr_point.distance(start_point)
 dist_to_end = thr_point.distance(end_point)
 thr_is_start = dist_to_start <= dist_to_end
@@ -221,9 +221,11 @@ pt_0 = new_geom
 
 # Point after threshold offset
 pt_01 = new_geom.project(threshold_offset_m, azimuth)
-pt_01.addZValue(start_elevation_m)
+pt_01.setZ(start_elevation_m)
 pt_01AL = pt_01.project(approach_width_m / 2, azimuth + 90)
+pt_01AL.setZ(start_elevation_m)
 pt_01AR = pt_01.project(approach_width_m / 2, azimuth - 90)
+pt_01AR.setZ(start_elevation_m)
 
 construction_points.extend((pt_0, pt_01, pt_01AL, pt_01AR))
 
@@ -242,7 +244,9 @@ if first_section_length_m > 0:
     pt_05.setZ(height_first_end)
     half_w_first_end = lateral_offset(dist_first_end)
     pt_05L = pt_05.project(half_w_first_end, azimuth + 90)
+    pt_05L.setZ(height_first_end)
     pt_05R = pt_05.project(half_w_first_end, azimuth - 90)
+    pt_05R.setZ(height_first_end)
     construction_points.extend((pt_05, pt_05L, pt_05R))
     features_to_create.append((next_id, 'Approach First Section', [pt_05R, pt_05L, pt_01AL, pt_01AR]))
     next_id += 1
@@ -262,7 +266,9 @@ if second_section_length_m > 0:
     pt_06.setZ(height_second_end)
     half_w_second_end = lateral_offset(dist_second_end)
     pt_06L = pt_06.project(half_w_second_end, azimuth + 90)
+    pt_06L.setZ(height_second_end)
     pt_06R = pt_06.project(half_w_second_end, azimuth - 90)
+    pt_06R.setZ(height_second_end)
     construction_points.extend((pt_06, pt_06L, pt_06R))
     features_to_create.append((next_id, 'Approach Second Section', [pt_06R, pt_06L, pt_05L, pt_05R]))
     next_id += 1
@@ -281,7 +287,9 @@ if second_section_length_m > 0 and horizontal_section_length_m > 0:
     pt_07.setZ(height_second_end)  # constant height
     half_w_horizontal_end = lateral_offset(dist_horizontal_end)
     pt_07L = pt_07.project(half_w_horizontal_end, azimuth + 90)
+    pt_07L.setZ(height_second_end)
     pt_07R = pt_07.project(half_w_horizontal_end, azimuth - 90)
+    pt_07R.setZ(height_second_end)
     construction_points.extend((pt_07, pt_07L, pt_07R))
     features_to_create.append((next_id, 'Approach Horizontal Section', [pt_07R, pt_07L, pt_06L, pt_06R]))
     next_id += 1
@@ -303,9 +311,14 @@ approach_layer.updateFields()
 provider = approach_layer.dataProvider()
 for fid, name, surface_area in features_to_create:
     feature = QgsFeature()
-    feature.setGeometry(QgsPolygon(QgsLineString(surface_area), rings=[]))
-    feature.setAttributes([fid, name, rwy_classification, runway_code, globals().get('active_rule_set', None)])
-    provider.addFeatures([feature])
+    try:
+        geom = polygonz_geometry_from_points(surface_area)
+        feature.setGeometry(geom)
+        feature.setAttributes([fid, name, rwy_classification, runway_code, globals().get('active_rule_set', None)])
+        provider.addFeatures([feature])
+        print(f"QOLS: Added feature {fid} '{name}' wkbType={geom.wkbType()} as PolygonZ")
+    except Exception as e:
+        print(f"QOLS: Failed to create geometry for feature {fid} '{name}': {e}")
 
 # Load PolygonZ Layer to map canvas 
 QgsProject.instance().addMapLayers([approach_layer])

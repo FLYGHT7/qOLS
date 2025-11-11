@@ -112,9 +112,9 @@ for feat in selection:
     geom = get_polyline_points(feat.geometry())
     print(f"TransitionalSurface: Geometry points count: {len(geom)}")
     
-    # ORIGINAL LOGIC - SIMPLE AND WORKING
-    start_point = QgsPoint(geom[-1-s])
-    end_point = QgsPoint(geom[s])
+    # Use existing QgsPoint objects directly to avoid constructor issues
+    start_point = geom[-1-s]
+    end_point = geom[s]
     angle0 = start_point.azimuth(end_point)
     
     print(f"TransitionalSurface: start_point index: {-1-s}, end_point index: {s}")
@@ -159,8 +159,7 @@ if len(threshold_selection) >= 1:
 else:
     raise Exception("No threshold features found")
 
-new_geom = QgsPoint(threshold_geom)
-new_geom.addZValue(Z0)
+new_geom = QgsPoint(threshold_geom.x(), threshold_geom.y(), Z0)
 
 print(f"TransitionalSurface: Threshold point: {new_geom.x()}, {new_geom.y()}, {new_geom.z()}")
 
@@ -172,9 +171,9 @@ print(f"TransitionalSurface: Threshold point: {new_geom.x()}, {new_geom.y()}, {n
 print(f"TransitionalSurface: Runway direction parameter s={s}")
 print(f"TransitionalSurface: s=0 means normal direction, s=-1 means inverted direction")
 
-# Use original runway point selection logic - this LITERALLY inverts the runway
-start_point = QgsPoint(geom[-1-s])
-end_point = QgsPoint(geom[s])
+# Use original runway point selection logic (direct points)
+start_point = geom[-1-s]
+end_point = geom[s]
 angle0 = start_point.azimuth(end_point)
 
 print(f"TransitionalSurface: Start point index: {-1-s}, End point index: {s}")
@@ -211,10 +210,12 @@ pt_0= new_geom
     
 # Distance prior from THR (60 m)
 pt_01= new_geom.project(60,azimuth)
-pt_01.addZValue(Z0)
+pt_01.setZ(Z0)
 #print (pt_01)
 pt_01AL = pt_01.project(widthApp/2,azimuth+90)
+pt_01AL.setZ(Z0)
 pt_01AR = pt_01.project(widthApp/2,azimuth-90)
+pt_01AR.setZ(Z0)
 pt_01TL = pt_01.project(widthApp/2+(ZIH-Z0)/Tslope,azimuth+90)
 pt_01TL.setZ(ZIH)
 pt_01TR = pt_01.project(widthApp/2+(ZIH-Z0)/Tslope,azimuth-90)
@@ -225,13 +226,17 @@ dIH = (ZIH - Z0)/(2/100)
 pt_08= pt_01.project(dIH,azimuth)
 pt_08.setZ(Z0+dIH*0.02) # Could be ZO directly but for checking this is left
 pt_08L = pt_08.project(widthApp/2+(dIH*.15),azimuth+90)
+pt_08L.setZ(pt_08.z())
 pt_08R = pt_08.project(widthApp/2+(dIH*.15),azimuth-90)
+pt_08R.setZ(pt_08.z())
 
 # Point in runway end
 pt_02T = start_point.project(60,bazimuth)
-pt_02T.addZValue(ZE)
+pt_02T.setZ(ZE)
 pt_02L = pt_02T.project(widthApp/2,bazimuth-90)
+pt_02L.setZ(ZE)
 pt_02R = pt_02T.project(widthApp/2,bazimuth+90)
+pt_02R.setZ(ZE)
 pt_02TL = pt_02T.project(widthApp/2+(ZIH-ZE)/Tslope,bazimuth-90)
 pt_02TL.setZ(ZIH)
 pt_02TR = pt_02T.project(widthApp/2+(ZIH-ZE)/Tslope,bazimuth+90)
@@ -269,18 +274,27 @@ v_layer.updateFields()
 # Left Transition Surface
 SurfaceArea = [pt_08L,pt_01TL,pt_02TL,pt_02L,pt_01AL]
 pr = v_layer.dataProvider()
+from qols.geom_utils import polygonz_geometry_from_points
 seg = QgsFeature()
-seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
+seg.setGeometry(polygonz_geometry_from_points(SurfaceArea))
 seg.setAttributes([10,'Left Transitional Surface', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
+try:
+    print(f"Transitional: 'Left Transitional Surface' geometry type: {QgsWkbTypes.displayString(seg.geometry().wkbType())}")
+except Exception:
+    pass
 
 # Right Transition Surface
 SurfaceArea = [pt_08R,pt_01TR,pt_02TR,pt_02R,pt_01AR]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
-seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
+seg.setGeometry(polygonz_geometry_from_points(SurfaceArea))
 seg.setAttributes([11,'Right Transitional Surface', globals().get('active_rule_set', None)])
 pr.addFeatures( [ seg ] )
+try:
+    print(f"Transitional: 'Right Transitional Surface' geometry type: {QgsWkbTypes.displayString(seg.geometry().wkbType())}")
+except Exception:
+    pass
 
 QgsProject.instance().addMapLayers([v_layer])
 
@@ -318,3 +332,4 @@ set(globals().keys()).difference(myglobals)
 for g in set(globals().keys()).difference(myglobals):
     if g != 'myglobals':
         del globals()[g]
+print("TransitionalSurface: Version 2025-11-11Z geometry fix applied")
