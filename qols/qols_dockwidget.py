@@ -507,11 +507,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             runway_layer = self.runwayLayerCombo.currentLayer()
             threshold_layer = self.thresholdLayerCombo.currentLayer()
             
-            # Connect to runway layer selection changes
+            # Connect to Runway Layer Centerline selection changes
             if runway_layer and isinstance(runway_layer, QgsVectorLayer):
                 runway_layer.selectionChanged.connect(self.update_selection_info)
                 self.connected_runway_layer = runway_layer
-                print(f"QOLS: Connected to runway layer selection signals: {runway_layer.name()}")
+                print(f"QOLS: Connected to Runway Layer Centerline selection signals: {runway_layer.name()}")
             
             # Connect to threshold layer selection changes  
             if threshold_layer and isinstance(threshold_layer, QgsVectorLayer):
@@ -528,7 +528,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             if self.connected_runway_layer:
                 try:
                     self.connected_runway_layer.selectionChanged.disconnect(self.update_selection_info)
-                    print(f"QOLS: Disconnected from runway layer: {self.connected_runway_layer.name()}")
+                    print(f"QOLS: Disconnected from Runway Layer Centerline: {self.connected_runway_layer.name()}")
                 except:
                     pass  # Signal might not be connected
                 self.connected_runway_layer = None
@@ -978,7 +978,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         try:
             print("QOLS: Setting up layer filters")
             
-            # Configure runway layer combo - only show LINE geometry layers
+            # Configure Runway Layer Centerline combo - only show LINE geometry layers
             self.runwayLayerCombo.setFilters(QgsMapLayerProxyModel.VectorLayer)
             self.runwayLayerCombo.setExceptedLayerList([])
             # Enable additional display options for runway combo
@@ -1011,7 +1011,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             vector_layers = [layer for layer in QgsProject.instance().mapLayers().values() 
                            if isinstance(layer, QgsVectorLayer)]
             
-            # Filter runway layers - only show LINE geometry
+            # Filter Runway Layer Centerline layers - only show LINE geometry
             runway_excluded = []
             threshold_excluded = []
             
@@ -1482,14 +1482,14 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             runway_layer = self.runwayLayerCombo.currentLayer()
             threshold_layer = self.thresholdLayerCombo.currentLayer()
             
-            # Validate runway layer
+            # Validate Runway Layer Centerline
             if runway_layer:
                 if runway_layer.geometryType() != QgsWkbTypes.LineGeometry:
                     geom_type = self.get_layer_geometry_info(runway_layer)
                     self.show_error_message(
-                        f"Invalid Runway Layer!\n"
+                        f"Invalid Runway Layer Centerline!\n"
                         f"'{runway_layer.name()}' contains {geom_type} geometry.\n"
-                        f"Runway layer must contain LINE geometry (runway lines)."
+                        f"Runway Layer Centerline must contain LINE geometry (runway lines)."
                     )
                     # Reset to no selection
                     self.runwayLayerCombo.setCurrentIndex(-1)
@@ -1706,9 +1706,9 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # CRITICAL CHECK 1: Ensure layers are selected
             if not runway_layer:
                 self.show_error_message(
-                    "No Runway Layer Selected!\n\n"
-                    "Please select a runway layer from the dropdown.\n"
-                    "The runway layer must contain LINE geometry (runway lines)."
+                    "No Runway Layer Centerline Selected!\n\n"
+                    "Please select a Runway Layer Centerline from the dropdown.\n"
+                    "The Runway Layer Centerline must contain LINE geometry (runway lines)."
                 )
                 return False
             
@@ -1723,9 +1723,9 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # CRITICAL CHECK 2: Ensure layers are valid QGIS objects
             if not isinstance(runway_layer, QgsVectorLayer):
                 self.show_error_message(
-                    f"Invalid Runway Layer Object!\n\n"
+                    f"Invalid Runway Layer Centerline Object!\n\n"
                     f"Selected object is not a valid vector layer: {type(runway_layer)}\n"
-                    f"Please select a different runway layer."
+                    f"Please select a different Runway Layer Centerline."
                 )
                 return False
             
@@ -1741,9 +1741,9 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             project_layers = list(QgsProject.instance().mapLayers().values())
             if runway_layer not in project_layers:
                 self.show_error_message(
-                    f"Runway Layer Not Found!\n\n"
+                    f"Runway Layer Centerline Not Found!\n\n"
                     f"Layer '{runway_layer.name()}' is no longer in the project.\n"
-                    f"It may have been removed. Please select a different runway layer."
+                    f"It may have been removed. Please select a different Runway Layer Centerline."
                 )
                 return False
             
@@ -1758,9 +1758,9 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # CRITICAL CHECK 4: Ensure layers are valid and accessible
             if not runway_layer.isValid():
                 self.show_error_message(
-                    f"Corrupted Runway Layer!\n\n"
+                    f"Corrupted Runway Layer Centerline!\n\n"
                     f"Layer '{runway_layer.name()}' is invalid or corrupted.\n"
-                    f"Please check the layer source and select a different runway layer."
+                    f"Please check the layer source and select a different Runway Layer Centerline."
                 )
                 return False
             
@@ -1772,7 +1772,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 )
                 return False
             
-            # CRITICAL CHECK 5: Validate runway layer geometry (must be LINE)
+            # CRITICAL CHECK 5: Validate Runway Layer Centerline geometry (must be LINE)
             if runway_layer.geometryType() != QgsWkbTypes.LineGeometry:
                 runway_geom_type = self.get_layer_geometry_info(runway_layer)
                 self.show_error_message(
@@ -1802,9 +1802,9 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             
             if runway_total == 0:
                 self.show_error_message(
-                    f"Empty Runway Layer!\n\n"
+                    f"Empty Runway Layer Centerline!\n\n"
                     f"Layer '{runway_layer.name()}' contains no features.\n"
-                    f"Please select a runway layer with runway line features."
+                    f"Please select a Runway Layer Centerline with runway line features."
                 )
                 return False
             
@@ -1854,7 +1854,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             
             # SUCCESS: All validations passed
             print(f"QOLS: ✅ ALL VALIDATIONS PASSED")
-            print(f"QOLS: Runway Layer: '{runway_layer.name()}' (LINE geometry, {runway_total} features)")
+            print(f"QOLS: Runway Layer Centerline: '{runway_layer.name()}' (LINE geometry, {runway_total} features)")
             print(f"QOLS: Threshold Layer: '{threshold_layer.name()}' (POINT geometry, {threshold_total} features)")
             print(f"QOLS: Selection Mode: Runway={'selected' if use_runway_selected else 'all'}, Threshold={'selected' if use_threshold_selected else 'all'}")
             
@@ -1912,7 +1912,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             
             # SAFETY CHECK: Ensure layers are still valid (could have been removed)
             if not runway_layer:
-                raise Exception("CRITICAL ERROR: No runway layer selected. This should not happen after validation.")
+                raise Exception("CRITICAL ERROR: No Runway Layer Centerline selected. This should not happen after validation.")
             
             if not threshold_layer:
                 raise Exception("CRITICAL ERROR: No threshold layer selected. This should not happen after validation.")
@@ -1920,14 +1920,14 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # SAFETY CHECK: Ensure layers are still in project (could have been removed)
             project_layers = QgsProject.instance().mapLayers().values()
             if runway_layer not in project_layers:
-                raise Exception(f"CRITICAL ERROR: Runway layer '{runway_layer.name()}' no longer exists in project.")
+                raise Exception(f"CRITICAL ERROR: Runway Layer Centerline '{runway_layer.name()}' no longer exists in project.")
             
             if threshold_layer not in project_layers:
                 raise Exception(f"CRITICAL ERROR: Threshold layer '{threshold_layer.name()}' no longer exists in project.")
             
             # SAFETY CHECK: Re-verify geometry types (layers could have changed)
             if runway_layer.geometryType() != QgsWkbTypes.LineGeometry:
-                raise Exception(f"CRITICAL ERROR: Runway layer '{runway_layer.name()}' geometry changed to {self.get_layer_geometry_info(runway_layer)}.")
+                raise Exception(f"CRITICAL ERROR: Runway Layer Centerline '{runway_layer.name()}' geometry changed to {self.get_layer_geometry_info(runway_layer)}.")
             
             if threshold_layer.geometryType() != QgsWkbTypes.PointGeometry:
                 raise Exception(f"CRITICAL ERROR: Threshold layer '{threshold_layer.name()}' geometry changed to {self.get_layer_geometry_info(threshold_layer)}.")

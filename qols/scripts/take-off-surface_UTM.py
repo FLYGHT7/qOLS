@@ -93,23 +93,23 @@ except Exception as e:
     print(f"TakeOffSurface: CRS Traceback: {traceback.format_exc()}")
     raise
 
-# RUNWAY LAYER SELECTION - Hybrid approach
+# RUNWAY LAYER CENTERLINE SELECTION - Hybrid approach
 try:
     if runway_layer:
         # Use layer from UI
-        print(f"TakeOffSurface: Using runway layer from UI: {runway_layer.name()}")
+        print(f"TakeOffSurface: Using Runway Layer Centerline from UI: {runway_layer.name()}")
         layer = runway_layer
         selection = layer.selectedFeatures()
         if not selection:
             # No selection, use all features
             selection = list(layer.getFeatures())
             if not selection:
-                raise Exception("No features found in runway layer.")
+                raise Exception("No features found in Runway Layer Centerline.")
             print(f"TakeOffSurface: No selection, using first feature from layer")
             selection = [selection[0]]
     else:
-        # ORIGINAL METHOD - Gets the runway layer based on name and selected feature
-        print("TakeOffSurface: No runway layer from UI, searching by name")
+        # ORIGINAL METHOD - Gets the Runway Layer Centerline based on name and selected feature
+        print("TakeOffSurface: No Runway Layer Centerline from UI, searching by name")
         for layer in QgsProject.instance().mapLayers().values():
             if "runway" in layer.name():
                 layer = layer
@@ -120,9 +120,9 @@ try:
                         selection = [selection[0]]
                 break
         else:
-            raise Exception("No runway layer found")
+            raise Exception("No Runway Layer Centerline found")
     
-    print(f"TakeOffSurface: Using runway layer: {layer.name()}")
+    print(f"TakeOffSurface: Using Runway Layer Centerline: {layer.name()}")
     
     # ORIGINAL runway calculations
     rwy_geom = selection[0].geometry()
@@ -131,8 +131,8 @@ try:
     print(f"TakeOffSurface: rwy_length={rwy_length}")
     
 except Exception as e:
-    print(f"TakeOffSurface: Error with runway layer: {e}")
-    iface.messageBar().pushMessage("TakeOffSurface Error", f"Runway layer error: {str(e)}", level=Qgis.Critical)
+    print(f"TakeOffSurface: Error with Runway Layer Centerline: {e}")
+    iface.messageBar().pushMessage("TakeOffSurface Error", f"Runway Layer Centerline error: {str(e)}", level=Qgis.Critical)
     raise
 
 # ORIGINAL ZIHs calculation (kept for compatibility; not used in geometry below)

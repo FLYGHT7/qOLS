@@ -93,7 +93,7 @@ def apply_custom_icons_to_combos(dockwidget, icon_manager):
         
         # Add tooltips to make the purpose clearer
         dockwidget.runwayLayerCombo.setToolTip(
-            "🛬 Select runway layer\n"
+            "🛬 Select Runway Layer Centerline\n"
             "Choose the vector layer containing runway geometries.\n"
             "Should contain LineString or Polygon features representing runways."
         )
