@@ -58,7 +58,7 @@ trfm = QgsCoordinateTransform(dest_crs, source_crs, QgsProject.instance())
 # ENHANCED LAYER SELECTION - Use layers from UI
 try:
     if runway_layer is not None:
-        print(f"InnerHorizontal: Using runway layer from UI: {runway_layer.name()}")
+        print(f"InnerHorizontal: Using Runway Layer Centerline from UI: {runway_layer.name()}")
         
         if use_selected_feature:
             selection = runway_layer.selectedFeatures()
@@ -68,17 +68,17 @@ try:
         else:
             selection = list(runway_layer.getFeatures())
             if not selection:
-                raise Exception("No features found in runway layer.")
+                raise Exception("No features found in Runway Layer Centerline.")
             print(f"InnerHorizontal: Using first feature from layer")
         
         print(f"InnerHorizontal: Processing {len(selection)} runway features")
         
     else:
-        raise Exception("No runway layer provided. Please select a runway layer from the UI.")
+        raise Exception("No Runway Layer Centerline provided. Please select a Runway Layer Centerline from the UI.")
         
 except Exception as e:
-    print(f"InnerHorizontal: Error with runway layer: {e}")
-    iface.messageBar().pushMessage("InnerHorizontal Error", f"Runway layer error: {str(e)}", level=Qgis.Critical)
+    print(f"InnerHorizontal: Error with Runway Layer Centerline: {e}")
+    iface.messageBar().pushMessage("InnerHorizontal Error", f"Runway Layer Centerline error: {str(e)}", level=Qgis.Critical)
     raise
 
 # Create memory layer for 3D polygon (PolygonZ)

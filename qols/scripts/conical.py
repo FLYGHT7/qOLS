@@ -57,7 +57,7 @@ map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 # ENHANCED LAYER SELECTION - Use layers from UI
 try:
     if runway_layer is not None:
-        print(f"Conical: Using runway layer from UI: {runway_layer.name()}")
+        print(f"Conical: Using Runway Layer Centerline from UI: {runway_layer.name()}")
         
         if use_selected_feature:
             # Require explicit feature selection
@@ -69,18 +69,18 @@ try:
             # Use all features (take first one)
             selection = list(runway_layer.getFeatures())
             if not selection:
-                raise Exception("No features found in runway layer.")
+                raise Exception("No features found in Runway Layer Centerline.")
             print(f"Conical: Using first feature from layer (selection disabled)")
         
         print(f"Conical: Processing {len(selection)} runway features")
         
     else:
-        # No fallback - require explicit runway layer selection
-        raise Exception("No runway layer provided. Please select a runway layer from the UI.")
+        # No fallback - require explicit Runway Layer Centerline selection
+        raise Exception("No Runway Layer Centerline provided. Please select a Runway Layer Centerline from the UI.")
         
 except Exception as e:
-    print(f"Conical: Error with runway layer: {e}")
-    iface.messageBar().pushMessage("Conical Error", f"Runway layer error: {str(e)}", level=Qgis.Critical)
+    print(f"Conical: Error with Runway Layer Centerline: {e}")
+    iface.messageBar().pushMessage("Conical Error", f"Runway Layer Centerline error: {str(e)}", level=Qgis.Critical)
     raise
 
 # Get the azimuth of the line - USING ORIGINAL CALCULATION LOGIC

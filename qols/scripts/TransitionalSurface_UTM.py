@@ -71,7 +71,7 @@ map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 # ENHANCED LAYER SELECTION - Use layers from UI
 try:
     if runway_layer is not None:
-        print(f"TransitionalSurface: Using runway layer from UI: {runway_layer.name()}")
+        print(f"TransitionalSurface: Using Runway Layer Centerline from UI: {runway_layer.name()}")
         
         if use_selected_feature:
             # Require explicit feature selection
@@ -82,7 +82,7 @@ try:
         else:
             selection = list(runway_layer.getFeatures())
             if not selection:
-                raise Exception("No features found in runway layer.")
+                raise Exception("No features found in Runway Layer Centerline.")
             print(f"TransitionalSurface: Using first feature from layer (selection disabled)")
         
         print(f"TransitionalSurface: Processing {len(selection)} runway features")
@@ -93,12 +93,12 @@ try:
         print(f"TransitionalSurface: Runway length: {rwy_length}, slope: {rwy_slope}")
         
     else:
-        # No fallback - require explicit runway layer selection
-        raise Exception("No runway layer provided. Please select a runway layer from the UI.")
+        # No fallback - require explicit Runway Layer Centerline selection
+        raise Exception("No Runway Layer Centerline provided. Please select a Runway Layer Centerline from the UI.")
 
 except Exception as e:
-    print(f"TransitionalSurface: Error with runway layer: {e}")
-    iface.messageBar().pushMessage("TransitionalSurface Error", f"Runway layer error: {str(e)}", level=Qgis.Critical)
+    print(f"TransitionalSurface: Error with Runway Layer Centerline: {e}")
+    iface.messageBar().pushMessage("TransitionalSurface Error", f"Runway Layer Centerline error: {str(e)}", level=Qgis.Critical)
     raise
 
 # Calculate ZIHs
@@ -256,6 +256,7 @@ list_pts.extend((pt_0,pt_01,pt_01AL,pt_01AR,pt_01TL,pt_01TR,pt_08,pt_08L,pt_08R,
 
 # Creation of the Transitional Surfaces
 #Create memory layer
+
 v_layer = QgsVectorLayer("PolygonZ?crs="+map_srid, "RWY_Transition Surface", "memory")
 IDField = QgsField( 'ID', QVariant.String)
 NameField = QgsField( 'SurfaceName', QVariant.String)
