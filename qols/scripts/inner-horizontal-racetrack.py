@@ -12,6 +12,34 @@ from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
 
+def _normalize_polyline_points(geometry: 'QgsGeometry', iface=None):
+    """Return a list of QgsPoint representing a single polyline.
+    Accepts LineString or MultiLineString; for MultiLineString picks the longest part.
+    """
+    if geometry is None or geometry.isEmpty():
+        raise Exception("Empty geometry provided for runway centerline.")
+    if geometry.isMultipart():
+        parts = geometry.asMultiPolyline()
+        if not parts:
+            raise Exception("Empty MultiLineString geometry.")
+        def length_of(pts):
+            if not pts or len(pts) < 2:
+                return 0.0
+            total = 0.0
+            for i in range(1, len(pts)):
+                dx = pts[i].x() - pts[i-1].x()
+                dy = pts[i].y() - pts[i-1].y()
+                total += sqrt(dx*dx + dy*dy)
+            return total
+        longest = max(parts, key=length_of)
+        if iface and len(parts) > 1:
+            iface.messageBar().pushMessage("InnerHorizontal Info", "MultiLineString detected; using longest part as centerline.", level=Qgis.Info)
+        return [QgsPoint(p) for p in longest]
+    poly = geometry.asPolyline()
+    if poly and len(poly) >= 2:
+        return [QgsPoint(p) for p in poly]
+    raise Exception("Line geometry cannot be converted to a polyline. Only single line or curve types are permitted.")
+
 # Parameters - FROM UI
 try:
     # Inner horizontal surface parameters from UI
@@ -106,14 +134,12 @@ features_created = 0
 
 # Process each runway feature
 for feat in selection:
-    geom = feat.geometry().asPolyline()
-    print(f"InnerHorizontal: Geometry points count: {len(geom)}")
+    line_pts = _normalize_polyline_points(feat.geometry(), iface)
+    print(f"InnerHorizontal: Geometry points count (normalized): {len(line_pts)}")
     
-    # Get runway endpoints - convert QgsPointXY to QgsPoint
-    start_point_xy = geom[0]
-    end_point_xy = geom[-1]
-    start_point = QgsPoint(start_point_xy.x(), start_point_xy.y())   # Always first point
-    end_point = QgsPoint(end_point_xy.x(), end_point_xy.y())       # Always last point
+    # Get runway endpoints from normalized line
+    start_point = QgsPoint(line_pts[0].x(), line_pts[0].y())   # Always first point
+    end_point = QgsPoint(line_pts[-1].x(), line_pts[-1].y())   # Always last point
     angle0 = start_point.azimuth(end_point)
     
     print(f"InnerHorizontal: Start point: {start_point.x()}, {start_point.y()}")

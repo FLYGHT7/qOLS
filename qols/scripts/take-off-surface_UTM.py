@@ -14,6 +14,34 @@ from qgis.PyQt.QtCore import QVariant
 from qgis.utils import iface
 from math import *
 
+def _normalize_polyline_points(geometry: 'QgsGeometry', iface=None):
+    """Return a list of QgsPoint representing a single polyline.
+    Accepts LineString or MultiLineString; for MultiLineString picks the longest part.
+    """
+    if geometry is None or geometry.isEmpty():
+        raise Exception("Empty geometry provided for runway centerline.")
+    if geometry.isMultipart():
+        parts = geometry.asMultiPolyline()
+        if not parts:
+            raise Exception("Empty MultiLineString geometry.")
+        def length_of(pts):
+            if not pts or len(pts) < 2:
+                return 0.0
+            total = 0.0
+            for i in range(1, len(pts)):
+                dx = pts[i].x() - pts[i-1].x()
+                dy = pts[i].y() - pts[i-1].y()
+                total += sqrt(dx*dx + dy*dy)
+            return total
+        longest = max(parts, key=length_of)
+        if iface and len(parts) > 1:
+            iface.messageBar().pushMessage("TakeOffSurface Info", "MultiLineString detected; using longest part as centerline.", level=Qgis.Info)
+        return [QgsPoint(p) for p in longest]
+    poly = geometry.asPolyline()
+    if poly and len(poly) >= 2:
+        return [QgsPoint(p) for p in poly]
+    raise Exception("Line geometry cannot be converted to a polyline. Only single line or curve types are permitted.")
+
 # UI Parameters - Get from plugin or use defaults (now driven by UI)
 print("TakeOffSurface: Script started - checking for UI parameters...")
 print(f"TakeOffSurface: Available globals keys: {list(globals().keys())}")
@@ -140,18 +168,18 @@ ZIHs = ((Z0 - ((Z0 - ZE) / rwy_length) * 1800))
 
 # Get the azimuth of the line - FIXED: Simplified consistent logic like other scripts
 for feat in selection:
-    geom = feat.geometry().asPolyline()
-    print(f"TakeOffSurface: Geometry points count: {len(geom)}")
+    line_pts = _normalize_polyline_points(feat.geometry(), iface)
+    print(f"TakeOffSurface: Geometry points count (normalized): {len(line_pts)}")
     
     # FIXED: Always use the same points regardless of direction
     # Direction change is handled by azimuth rotation only (like approach-surface)
-    start_point = QgsPoint(geom[0])   # Always first point
-    end_point = QgsPoint(geom[-1])    # Always last point
+    start_point = line_pts[0]   # Always first point
+    end_point = line_pts[-1]    # Always last point
     angle0 = start_point.azimuth(end_point)
     
     print(f"TakeOffSurface: Using consistent points regardless of direction")
-    print(f"TakeOffSurface: start_point = geom[0] (first point)")
-    print(f"TakeOffSurface: end_point = geom[-1] (last point)")
+    print(f"TakeOffSurface: start_point = first vertex of normalized line")
+    print(f"TakeOffSurface: end_point = last vertex of normalized line")
     print(f"TakeOffSurface: Start point: {start_point.x():.2f}, {start_point.y():.2f}")
     print(f"TakeOffSurface: End point: {end_point.x():.2f}, {end_point.y():.2f}")
     print(f"TakeOffSurface: Base azimuth (angle0): {angle0:.2f}°")
