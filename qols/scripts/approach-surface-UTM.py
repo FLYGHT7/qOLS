@@ -122,24 +122,8 @@ for feat in selection:
     print(f"QOLS: End point: {end_point.x()}, {end_point.y()}")
     print(f"QOLS: Base azimuth (deg): {base_azimuth_deg}")
 
-# Initial true azimuth data - FIXED LOGIC FOR PROPER DIRECTION CHANGE
-# Always use the same points but change the azimuth by exactly 180 degrees
-if direction == -1:
-    # For reverse direction, use the opposite direction (180 degrees from normal)
-    azimuth = base_azimuth_deg + 180
-    if azimuth >= 360:
-        azimuth -= 360
-    print(f"QOLS: REVERSE direction - using base_azimuth + 180 = {base_azimuth_deg} + 180 = {azimuth}")
-else:
-    # For normal direction, use the forward azimuth as-is
-    azimuth = base_azimuth_deg
-    print(f"QOLS: NORMAL direction - using base_azimuth = {azimuth}")
-
-print(f"QOLS: Using direction={direction}")
-print(f"QOLS: Base azimuth: {base_azimuth_deg}")
-print(f"QOLS: Final azimuth: {azimuth}")
-print(f"QOLS: Expected difference between directions: 180°")
-print(f"QOLS: Direction interpretation - direction={direction} means {'End to Start' if direction == -1 else 'Start to End'}")
+# Defer final azimuth until we know which threshold end is selected
+print(f"QOLS: Base azimuth (start→end) will be adjusted based on selected threshold end and UI direction toggle")
 
 # ENHANCED THRESHOLD SELECTION - Use threshold layer from UI
 try:
@@ -183,8 +167,23 @@ else:
 new_geom = QgsPoint(threshold_geom)
 new_geom.addZValue(start_elevation_m)
 
+# Determine which runway end the selected threshold corresponds to
+dist_to_start = hypot(new_geom.x() - start_point.x(), new_geom.y() - start_point.y())
+dist_to_end = hypot(new_geom.x() - end_point.x(), new_geom.y() - end_point.y())
+selected_end = 'start' if dist_to_start <= dist_to_end else 'end'
+
+# Compute outward azimuth from the selected threshold end
+outward_azimuth = base_azimuth_deg if selected_end == 'start' else (base_azimuth_deg + 180) % 360
+
+# Apply UI direction toggle: 0 = Start→End, -1 = End→Start (flip 180)
+azimuth = (outward_azimuth + (180 if direction == -1 else 0)) % 360
+
 print(f"QOLS: Threshold point: {new_geom.x()}, {new_geom.y()}, {new_geom.z()}")
-print(f"QOLS: Direction change handled by azimuth rotation (180°), not threshold position")
+print(f"QOLS: Selected threshold end: {selected_end} (dist_start={dist_to_start:.2f}, dist_end={dist_to_end:.2f})")
+print(f"QOLS: Base azimuth (start→end): {base_azimuth_deg:.6f}°")
+print(f"QOLS: Outward azimuth from selected end: {outward_azimuth:.6f}°")
+print(f"QOLS: UI direction toggle: {'End to Start' if direction == -1 else 'Start to End'}")
+print(f"QOLS: Final azimuth used for projection: {azimuth:.6f}°")
 
 construction_points = []
 
