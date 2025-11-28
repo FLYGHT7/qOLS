@@ -13,6 +13,34 @@ from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
 
+def _normalize_polyline_points(geometry: 'QgsGeometry', iface=None):
+    """Return a list of QgsPoint representing a single polyline.
+    Accepts LineString or MultiLineString; for MultiLineString picks the longest part.
+    """
+    if geometry is None or geometry.isEmpty():
+        raise Exception("Empty geometry provided for runway centerline.")
+    if geometry.isMultipart():
+        parts = geometry.asMultiPolyline()
+        if not parts:
+            raise Exception("Empty MultiLineString geometry.")
+        def length_of(pts):
+            if not pts or len(pts) < 2:
+                return 0.0
+            total = 0.0
+            for i in range(1, len(pts)):
+                dx = pts[i].x() - pts[i-1].x()
+                dy = pts[i].y() - pts[i-1].y()
+                total += sqrt(dx*dx + dy*dy)
+            return total
+        longest = max(parts, key=length_of)
+        if iface and len(parts) > 1:
+            iface.messageBar().pushMessage("OFZ Info", "MultiLineString detected; using longest part as centerline.", level=Qgis.Info)
+        return [QgsPoint(p) for p in longest]
+    poly = geometry.asPolyline()
+    if poly and len(poly) >= 2:
+        return [QgsPoint(p) for p in poly]
+    raise Exception("Line geometry cannot be converted to a polyline. Only single line or curve types are permitted.")
+
 # Parameters - NOW COME FROM UI INSTEAD OF HARDCODED
 try:
     # Try to get parameters from plugin namespace
@@ -72,7 +100,7 @@ map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 # ENHANCED LAYER SELECTION - Use layers from UI
 try:
     if runway_layer is not None:
-        print(f"OFZ: Using runway layer from UI: {runway_layer.name()}")
+        print(f"OFZ: Using Runway Layer Centerline from UI: {runway_layer.name()}")
         
         if use_selected_feature:
             # Require explicit feature selection
@@ -83,7 +111,7 @@ try:
         else:
             selection = list(runway_layer.getFeatures())
             if not selection:
-                raise Exception("No features found in runway layer.")
+                raise Exception("No features found in Runway Layer Centerline.")
             print(f"OFZ: Using first feature from layer (selection disabled)")
         
         print(f"OFZ: Processing {len(selection)} runway features")
@@ -94,26 +122,25 @@ try:
         print(f"OFZ: Runway length: {rwy_length}, slope: {rwy_slope}")
         
     else:
-        # No fallback - require explicit runway layer selection
-        raise Exception("No runway layer provided. Please select a runway layer from the UI.")
+        # No fallback - require explicit Runway Layer Centerline selection
+        raise Exception("No Runway Layer Centerline provided. Please select a Runway Layer Centerline from the UI.")
 
 except Exception as e:
-    print(f"OFZ: Error with runway layer: {e}")
-    iface.messageBar().pushMessage("OFZ Error", f"Runway layer error: {str(e)}", level=Qgis.Critical)
+    print(f"OFZ: Error with Runway Layer Centerline: {e}")
+    iface.messageBar().pushMessage("OFZ Error", f"Runway Layer Centerline error: {str(e)}", level=Qgis.Critical)
     raise
 
 # Calculate ZIHs
 ZIHs = ((Z0-((Z0-ZE)/rwy_length)*1800))
 print(f"OFZ: ZIHs calculated: {ZIHs}")
 
-# Get the azimuth of the line - SIMPLIFIED LOGIC
+# Get the azimuth of the line - robust to MultiLineString
 for feat in selection:
-    geom = feat.geometry().asPolyline()
-    print(f"OFZ: Geometry points count: {len(geom)}")
-    
+    pts = _normalize_polyline_points(feat.geometry(), iface)
+    print(f"OFZ: Geometry points count (normalized): {len(pts)}")
     # Always use the same points regardless of direction
-    start_point = QgsPoint(geom[0])   # Always first point
-    end_point = QgsPoint(geom[-1])    # Always last point
+    start_point = pts[0]
+    end_point = pts[-1]
     angle0 = start_point.azimuth(end_point)
     
     print(f"OFZ: Using consistent points regardless of direction")

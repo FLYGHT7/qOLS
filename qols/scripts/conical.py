@@ -14,6 +14,34 @@ from qgis.PyQt.QtCore import QVariant
 from math import *
 from qgis.utils import iface
 
+def _normalize_polyline_points(geometry: 'QgsGeometry', iface=None):
+    """Return a list of QgsPoint representing a single polyline.
+    Accepts LineString or MultiLineString; for MultiLineString picks the longest part.
+    """
+    if geometry is None or geometry.isEmpty():
+        raise Exception("Empty geometry provided for runway centerline.")
+    if geometry.isMultipart():
+        parts = geometry.asMultiPolyline()
+        if not parts:
+            raise Exception("Empty MultiLineString geometry.")
+        def length_of(pts):
+            if not pts or len(pts) < 2:
+                return 0.0
+            total = 0.0
+            for i in range(1, len(pts)):
+                dx = pts[i].x() - pts[i-1].x()
+                dy = pts[i].y() - pts[i-1].y()
+                total += sqrt(dx*dx + dy*dy)
+            return total
+        longest = max(parts, key=length_of)
+        if iface and len(parts) > 1:
+            iface.messageBar().pushMessage("Conical Info", "MultiLineString detected; using longest part as centerline.", level=Qgis.Info)
+        return [QgsPoint(p) for p in longest]
+    poly = geometry.asPolyline()
+    if poly and len(poly) >= 2:
+        return [QgsPoint(p) for p in poly]
+    raise Exception("Line geometry cannot be converted to a polyline. Only single line or curve types are permitted.")
+
 # Parameters - NOW COME FROM UI INSTEAD OF HARDCODED
 # These parameters will be injected by the plugin
 try:
@@ -57,7 +85,7 @@ map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 # ENHANCED LAYER SELECTION - Use layers from UI
 try:
     if runway_layer is not None:
-        print(f"Conical: Using runway layer from UI: {runway_layer.name()}")
+        print(f"Conical: Using Runway Layer Centerline from UI: {runway_layer.name()}")
         
         if use_selected_feature:
             # Require explicit feature selection
@@ -69,31 +97,28 @@ try:
             # Use all features (take first one)
             selection = list(runway_layer.getFeatures())
             if not selection:
-                raise Exception("No features found in runway layer.")
+                raise Exception("No features found in Runway Layer Centerline.")
             print(f"Conical: Using first feature from layer (selection disabled)")
         
         print(f"Conical: Processing {len(selection)} runway features")
         
     else:
-        # No fallback - require explicit runway layer selection
-        raise Exception("No runway layer provided. Please select a runway layer from the UI.")
+        # No fallback - require explicit Runway Layer Centerline selection
+        raise Exception("No Runway Layer Centerline provided. Please select a Runway Layer Centerline from the UI.")
         
 except Exception as e:
-    print(f"Conical: Error with runway layer: {e}")
-    iface.messageBar().pushMessage("Conical Error", f"Runway layer error: {str(e)}", level=Qgis.Critical)
+    print(f"Conical: Error with Runway Layer Centerline: {e}")
+    iface.messageBar().pushMessage("Conical Error", f"Runway Layer Centerline error: {str(e)}", level=Qgis.Critical)
     raise
 
 # Get the azimuth of the line - USING ORIGINAL CALCULATION LOGIC
 for feat in selection:
-    geom = feat.geometry().asPolyline()
-    print(f"Conical: Geometry points count: {len(geom)}")
+    line_pts = _normalize_polyline_points(feat.geometry(), iface)
+    print(f"Conical: Geometry points count (normalized): {len(line_pts)}")
     
     # Use original logic - always first to last point
-    # Convert QgsPointXY to QgsPoint for compatibility
-    start_point_xy = geom[0]
-    end_point_xy = geom[-1]
-    start_point = QgsPoint(start_point_xy.x(), start_point_xy.y())
-    end_point = QgsPoint(end_point_xy.x(), end_point_xy.y())
+    start_point = QgsPoint(line_pts[0].x(), line_pts[0].y())
+    end_point = QgsPoint(line_pts[-1].x(), line_pts[-1].y())
     
     # Apply direction logic BEFORE calculating azimuth (like original)
     if s == -1:
