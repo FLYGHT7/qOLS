@@ -13,6 +13,58 @@ from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
 
+def _normalize_polyline_points(geometry: 'QgsGeometry', iface=None):
+    """Return a list of QgsPoint representing a single polyline.
+    - Accepts LineString or MultiLineString. For MultiLineString, uses the longest part.
+    - Raises on empty or non-line geometries.
+    - Optionally posts an info message to the message bar when normalizing.
+    """
+    try:
+        if geometry is None or geometry.isEmpty():
+            raise Exception("Empty geometry provided for runway centerline.")
+
+        if geometry.isMultipart():
+            parts = geometry.asMultiPolyline()
+            if not parts:
+                raise Exception("Empty MultiLineString geometry.")
+
+            def part_length(pts):
+                if not pts or len(pts) < 2:
+                    return 0.0
+                total = 0.0
+                for i in range(1, len(pts)):
+                    dx = pts[i].x() - pts[i-1].x()
+                    dy = pts[i].y() - pts[i-1].y()
+                    total += sqrt(dx*dx + dy*dy)
+                return total
+
+            longest = max(parts, key=part_length)
+            if iface and len(parts) > 1:
+                iface.messageBar().pushMessage(
+                    "QOLS Info",
+                    "MultiLineString detected; using longest part as centerline.",
+                    level=Qgis.Info
+                )
+            return [QgsPoint(p) for p in longest]
+
+        # Single part line
+        poly = geometry.asPolyline()
+        if poly and len(poly) >= 2:
+            return [QgsPoint(p) for p in poly]
+        else:
+            # Try curves gracefully if present
+            try:
+                curve = geometry.constGet()
+                if hasattr(curve, 'points'):
+                    pts = curve.points()
+                    if pts and len(pts) >= 2:
+                        return [QgsPoint(p) for p in pts]
+            except Exception:
+                pass
+            raise Exception("Line geometry cannot be converted to a polyline. Only single line or curve types are permitted.")
+    except Exception as e:
+        raise
+
 """Parameter extraction
 Prefers pythonic, UI-aligned names with backward-compatible fallbacks to legacy keys.
 """
@@ -104,42 +156,26 @@ except Exception as e:
 zih_at_start_m = (start_elevation_m - ((start_elevation_m - end_elevation_m) / rwy_length) * 1800)
 print(f"QOLS: ZIH at start (m): {zih_at_start_m}")
 
-# Get the azimuth of the line - SIMPLIFIED LOGIC
+# Get the azimuth of the line - robust to MultiLineString
 for feat in selection:
-    geom = feat.geometry().asPolyline()
-    print(f"QOLS: Geometry points count: {len(geom)}")
-    
+    line_pts = _normalize_polyline_points(feat.geometry(), iface)
+    print(f"QOLS: Geometry points count (normalized): {len(line_pts)}")
+
     # Always use the same points regardless of direction
     # Direction change is handled by azimuth rotation only
-    start_point = QgsPoint(geom[0])   # Always first point
-    end_point = QgsPoint(geom[-1])    # Always last point
+    start_point = line_pts[0]
+    end_point = line_pts[-1]
     base_azimuth_deg = start_point.azimuth(end_point)
-    
+
     print(f"QOLS: Using consistent points regardless of direction")
-    print(f"QOLS: start_point = geom[0] (first point)")
-    print(f"QOLS: end_point = geom[-1] (last point)")
+    print(f"QOLS: start_point = first vertex of normalized line")
+    print(f"QOLS: end_point = last vertex of normalized line")
     print(f"QOLS: Start point: {start_point.x()}, {start_point.y()}")
     print(f"QOLS: End point: {end_point.x()}, {end_point.y()}")
     print(f"QOLS: Base azimuth (deg): {base_azimuth_deg}")
 
-# Initial true azimuth data - FIXED LOGIC FOR PROPER DIRECTION CHANGE
-# Always use the same points but change the azimuth by exactly 180 degrees
-if direction == -1:
-    # For reverse direction, use the opposite direction (180 degrees from normal)
-    azimuth = base_azimuth_deg + 180
-    if azimuth >= 360:
-        azimuth -= 360
-    print(f"QOLS: REVERSE direction - using base_azimuth + 180 = {base_azimuth_deg} + 180 = {azimuth}")
-else:
-    # For normal direction, use the forward azimuth as-is
-    azimuth = base_azimuth_deg
-    print(f"QOLS: NORMAL direction - using base_azimuth = {azimuth}")
-
-print(f"QOLS: Using direction={direction}")
-print(f"QOLS: Base azimuth: {base_azimuth_deg}")
-print(f"QOLS: Final azimuth: {azimuth}")
-print(f"QOLS: Expected difference between directions: 180°")
-print(f"QOLS: Direction interpretation - direction={direction} means {'End to Start' if direction == -1 else 'Start to End'}")
+# Defer final azimuth until we know which threshold end is selected
+print(f"QOLS: Base azimuth (start→end) will be adjusted based on selected threshold end and UI direction toggle")
 
 # ENHANCED THRESHOLD SELECTION - Use threshold layer from UI
 try:
@@ -183,8 +219,23 @@ else:
 new_geom = QgsPoint(threshold_geom)
 new_geom.addZValue(start_elevation_m)
 
+# Determine which runway end the selected threshold corresponds to
+dist_to_start = hypot(new_geom.x() - start_point.x(), new_geom.y() - start_point.y())
+dist_to_end = hypot(new_geom.x() - end_point.x(), new_geom.y() - end_point.y())
+selected_end = 'start' if dist_to_start <= dist_to_end else 'end'
+
+# Compute outward azimuth from the selected threshold end
+outward_azimuth = base_azimuth_deg if selected_end == 'start' else (base_azimuth_deg + 180) % 360
+
+# Apply UI direction toggle: 0 = Start→End, -1 = End→Start (flip 180)
+azimuth = (outward_azimuth + (180 if direction == -1 else 0)) % 360
+
 print(f"QOLS: Threshold point: {new_geom.x()}, {new_geom.y()}, {new_geom.z()}")
-print(f"QOLS: Direction change handled by azimuth rotation (180°), not threshold position")
+print(f"QOLS: Selected threshold end: {selected_end} (dist_start={dist_to_start:.2f}, dist_end={dist_to_end:.2f})")
+print(f"QOLS: Base azimuth (start→end): {base_azimuth_deg:.6f}°")
+print(f"QOLS: Outward azimuth from selected end: {outward_azimuth:.6f}°")
+print(f"QOLS: UI direction toggle: {'End to Start' if direction == -1 else 'Start to End'}")
+print(f"QOLS: Final azimuth used for projection: {azimuth:.6f}°")
 
 construction_points = []
 

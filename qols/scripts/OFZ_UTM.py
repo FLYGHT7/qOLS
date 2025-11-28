@@ -13,6 +13,34 @@ from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
 
+def _normalize_polyline_points(geometry: 'QgsGeometry', iface=None):
+    """Return a list of QgsPoint representing a single polyline.
+    Accepts LineString or MultiLineString; for MultiLineString picks the longest part.
+    """
+    if geometry is None or geometry.isEmpty():
+        raise Exception("Empty geometry provided for runway centerline.")
+    if geometry.isMultipart():
+        parts = geometry.asMultiPolyline()
+        if not parts:
+            raise Exception("Empty MultiLineString geometry.")
+        def length_of(pts):
+            if not pts or len(pts) < 2:
+                return 0.0
+            total = 0.0
+            for i in range(1, len(pts)):
+                dx = pts[i].x() - pts[i-1].x()
+                dy = pts[i].y() - pts[i-1].y()
+                total += sqrt(dx*dx + dy*dy)
+            return total
+        longest = max(parts, key=length_of)
+        if iface and len(parts) > 1:
+            iface.messageBar().pushMessage("OFZ Info", "MultiLineString detected; using longest part as centerline.", level=Qgis.Info)
+        return [QgsPoint(p) for p in longest]
+    poly = geometry.asPolyline()
+    if poly and len(poly) >= 2:
+        return [QgsPoint(p) for p in poly]
+    raise Exception("Line geometry cannot be converted to a polyline. Only single line or curve types are permitted.")
+
 # Parameters - NOW COME FROM UI INSTEAD OF HARDCODED
 try:
     # Try to get parameters from plugin namespace
@@ -106,14 +134,13 @@ except Exception as e:
 ZIHs = ((Z0-((Z0-ZE)/rwy_length)*1800))
 print(f"OFZ: ZIHs calculated: {ZIHs}")
 
-# Get the azimuth of the line - SIMPLIFIED LOGIC
+# Get the azimuth of the line - robust to MultiLineString
 for feat in selection:
-    geom = feat.geometry().asPolyline()
-    print(f"OFZ: Geometry points count: {len(geom)}")
-    
+    pts = _normalize_polyline_points(feat.geometry(), iface)
+    print(f"OFZ: Geometry points count (normalized): {len(pts)}")
     # Always use the same points regardless of direction
-    start_point = QgsPoint(geom[0])   # Always first point
-    end_point = QgsPoint(geom[-1])    # Always last point
+    start_point = pts[0]
+    end_point = pts[-1]
     angle0 = start_point.azimuth(end_point)
     
     print(f"OFZ: Using consistent points regardless of direction")

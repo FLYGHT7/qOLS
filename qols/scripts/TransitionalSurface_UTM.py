@@ -12,6 +12,34 @@ from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from math import *
 
+def _normalize_polyline_points(geometry: 'QgsGeometry', iface=None):
+    """Return a list of QgsPoint representing a single polyline.
+    Accepts LineString or MultiLineString; for MultiLineString picks the longest part.
+    """
+    if geometry is None or geometry.isEmpty():
+        raise Exception("Empty geometry provided for runway centerline.")
+    if geometry.isMultipart():
+        parts = geometry.asMultiPolyline()
+        if not parts:
+            raise Exception("Empty MultiLineString geometry.")
+        def length_of(pts):
+            if not pts or len(pts) < 2:
+                return 0.0
+            total = 0.0
+            for i in range(1, len(pts)):
+                dx = pts[i].x() - pts[i-1].x()
+                dy = pts[i].y() - pts[i-1].y()
+                total += sqrt(dx*dx + dy*dy)
+            return total
+        longest = max(parts, key=length_of)
+        if iface and len(parts) > 1:
+            iface.messageBar().pushMessage("Transitional Info", "MultiLineString detected; using longest part as centerline.", level=Qgis.Info)
+        return [QgsPoint(p) for p in longest]
+    poly = geometry.asPolyline()
+    if poly and len(poly) >= 2:
+        return [QgsPoint(p) for p in poly]
+    raise Exception("Line geometry cannot be converted to a polyline. Only single line or curve types are permitted.")
+
 # Parameters - NOW COME FROM UI INSTEAD OF HARDCODED
 # These parameters will be injected by the plugin
 try:
@@ -108,12 +136,12 @@ print(f"TransitionalSurface: ZIHs calculated: {ZIHs}")
         
 #Get the azimuth of the line - ORIGINAL SIMPLE LOGIC
 for feat in selection:
-    geom = feat.geometry().asPolyline()
-    print(f"TransitionalSurface: Geometry points count: {len(geom)}")
+    line_pts = _normalize_polyline_points(feat.geometry(), iface)
+    print(f"TransitionalSurface: Geometry points count (normalized): {len(line_pts)}")
     
     # ORIGINAL LOGIC - SIMPLE AND WORKING
-    start_point = QgsPoint(geom[-1-s])
-    end_point = QgsPoint(geom[s])
+    start_point = line_pts[-1-s]
+    end_point = line_pts[s]
     angle0 = start_point.azimuth(end_point)
     
     print(f"TransitionalSurface: start_point index: {-1-s}, end_point index: {s}")
@@ -172,8 +200,8 @@ print(f"TransitionalSurface: Runway direction parameter s={s}")
 print(f"TransitionalSurface: s=0 means normal direction, s=-1 means inverted direction")
 
 # Use original runway point selection logic - this LITERALLY inverts the runway
-start_point = QgsPoint(geom[-1-s])
-end_point = QgsPoint(geom[s])
+start_point = line_pts[-1-s]
+end_point = line_pts[s]
 angle0 = start_point.azimuth(end_point)
 
 print(f"TransitionalSurface: Start point index: {-1-s}, End point index: {s}")
