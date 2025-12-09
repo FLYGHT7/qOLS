@@ -124,16 +124,16 @@ for feat in selection:
 
 # Initial true azimuth data - FIXED LOGIC FOR PROPER DIRECTION CHANGE
 # Always use the same points but change the azimuth by exactly 180 degrees
-if direction == -1:
-    # End → Start selected: use runway forward azimuth as-is
+if direction == 0:
+    # Start → End selected: use runway forward azimuth as-is
     azimuth = base_azimuth_deg
-    print(f"QOLS: End→Start direction - using base_azimuth = {azimuth}")
+    print(f"QOLS: Start→End direction - using base_azimuth = {azimuth}")
 else:
-    # Start → End selected: invert azimuth by 180° (client-required inverse logic)
+    # End → Start selected: invert azimuth by 180°
     azimuth = base_azimuth_deg + 180
     if azimuth >= 360:
         azimuth -= 360
-    print(f"QOLS: Start→End direction - using base_azimuth + 180 = {base_azimuth_deg} + 180 = {azimuth}")
+    print(f"QOLS: End→Start direction - using base_azimuth + 180 = {base_azimuth_deg} + 180 = {azimuth}")
 
 print(f"QOLS: Using direction={direction}")
 print(f"QOLS: Base azimuth: {base_azimuth_deg}")
