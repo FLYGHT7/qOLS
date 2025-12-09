@@ -14,6 +14,34 @@ from qgis.PyQt.QtCore import QVariant
 from qgis.utils import iface
 from math import *
 
+def _normalize_polyline_points(geometry: 'QgsGeometry', iface=None):
+    """Return a list of QgsPoint representing a single polyline.
+    Accepts LineString or MultiLineString; for MultiLineString picks the longest part.
+    """
+    if geometry is None or geometry.isEmpty():
+        raise Exception("Empty geometry provided for runway centerline.")
+    if geometry.isMultipart():
+        parts = geometry.asMultiPolyline()
+        if not parts:
+            raise Exception("Empty MultiLineString geometry.")
+        def length_of(pts):
+            if not pts or len(pts) < 2:
+                return 0.0
+            total = 0.0
+            for i in range(1, len(pts)):
+                dx = pts[i].x() - pts[i-1].x()
+                dy = pts[i].y() - pts[i-1].y()
+                total += sqrt(dx*dx + dy*dy)
+            return total
+        longest = max(parts, key=length_of)
+        if iface and len(parts) > 1:
+            iface.messageBar().pushMessage("TakeOffSurface Info", "MultiLineString detected; using longest part as centerline.", level=Qgis.Info)
+        return [QgsPoint(p) for p in longest]
+    poly = geometry.asPolyline()
+    if poly and len(poly) >= 2:
+        return [QgsPoint(p) for p in poly]
+    raise Exception("Line geometry cannot be converted to a polyline. Only single line or curve types are permitted.")
+
 # UI Parameters - Get from plugin or use defaults (now driven by UI)
 print("TakeOffSurface: Script started - checking for UI parameters...")
 print(f"TakeOffSurface: Available globals keys: {list(globals().keys())}")
@@ -93,23 +121,23 @@ except Exception as e:
     print(f"TakeOffSurface: CRS Traceback: {traceback.format_exc()}")
     raise
 
-# RUNWAY LAYER SELECTION - Hybrid approach
+# RUNWAY LAYER CENTERLINE SELECTION - Hybrid approach
 try:
     if runway_layer:
         # Use layer from UI
-        print(f"TakeOffSurface: Using runway layer from UI: {runway_layer.name()}")
+        print(f"TakeOffSurface: Using Runway Layer Centerline from UI: {runway_layer.name()}")
         layer = runway_layer
         selection = layer.selectedFeatures()
         if not selection:
             # No selection, use all features
             selection = list(layer.getFeatures())
             if not selection:
-                raise Exception("No features found in runway layer.")
+                raise Exception("No features found in Runway Layer Centerline.")
             print(f"TakeOffSurface: No selection, using first feature from layer")
             selection = [selection[0]]
     else:
-        # ORIGINAL METHOD - Gets the runway layer based on name and selected feature
-        print("TakeOffSurface: No runway layer from UI, searching by name")
+        # ORIGINAL METHOD - Gets the Runway Layer Centerline based on name and selected feature
+        print("TakeOffSurface: No Runway Layer Centerline from UI, searching by name")
         for layer in QgsProject.instance().mapLayers().values():
             if "runway" in layer.name():
                 layer = layer
@@ -120,9 +148,9 @@ try:
                         selection = [selection[0]]
                 break
         else:
-            raise Exception("No runway layer found")
+            raise Exception("No Runway Layer Centerline found")
     
-    print(f"TakeOffSurface: Using runway layer: {layer.name()}")
+    print(f"TakeOffSurface: Using Runway Layer Centerline: {layer.name()}")
     
     # ORIGINAL runway calculations
     rwy_geom = selection[0].geometry()
@@ -131,8 +159,8 @@ try:
     print(f"TakeOffSurface: rwy_length={rwy_length}")
     
 except Exception as e:
-    print(f"TakeOffSurface: Error with runway layer: {e}")
-    iface.messageBar().pushMessage("TakeOffSurface Error", f"Runway layer error: {str(e)}", level=Qgis.Critical)
+    print(f"TakeOffSurface: Error with Runway Layer Centerline: {e}")
+    iface.messageBar().pushMessage("TakeOffSurface Error", f"Runway Layer Centerline error: {str(e)}", level=Qgis.Critical)
     raise
 
 # ORIGINAL ZIHs calculation (kept for compatibility; not used in geometry below)
@@ -140,18 +168,18 @@ ZIHs = ((Z0 - ((Z0 - ZE) / rwy_length) * 1800))
 
 # Get the azimuth of the line - FIXED: Simplified consistent logic like other scripts
 for feat in selection:
-    geom = feat.geometry().asPolyline()
-    print(f"TakeOffSurface: Geometry points count: {len(geom)}")
+    line_pts = _normalize_polyline_points(feat.geometry(), iface)
+    print(f"TakeOffSurface: Geometry points count (normalized): {len(line_pts)}")
     
     # FIXED: Always use the same points regardless of direction
     # Direction change is handled by azimuth rotation only (like approach-surface)
-    start_point = QgsPoint(geom[0])   # Always first point
-    end_point = QgsPoint(geom[-1])    # Always last point
+    start_point = line_pts[0]   # Always first point
+    end_point = line_pts[-1]    # Always last point
     angle0 = start_point.azimuth(end_point)
     
     print(f"TakeOffSurface: Using consistent points regardless of direction")
-    print(f"TakeOffSurface: start_point = geom[0] (first point)")
-    print(f"TakeOffSurface: end_point = geom[-1] (last point)")
+    print(f"TakeOffSurface: start_point = first vertex of normalized line")
+    print(f"TakeOffSurface: end_point = last vertex of normalized line")
     print(f"TakeOffSurface: Start point: {start_point.x():.2f}, {start_point.y():.2f}")
     print(f"TakeOffSurface: End point: {end_point.x():.2f}, {end_point.y():.2f}")
     print(f"TakeOffSurface: Base azimuth (angle0): {angle0:.2f}°")

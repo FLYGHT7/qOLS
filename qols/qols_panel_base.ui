@@ -143,7 +143,7 @@
           <item>
            <widget class="QLabel" name="runwayTitleLabel">
             <property name="text">
-             <string>Runway Layer</string>
+             <string>Runway Layer Centerline</string>
             </property>
             <property name="styleSheet">
              <string>QLabel { font-weight: bold; }</string>
@@ -166,7 +166,7 @@
                <number>28</number>
               </property>
               <property name="toolTip">
-               <string>Select the runway layer from your project. This layer should contain line features representing runway centerlines.</string>
+               <string>Select the Runway Layer Centerline from your project. This layer should contain line features representing runway centerlines.</string>
               </property>
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
