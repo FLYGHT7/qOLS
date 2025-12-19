@@ -131,11 +131,15 @@ try:
                 raise Exception("No runway features selected. Please select runway features.")
             print(f"QOLS: Using {len(selection)} selected runway features")
         else:
-            # Use all features (take first one)
-            selection = list(runway_layer.getFeatures())
-            if not selection:
-                raise Exception("No features found in Runway Layer Centerline.")
-            print(f"QOLS: Using first feature from layer (selection disabled)")
+            # If user has a selection, prefer it even if the checkbox is off; otherwise use first feature
+            selection = runway_layer.selectedFeatures()
+            if selection:
+                print(f"QOLS: Selection detected (checkbox off) — using {len(selection)} selected runway features")
+            else:
+                selection = list(runway_layer.getFeatures())
+                if not selection:
+                    raise Exception("No features found in Runway Layer Centerline.")
+                print(f"QOLS: Using first feature from layer (selection disabled and no active selection)")
         
         print(f"QOLS: Processing {len(selection)} runway features")
         rwy_geom = selection[0].geometry()
@@ -189,11 +193,15 @@ try:
                 raise Exception("No threshold features selected. Please select threshold features.")
             print(f"QOLS: Using {len(threshold_selection)} selected threshold features")
         else:
-            # Use all features (take first one)
-            threshold_selection = list(threshold_layer.getFeatures())
-            if not threshold_selection:
-                raise Exception("No features found in threshold layer.")
-            print(f"QOLS: Using first threshold feature from layer (selection disabled)")
+            # If there is an active selection, honor it even if the checkbox is off; otherwise use first feature
+            threshold_selection = threshold_layer.selectedFeatures()
+            if threshold_selection:
+                print(f"QOLS: Selection detected (checkbox off) — using {len(threshold_selection)} selected threshold features")
+            else:
+                threshold_selection = list(threshold_layer.getFeatures())
+                if not threshold_selection:
+                    raise Exception("No features found in threshold layer.")
+                print(f"QOLS: Using first threshold feature from layer (selection disabled and no active selection)")
         
         print(f"QOLS: Processing {len(threshold_selection)} threshold features")
         
