@@ -227,8 +227,11 @@ selected_end = 'start' if dist_to_start <= dist_to_end else 'end'
 # Compute outward azimuth from the selected threshold end
 outward_azimuth = base_azimuth_deg if selected_end == 'start' else (base_azimuth_deg + 180) % 360
 
-# Apply UI direction toggle: 0 = Start→End, -1 = End→Start (flip 180)
-azimuth = (outward_azimuth + (180 if direction == -1 else 0)) % 360
+# UI toggle: client wants Start→End to be the opposite of the outward azimuth; End→Start follows outward azimuth
+if direction == 0:  # Start → End
+    azimuth = (outward_azimuth + 180) % 360
+else:  # End → Start
+    azimuth = outward_azimuth
 
 print(f"QOLS: Threshold point: {new_geom.x()}, {new_geom.y()}, {new_geom.z()}")
 print(f"QOLS: Selected threshold end: {selected_end} (dist_start={dist_to_start:.2f}, dist_end={dist_to_end:.2f})")
