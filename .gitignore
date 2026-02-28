@@ -12,6 +12,10 @@ pyproject.toml
 .claude/
 skills-lock.json
 
+# Python cache
+__pycache__/
+*.py[cod]
+
 #igonre test
 tests/
 pytest.ini
