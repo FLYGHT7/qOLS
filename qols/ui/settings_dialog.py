@@ -1,11 +1,20 @@
+"""qOLS Settings Dialog.
+
+Provides :class:`RulesSettingsDialog`, a simple modal dialog that lets
+the user:
+
+* Select the active Rule Set from the discovered JSON files.
+* Reload rule files from disk without restarting QGIS.
+* Open the rules folder in the file manager.
+"""
 import os
 from qgis.PyQt import QtWidgets, QtCore
 from qgis.PyQt.QtCore import Qt, QUrl
 from qgis.PyQt.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton, QDialogButtonBox
 from qgis.PyQt.QtGui import QDesktopServices
 
-from .rules import manager as rule_mgr
-from .compat import BTN_SAVE, BTN_CANCEL
+from ..rules import manager as rule_mgr
+from ..compat import BTN_SAVE, BTN_CANCEL
 
 
 class RulesSettingsDialog(QDialog):
@@ -21,7 +30,7 @@ class RulesSettingsDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("QOLS Settings")
         self.setModal(True)
-        self._rules_dir = os.path.join(os.path.dirname(__file__), 'rules')
+        self._rules_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'rules')
 
         self._build_ui()
         self._load_rule_sets()

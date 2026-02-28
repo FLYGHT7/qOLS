@@ -96,17 +96,17 @@ _SLOPE2_MAP = {
 
 
 def get_approach_defaults(rwy_classification: str, code: int) -> Dict[str, float]:
-    """Return defaults for APPROACH surface for given classification & code.
+    """Return ICAO Annex 14 Table 4-1 Approach surface defaults.
 
-    Returns dict:
-      width_m
-      threshold_offset_m
-      divergence_ratio
-      L1_m
-      first_section_slope
-      L2_m
-      second_section_slope
-      LH_m
+    Args:
+        rwy_classification: Canonical runway classification string.
+        code: Aerodrome reference code (1–4).
+
+    Returns:
+        Dict with keys ``width_m``, ``threshold_offset_m``,
+        ``divergence_ratio``, ``L1_m``, ``first_section_slope``,
+        ``L2_m``, ``second_section_slope``, ``LH_m``.
+        All lengths in metres; slopes as decimal ratios.
     """
     code = int(code)
     rwy = rwy_classification

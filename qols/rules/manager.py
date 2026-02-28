@@ -1,3 +1,21 @@
+"""Rule-set manager for qOLS.
+
+Loads JSON rule files from the package :file:`rules/` directory,
+normalises classification keys to the four ICAO canonical values, and
+exports singleton-based convenience functions for the rest of the plugin.
+
+JSON schema (per rule file)::
+
+    {
+      "name": "<human-readable name>",
+      "approach": {"width_m": {"<class>": {<code>: <value>, ...}, ...}},
+      "conical":  {"height_m": { ... }},
+      ...
+    }
+
+The singleton :data:`_RM` is created at import time and is reset by
+calling :func:`reload_rules`.
+"""
 import os
 import json
 from typing import Dict, Optional, Any
@@ -12,6 +30,50 @@ CLASS_KEYS = [
     'Precision Approach CAT II or III',
 ]
 
+# Alias table: maps any recognised variant (lowercase) to a canonical CLASS_KEY.
+# More specific phrases come before shorter ones to prevent substring shadowing.
+_CLASSIFICATION_ALIASES: dict = {
+    'non-instrument':                    'Non-instrument',
+    'non-precision approach':            'Non-precision approach',
+    'non-precision':                     'Non-precision approach',
+    'precision approach cat ii or iii':  'Precision Approach CAT II or III',
+    'precision approach cat ii':         'Precision Approach CAT II or III',
+    'precision approach cat iii':        'Precision Approach CAT II or III',
+    'cat ii or iii':                     'Precision Approach CAT II or III',
+    'cat ii':                            'Precision Approach CAT II or III',
+    'cat iii':                           'Precision Approach CAT II or III',
+    'precision approach cat i':          'Precision Approach CAT I',
+    'cat i':                             'Precision Approach CAT I',
+}
+
+# Substring rules for fuzzy/informal keys — ORDER MATTERS (more specific first).
+_CONTAINS_RULES = [
+    ('non-instrument',  'Non-instrument'),
+    ('non-precision',   'Non-precision approach'),
+    ('cat ii',          'Precision Approach CAT II or III'),  # before 'cat i'
+    ('cat iii',         'Precision Approach CAT II or III'),
+    ('cat i',           'Precision Approach CAT I'),
+]
+
+
+def _normalize_classification_key(raw: str) -> str:
+    """Return the canonical CLASS_KEY for *raw*, or *raw* unchanged if unrecognised.
+
+    Resolution order:
+    1. Exact lowercase match against _CLASSIFICATION_ALIASES.
+    2. Substring match via _CONTAINS_RULES (ordered, more-specific first).
+    3. Return *raw* unchanged.
+    """
+    k = str(raw).strip()
+    k_lower = k.lower()
+    exact = _CLASSIFICATION_ALIASES.get(k_lower)
+    if exact:
+        return exact
+    for substr, canonical in _CONTAINS_RULES:
+        if substr in k_lower:
+            return canonical
+    return k
+
 
 class RuleManager:
     """Loads JSON rule sets from the qols/rules folder and provides lookups.
@@ -22,9 +84,14 @@ class RuleManager:
     def __init__(self):
         self._rules_loaded = False
         self._registry: Dict[str, Dict[str, Any]] = {}
-        self._rules_dir = os.path.join(os.path.dirname(__file__), 'rules')
+        self._rules_dir = os.path.dirname(__file__)
 
     def load(self):
+        """Load all JSON rule files from the rules directory into the registry.
+
+        Idempotent: repeated calls are no-ops until :meth:`reload` is called.
+        Broken JSON files are silently skipped.
+        """
         if self._rules_loaded:
             return
         self._registry.clear()
@@ -59,30 +126,7 @@ class RuleManager:
         def normalize_map(m: Dict[str, Any]) -> Dict[str, Any]:
             if not isinstance(m, dict):
                 return {}
-            result = {}
-            for key, value in m.items():
-                # Attempt to match by case-insensitive containment
-                k_lower = str(key).strip().lower()
-                mapped = None
-                for ck in CLASS_KEYS:
-                    if k_lower == ck.lower():
-                        mapped = ck
-                        break
-                    # simple aliasing
-                    if 'non-instrument' in k_lower and ck == 'Non-instrument':
-                        mapped = ck
-                        break
-                    if 'non-precision' in k_lower and ck == 'Non-precision approach':
-                        mapped = ck
-                        break
-                    if 'cat i' in k_lower and ck == 'Precision Approach CAT I':
-                        mapped = ck
-                        break
-                    if ('cat ii' in k_lower or 'cat iii' in k_lower) and ck == 'Precision Approach CAT II or III':
-                        mapped = ck
-                        break
-                result[mapped or key] = value
-            return result
+            return {_normalize_classification_key(k): v for k, v in m.items()}
 
         # Inner Horizontal
         ih = data.get('inner_horizontal')
@@ -129,10 +173,22 @@ class RuleManager:
                     bl[key] = normalize_map(bl.get(key, {}))
 
     def list_rule_sets(self) -> Dict[str, Dict[str, Any]]:
+        """Return a shallow copy of the loaded rule-set registry.
+
+        Returns:
+            Mapping of rule-set name to its raw data dict.
+            Empty dict if no rule files exist.
+        """
         self.load()
         return dict(self._registry)
 
     def get_active_rule_set_name(self) -> Optional[str]:
+        """Return the currently active rule-set name, or ``None`` if unset.
+
+        Reads from ``QSettings`` key ``'QOLS/ActiveRuleSet'``.
+        If exactly one rule set is loaded and no preference is stored,
+        the single rule set is returned implicitly.
+        """
         try:
             settings = QSettings()
             name = settings.value('QOLS/ActiveRuleSet', type=str)
@@ -146,6 +202,12 @@ class RuleManager:
             return None
 
     def set_active_rule_set_name(self, name: Optional[str]):
+        """Persist the active rule-set name to ``QSettings``.
+
+        Args:
+            name: Name of an existing loaded rule set to activate,
+                or ``None`` to clear the preference.
+        """
         settings = QSettings()
         if name and name in self._registry:
             settings.setValue('QOLS/ActiveRuleSet', name)
@@ -160,6 +222,16 @@ class RuleManager:
         return None
 
     def get_inner_horizontal_defaults(self, rwy_classification: str, code: int) -> Optional[Dict[str, float]]:
+        """Return inner horizontal surface defaults from the active rule set.
+
+        Args:
+            rwy_classification: Canonical runway classification string.
+            code: Aerodrome reference code (1–4).
+
+        Returns:
+            Dict with a subset of keys ``height_m``, ``radius_m``;
+            or ``None`` if no active rule set or no matching entry.
+        """
         rs = self._get_active()
         if not rs:
             return None
@@ -187,6 +259,17 @@ class RuleManager:
         return result if result else None
 
     def get_conical_defaults(self, rwy_classification: str, code: int) -> Optional[Dict[str, float]]:
+        """Return conical surface defaults from the active rule set.
+
+        Args:
+            rwy_classification: Canonical runway classification string.
+            code: Aerodrome reference code (1–4).
+
+        Returns:
+            Dict with a subset of keys ``height_m``, ``slope_pct``,
+            ``radius_m``; or ``None`` if no active rule set or no
+            matching entry.
+        """
         rs = self._get_active()
         if not rs:
             return None
@@ -224,7 +307,11 @@ class RuleManager:
     def _class_code_lookup(self, mapping: Dict[str, Any], rwy_classification: str, code: int) -> Optional[float]:
         try:
             class_map = mapping.get(rwy_classification) or {}
-            val = class_map.get(str(int(code))) or class_map.get(int(code))
+            # Use explicit None check — do NOT use `or` here because 0 is a
+            # valid value and would be treated as falsy, silently dropping it.
+            val = class_map.get(str(int(code)))
+            if val is None:
+                val = class_map.get(int(code))
             return float(val) if val is not None else None
         except Exception:
             return None
