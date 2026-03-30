@@ -24,3 +24,4 @@ pytest.ini
 # Ignore md
 REFACTOR_PLAN.md
 CONTRIBUTING.md
+qols.zip
