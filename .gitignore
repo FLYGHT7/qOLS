@@ -1,19 +1,9 @@
 *.zip
-# Ignore the doc/ directory
-doc/
-#ignore skills
-.agent/
-.agents/
-.claude/
-.vscode
-skills-lock.json
-
 
 # Ignore the tests/ directory
 tests/
-pyproject.toml
 pytest.ini
 
-#python cache
+# Python cache
 __pycache__/
 *.pyc
