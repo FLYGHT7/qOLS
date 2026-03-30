@@ -168,8 +168,8 @@ def contour_specs_for_linear_section(
 
 | ID    | Task                                                                                                                     | Risk | Status |
 | ----- | ------------------------------------------------------------------------------------------------------------------------ | ---- | ------ |
-| CT-01 | Create `qols/scripts/_contour_utils.py` with `ContourSpec`, `contour_elevations()`, `contour_specs_for_linear_section()` | None | ⏳     |
-| CT-02 | Unit tests for `_contour_utils.py` (no QGIS required)                                                                    | None | ⏳     |
+| CT-01 | Create `qols/scripts/_contour_utils.py` with `ContourSpec`, `contour_elevations()`, `contour_specs_for_linear_section()` | None | ✅     |
+| CT-02 | Unit tests for `_contour_utils.py` (no QGIS required)                                                                    | None | ✅     |
 
 ### Phase 2 — UI Parameters
 
@@ -269,3 +269,4 @@ contour_layer.setLabelsEnabled(True)
 | Date       | Entry                                                                                   |
 | ---------- | --------------------------------------------------------------------------------------- |
 | 2026-03-30 | Feature plan created. Branch `feature/84-stepped-surface-contours` created from `main`. |
+| 2026-03-30 | Phase 1 complete — `_contour_utils.py` (CT-01) and `test_contour_utils.py` (CT-02) committed. 26/26 tests pass. |

@@ -235,6 +235,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_radius_outer', 'spin_height_outer',
                 'spin_widthDep_takeoff', 'spin_maxWidthDep_takeoff',
                 'spin_CWYLength_takeoff', 'spin_Z0_takeoff',
+                'spin_contour_interval', 'spin_contour_interval_takeoff',
                 'spin_widthApp_transitional', 'spin_Z0_transitional', 'spin_ZE_transitional',
                 'spin_ARPH_transitional', 'spin_Tslope_transitional'
             ]
@@ -246,7 +247,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_L_inner': '4000.00', 'spin_height_inner': '45.00',
                 'spin_width_ofz': '120.00', 'spin_Z0_ofz': '2548.00', 'spin_ZE_ofz': '2546.50',
                 'spin_ARPH_ofz': '2548.00', 'spin_IHSlope_ofz': '33.30',
-                'spin_radius_outer': '15000.00', 'spin_height_outer': '150.00'
+                'spin_radius_outer': '15000.00', 'spin_height_outer': '150.00',
+                'spin_contour_interval': '10', 'spin_contour_interval_takeoff': '10'
             }
             
             # Allow unlimited decimals; optional sign and decimal part
@@ -2011,7 +2013,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'divergence_ratio': getattr(self, '_approach_divergence_ratio', 0.15),
                     'first_section_slope': getattr(self, '_approach_slope1', 0.02),
                     'second_section_slope': getattr(self, '_approach_slope2', 0.025),
-                    'threshold_offset_m': getattr(self, '_approach_threshold_offset', 60.0)
+                    'threshold_offset_m': getattr(self, '_approach_threshold_offset', 60.0),
+                    'contour_interval_m': int(round(self.get_numeric_value('spin_contour_interval')))
                 }
             elif surface_type == "Conical":
                 specific_params = {
@@ -2094,7 +2097,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'startDistance': float(self.spin_startDistance_takeoff.text() or "60") if hasattr(self, 'spin_startDistance_takeoff') else 60.0,
                     'surfaceLength': float(self.spin_surfaceLength_takeoff.text() or "15000") if hasattr(self, 'spin_surfaceLength_takeoff') else 15000.0,
                     'slopePct': float(self.spin_slope_takeoff.text() or "2.0") if hasattr(self, 'spin_slope_takeoff') else 2.0,
-                    'direction': s_value
+                    'direction': s_value,
+                    'contour_interval_m': int(round(self.get_numeric_value('spin_contour_interval_takeoff')))
                 }
                 print(f"QOLS DEBUG: Take-off Surface specific_params = {specific_params}")
             elif surface_type == "Transitional Surface" or surface_type == "Transitional":
