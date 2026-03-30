@@ -175,11 +175,11 @@ def contour_specs_for_linear_section(
 
 | ID    | Task                                                                                              | Risk | Status |
 | ----- | ------------------------------------------------------------------------------------------------- | ---- | ------ |
-| CT-03 | Add `spin_contour_interval` QLineEdit row to Approach Surface tab in `qols_panel_base.ui`         | Low  | ⏳     |
-| CT-04 | Add `spin_contour_interval_takeoff` QLineEdit row to Take-Off Surface tab in `qols_panel_base.ui` | Low  | ⏳     |
-| CT-05 | Add validation for both fields in `setup_numeric_lineedit_validation()` (integer ≥ 0, default 10) | Low  | ⏳     |
-| CT-06 | Expose `contour_interval_m` in `get_parameters()` for `"Approach Surface"` branch                 | Low  | ⏳     |
-| CT-07 | Expose `contour_interval_m` in `get_parameters()` for `"Take-Off Surface"` branch                 | Low  | ⏳     |
+| CT-03 | Add `spin_contour_interval` QLineEdit row to Approach Surface tab in `qols_panel_base.ui`         | Low  | ✅     |
+| CT-04 | Add `spin_contour_interval_takeoff` QLineEdit row to Take-Off Surface tab in `qols_panel_base.ui` | Low  | ✅     |
+| CT-05 | Add validation for both fields in `setup_numeric_lineedit_validation()` (integer ≥ 0, default 10) | Low  | ✅     |
+| CT-06 | Expose `contour_interval_m` in `get_parameters()` for `"Approach Surface"` branch                 | Low  | ✅     |
+| CT-07 | Expose `contour_interval_m` in `get_parameters()` for `"Take-Off Surface"` branch                 | Low  | ✅     |
 
 ### Phase 3 — Approach Surface contours
 
@@ -270,3 +270,4 @@ contour_layer.setLabelsEnabled(True)
 | ---------- | --------------------------------------------------------------------------------------- |
 | 2026-03-30 | Feature plan created. Branch `feature/84-stepped-surface-contours` created from `main`. |
 | 2026-03-30 | Phase 1 complete — `_contour_utils.py` (CT-01) and `test_contour_utils.py` (CT-02) committed. 26/26 tests pass. |
+| 2026-03-30 | Phase 2 complete — `spin_contour_interval` / `spin_contour_interval_takeoff` added to UI, validation and `get_parameters()` wired (CT-03–CT-07). |
