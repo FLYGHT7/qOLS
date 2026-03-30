@@ -6,4 +6,8 @@ pytest.ini
 
 # Python cache
 __pycache__/
+.pytest_cache/
 *.pyc
+
+#docs
+doc/
