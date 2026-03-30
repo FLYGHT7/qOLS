@@ -1,1 +1,26 @@
-*.zip
+# Ignore development docs
+/doc/
+.vscode/
+.idea/
+.venv/
+pyproject.toml
+
+
+# ignore agent
+.agent/
+.agents/
+.claude/
+skills-lock.json
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+#igonre test
+tests/
+pytest.ini
+.pytest_cache/
+
+# Ignore md
+REFACTOR_PLAN.md
+CONTRIBUTING.md

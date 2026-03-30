@@ -10,10 +10,9 @@ for clarity and DOC 9137 compliance.
 '''
 
 from qgis.core import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
+from qgis.PyQt.QtCore import *
+from qgis.PyQt.QtGui import *
 from qgis.gui import *
-from qgis.PyQt.QtCore import QVariant
 from math import *
 
 # Work exclusively in projected coordinate system - no transformations needed
