@@ -489,6 +489,7 @@ class QOLS:
             # Using .update() instead of double **-unpack makes key collisions
             # visible and prevents silent overwrites.
             exec_namespace: dict = {
+                '__file__': script_path,  # Allow scripts to locate sibling files (e.g. _contour_utils.py)
                 'iface': self.iface,
                 'QgsProject': QgsProject,
                 'QgsVectorLayer': QgsVectorLayer,

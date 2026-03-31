@@ -5,7 +5,6 @@
 .venv/
 pyproject.toml
 
-
 # ignore agent
 .agent/
 .agents/
@@ -15,11 +14,11 @@ skills-lock.json
 # Python cache
 __pycache__/
 *.py[cod]
+.pytest_cache/
 
-#igonre test
+# Tests
 tests/
 pytest.ini
-.pytest_cache/
 
 # Ignore md
 REFACTOR_PLAN.md
