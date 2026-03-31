@@ -379,14 +379,7 @@ if contour_interval_m > 0:
             _cfeats.append(_feat)
         _clayer.dataProvider().addFeatures(_cfeats)
 
-        _sym = QgsLineSymbol.createSimple({'color': 'red', 'width': '0.5'})
-        _clayer.setRenderer(QgsSingleSymbolRenderer(_sym))
-
-        _pal = QgsPalLayerSettings()
-        _pal.fieldName = 'surface_elevation'
-        _pal.enabled = True
-        _clayer.setLabeling(QgsVectorLayerSimpleLabeling(_pal))
-        _clayer.setLabelsEnabled(True)
+        _cu.apply_contour_style(_clayer, __file__)
 
         QgsProject.instance().addMapLayers([_clayer])
         _clayer.triggerRepaint()

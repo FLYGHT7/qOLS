@@ -213,3 +213,65 @@ def contour_specs_for_takeoff(
             half_width=half_w,
         ))
     return specs
+
+
+# ---------------------------------------------------------------------------
+# Layer styling
+# ---------------------------------------------------------------------------
+
+def apply_contour_style(layer, script_file: str) -> bool:
+    """Apply the distributed QML style to a contour layer.
+
+    Looks for ``<plugin_root>/styles/contour_styling.qml`` relative to the
+    calling script's location (``script_file`` should be ``__file__`` of the
+    caller, e.g. ``approach-surface-UTM.py``).
+
+    If the file is found and successfully loaded it is preferred over the
+    hardcoded fallback.  If the file is missing or ``loadNamedStyle`` fails,
+    the fallback is applied silently so the layer is always styled.
+
+    The fallback style matches the previous behaviour:
+      * Red solid line, 0.5 mm
+      * Plain label from the ``surface_elevation`` field
+
+    Args:
+        layer:       A ``QgsVectorLayer`` (LineStringZ) for the contour layer.
+        script_file: ``__file__`` of the calling script.  Used to locate the
+                     ``styles/`` folder one directory above ``scripts/``.
+
+    Returns:
+        ``True`` if the QML file was applied, ``False`` if the fallback was used.
+    """
+    import os
+
+    # styles/ lives at <plugin_root>/styles/ — one level above scripts/
+    styles_path = os.path.join(
+        os.path.dirname(os.path.dirname(script_file)),
+        'styles',
+        'contour_styling.qml',
+    )
+
+    if os.path.isfile(styles_path):
+        try:
+            _msg, success = layer.loadNamedStyle(styles_path)
+            if success:
+                layer.triggerRepaint()
+                return True
+        except Exception:
+            pass  # fall through to hardcoded fallback
+
+    # Fallback: hardcoded style (previous behaviour, always safe)
+    from qgis.core import (  # noqa: PLC0415 — intentional late import (no QGIS at test time)
+        QgsLineSymbol,
+        QgsSingleSymbolRenderer,
+        QgsPalLayerSettings,
+        QgsVectorLayerSimpleLabeling,
+    )
+    _sym = QgsLineSymbol.createSimple({'color': 'red', 'width': '0.5'})
+    layer.setRenderer(QgsSingleSymbolRenderer(_sym))
+    _pal = QgsPalLayerSettings()
+    _pal.fieldName = 'surface_elevation'
+    _pal.enabled = True
+    layer.setLabeling(QgsVectorLayerSimpleLabeling(_pal))
+    layer.setLabelsEnabled(True)
+    return False
