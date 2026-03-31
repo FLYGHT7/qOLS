@@ -1,4 +1,4 @@
-﻿'''
+'''
 Inner Approach Surface — supports RWY Classification and Code propagation to attributes
 Procedure to be used in Projected Coordinate System Only
 ENHANCED VERSION - Uses dynamic parameters from UI

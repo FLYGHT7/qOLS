@@ -1,4 +1,4 @@
-﻿'''
+'''
 Transitional Surface 
 Procedure to be used in Projected Coordinate System Only
 ENHANCED VERSION - Uses dynamic parameters from UI

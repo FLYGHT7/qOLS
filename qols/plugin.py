@@ -1,4 +1,4 @@
-﻿"""qOLS QGIS Plugin entrypoint.
+"""qOLS QGIS Plugin entrypoint.
 
 Defines the :class:`QOLS` class that QGIS instantiates via
 ``classFactory(iface)`` when the plugin is loaded.  Owns the toolbar

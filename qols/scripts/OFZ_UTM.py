@@ -1,4 +1,4 @@
-﻿'''
+'''
 Inner Approach Surface 4 CAT I - Obstacle Free Zone
 Procedure to be used in Projected Coordinate System Only
 ENHANCED VERSION - Uses dynamic parameters from UI

@@ -1,4 +1,4 @@
-﻿'''
+'''
 Inner Horizontal Racetrack Surface - PolygonZ Implementation
 Issue #12: Convert from LineString to 3D Polygon (PolygonZ)
 Procedure to be used in Projected Coordinate System Only

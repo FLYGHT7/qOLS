@@ -1,4 +1,4 @@
-﻿'''
+'''
 Take Off Climb Surface - HYBRID VERSION  
 Based on original working script with UI parameter integration
 Considering 15° course changes in night IMC or VMC conditions
