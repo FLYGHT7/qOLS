@@ -472,6 +472,7 @@ class QOLS:
             
             # Create execution namespace with parameters
             exec_namespace = {
+                '__file__': script_path,  # Allow scripts to locate sibling files (e.g. _contour_utils.py)
                 'iface': self.iface,
                 'QgsProject': QgsProject,
                 'QgsVectorLayer': QgsVectorLayer,

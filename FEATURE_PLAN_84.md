@@ -266,8 +266,8 @@ contour_layer.setLabelsEnabled(True)
 
 ## Changelog
 
-| Date       | Entry                                                                                   |
-| ---------- | --------------------------------------------------------------------------------------- |
-| 2026-03-30 | Feature plan created. Branch `feature/84-stepped-surface-contours` created from `main`. |
-| 2026-03-30 | Phase 1 complete — `_contour_utils.py` (CT-01) and `test_contour_utils.py` (CT-02) committed. 26/26 tests pass. |
+| Date       | Entry                                                                                                                                            |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-03-30 | Feature plan created. Branch `feature/84-stepped-surface-contours` created from `main`.                                                          |
+| 2026-03-30 | Phase 1 complete — `_contour_utils.py` (CT-01) and `test_contour_utils.py` (CT-02) committed. 26/26 tests pass.                                  |
 | 2026-03-30 | Phase 2 complete — `spin_contour_interval` / `spin_contour_interval_takeoff` added to UI, validation and `get_parameters()` wired (CT-03–CT-07). |
