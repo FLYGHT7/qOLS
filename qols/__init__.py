@@ -8,6 +8,6 @@
 """
 
 def classFactory(iface):
-    """Load QOLS class from file qols."""
-    from .qols import QOLS
+    """Load QOLS class from file plugin."""
+    from .plugin import QOLS
     return QOLS(iface)

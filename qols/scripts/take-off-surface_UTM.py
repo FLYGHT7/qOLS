@@ -7,12 +7,12 @@ Procedure to be used in Projected Coordinate System Only
 myglobals = set(globals().keys())
 
 from qgis.core import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
+from qgis.PyQt.QtCore import *
+from qgis.PyQt.QtGui import *
 from qgis.gui import *
-from qgis.PyQt.QtCore import QVariant
 from qgis.utils import iface
 from math import *
+import traceback
 
 def _normalize_polyline_points(geometry: 'QgsGeometry', iface=None):
     """Return a list of QgsPoint representing a single polyline.
@@ -82,7 +82,6 @@ try:
     
 except Exception as e:
     print(f"TakeOffSurface: Error getting UI parameters: {e}")
-    import traceback
     print(f"TakeOffSurface: Traceback: {traceback.format_exc()}")
     # Fallback to ORIGINAL defaults - Exactly as original
     code = 4
@@ -117,7 +116,6 @@ try:
     print(f"TakeOffSurface: Map SRID: {map_srid}")
 except Exception as e:
     print(f"TakeOffSurface: Error getting map CRS: {e}")
-    import traceback
     print(f"TakeOffSurface: CRS Traceback: {traceback.format_exc()}")
     raise
 
