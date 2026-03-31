@@ -185,15 +185,15 @@ def contour_specs_for_linear_section(
 
 | ID    | Task                                                                                                              | Risk | Status |
 | ----- | ----------------------------------------------------------------------------------------------------------------- | ---- | ------ |
-| CT-08 | Import `_contour_utils` inside `approach-surface-UTM.py` via `importlib`                                          | Low  | ⏳     |
-| CT-09 | Read `contour_interval_m` from globals (default 0 = disabled)                                                     | None | ⏳     |
-| CT-10 | Compute contour specs for Section 1 (if slope1 > 0 and L1 > 0)                                                    | None | ⏳     |
-| CT-11 | Compute contour specs for Section 2 (if slope2 > 0 and L2 > 0)                                                    | None | ⏳     |
-| CT-12 | Create `LineStringZ` layer `RWY_ApproachSurface_Contours` with fields `ID` (String), `surface_elevation` (Double) | Low  | ⏳     |
-| CT-13 | Add `QgsFeature` per contour spec to the layer                                                                    | None | ⏳     |
-| CT-14 | Apply red line style (width 0.5)                                                                                  | None | ⏳     |
-| CT-15 | Enable QGIS labeling on `surface_elevation` field                                                                 | None | ⏳     |
-| CT-16 | Add layer to project                                                                                              | None | ⏳     |
+| CT-08 | Import `_contour_utils` inside `approach-surface-UTM.py` via `importlib`                                          | Low  | ✅     |
+| CT-09 | Read `contour_interval_m` from globals (default 0 = disabled)                                                     | None | ✅     |
+| CT-10 | Compute contour specs for Section 1 (if slope1 > 0 and L1 > 0)                                                    | None | ✅     |
+| CT-11 | Compute contour specs for Section 2 (if slope2 > 0 and L2 > 0)                                                    | None | ✅     |
+| CT-12 | Create `LineStringZ` layer `RWY_ApproachSurface_Contours` with fields `ID` (String), `surface_elevation` (Double) | Low  | ✅     |
+| CT-13 | Add `QgsFeature` per contour spec to the layer                                                                    | None | ✅     |
+| CT-14 | Apply red line style (width 0.5)                                                                                  | None | ✅     |
+| CT-15 | Enable QGIS labeling on `surface_elevation` field                                                                 | None | ✅     |
+| CT-16 | Add layer to project                                                                                              | None | ✅     |
 
 ### Phase 4 — Take-Off Surface contours
 
@@ -271,3 +271,4 @@ contour_layer.setLabelsEnabled(True)
 | 2026-03-30 | Feature plan created. Branch `feature/84-stepped-surface-contours` created from `main`.                                                          |
 | 2026-03-30 | Phase 1 complete — `_contour_utils.py` (CT-01) and `test_contour_utils.py` (CT-02) committed. 26/26 tests pass.                                  |
 | 2026-03-30 | Phase 2 complete — `spin_contour_interval` / `spin_contour_interval_takeoff` added to UI, validation and `get_parameters()` wired (CT-03–CT-07). |
+| 2026-03-30 | Phase 3 complete — Approach Surface contour layer `RWY_ApproachSurface_Contours` generated (CT-08–CT-16). `__file__` injected into exec_namespace in `qols.py`. |
