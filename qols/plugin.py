@@ -101,13 +101,13 @@ class QOLS:
 
             # Add menu entry for Rule Set selection (Issue #65)
             try:
-                rules_action = QAction(self.tr('Select Rule Setâ€¦'), self.iface.mainWindow())
+                rules_action = QAction(self.tr('Select Rule Set…'), self.iface.mainWindow())
                 rules_action.triggered.connect(self.on_select_rule_set)
                 self.iface.addPluginToMenu(self.menu, rules_action)
                 self.actions.append(rules_action)
-                print("QOLS: Added 'Select Rule Setâ€¦' menu action")
+                print("QOLS: Added 'Select Rule Set…' menu action")
             except Exception as e:
-                print(f"QOLS: Error adding 'Select Rule Setâ€¦' action: {e}")
+                print(f"QOLS: Error adding 'Select Rule Set…' action: {e}")
 
             # Optional: Reload rule files action
             try:
@@ -352,21 +352,21 @@ class QOLS:
         try:
             print("QOLS: Executing combined Inner Horizontal & Conical surfaces")
             
-            # Extraer parÃ¡metros especÃ­ficos de cada superficie
+            # Extraer parámetros específicos de cada superficie
             specific_params = params.get('specific_params', {})
             
             if specific_params.get('combined_execution', False):
-                # Usar parÃ¡metros especÃ­ficos separados
+                # Usar parámetros específicos separados
                 inner_params = specific_params.get('inner_horizontal', {})
                 conical_params = specific_params.get('conical', {})
                 print(f"QOLS DEBUG: Using separate parameters - Inner: {inner_params.keys()}, Conical: {conical_params.keys()}")
             else:
-                # Fallback: usar los mismos parÃ¡metros para ambos (compatibilidad)
+                # Fallback: usar los mismos parámetros para ambos (compatibilidad)
                 inner_params = specific_params
                 conical_params = specific_params
                 print("QOLS DEBUG: Using shared parameters for both surfaces (fallback mode)")
             
-            # Preparar parÃ¡metros completos para Inner Horizontal
+            # Preparar parámetros completos para Inner Horizontal
             inner_full_params = params.copy()
             inner_full_params['specific_params'] = inner_params
             
@@ -375,7 +375,7 @@ class QOLS:
             inner_script_path = os.path.join(self.plugin_dir, 'scripts', 'inner-horizontal-racetrack.py')
             self.execute_script(inner_script_path, inner_full_params)
             
-            # Preparar parÃ¡metros completos para Conical
+            # Preparar parámetros completos para Conical
             conical_full_params = params.copy()
             conical_full_params['specific_params'] = conical_params
             
@@ -397,7 +397,7 @@ class QOLS:
             raise
 
     # ------------------------------------------------------------------
-    # BUG-04 â€” Centralised layer validation (called from execute_script)
+    # BUG-04 — Centralised layer validation (called from execute_script)
     # ------------------------------------------------------------------
 
     def _validate_layers_for_execution(self, params: dict) -> None:
@@ -485,10 +485,11 @@ class QOLS:
             print(f"QOLS DEBUG: specific_params before namespace: {specific_params}")
 
             # BUG-02: Build namespace explicitly with visible priority order.
-            # Priority (low â†’ high): QGIS API stubs < params < specific_params.
+            # Priority (low → high): QGIS API stubs < params < specific_params.
             # Using .update() instead of double **-unpack makes key collisions
             # visible and prevents silent overwrites.
             exec_namespace: dict = {
+                '__file__': script_path,  # Allow scripts to locate sibling files (e.g. _contour_utils.py)
                 'iface': self.iface,
                 'QgsProject': QgsProject,
                 'QgsVectorLayer': QgsVectorLayer,
@@ -512,11 +513,11 @@ class QOLS:
                 'use_selected_feature': params.get('use_threshold_selected', False),
                 'active_rule_set': rule_mgr.get_active_rule_set_name(),
             }
-            # params overrides QGIS stubs (runway_layer, threshold_layer, surface_type â€¦)
+            # params overrides QGIS stubs (runway_layer, threshold_layer, surface_type …)
             exec_namespace.update(params)
-            # specific_params overrides params (Z0, ZE, code, widthDep â€¦)
+            # specific_params overrides params (Z0, ZE, code, widthDep …)
             exec_namespace.update(specific_params)
-            # BUG-01: success sentinel â€” scripts should set _script_success = True when
+            # BUG-01: success sentinel — scripts should set _script_success = True when
             # they finish successfully.  Existing scripts don't yet set it, so we emit
             # a warning rather than raising to keep backward compatibility.
             exec_namespace['_script_success'] = False
@@ -530,7 +531,7 @@ class QOLS:
 
             # BUG-01: warn if script did not signal successful completion
             if not exec_namespace.get('_script_success', False):
-                print(f"QOLS: Warning â€” script did not set _script_success=True: {script_path}")
+                print(f"QOLS: Warning — script did not set _script_success=True: {script_path}")
 
             print(f"QOLS: Script executed successfully: {script_path}")
 

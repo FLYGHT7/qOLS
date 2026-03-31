@@ -429,6 +429,86 @@ print(f"QOLS: Surface type: {rwy_classification}, Code: {runway_code}, Width: {a
 # Success message
 iface.messageBar().pushMessage("QOLS Success", f"Approach Surface ({rwy_classification}, Code {runway_code}) calculated successfully", level=_ML.Success)
 
+# -----------------------------------------------------------------------
+# Contour layer (CT-08 – CT-16)
+# -----------------------------------------------------------------------
+contour_interval_m = int(globals().get('contour_interval_m', 0))
+if contour_interval_m > 0:
+    import importlib.util as _ilu, os as _os, sys as _sys
+    _utils_path = _os.path.join(_os.path.dirname(__file__), '_contour_utils.py')
+    _cu_spec = _ilu.spec_from_file_location('_contour_utils', _utils_path)
+    _cu = _ilu.module_from_spec(_cu_spec)
+    _sys.modules['_contour_utils'] = _cu          # must precede exec_module (Python 3.14+)
+    _cu_spec.loader.exec_module(_cu)
+
+    _all_specs = []
+
+    # Section 1 contours
+    if first_section_length_m > 0 and first_section_slope > 0:
+        _elevs1 = _cu.contour_elevations(start_elevation_m, height_first_end, contour_interval_m)
+        _all_specs += _cu.contour_specs_for_linear_section(
+            z_section_start=start_elevation_m,
+            z_section_end=height_first_end,
+            slope=first_section_slope,
+            d_offset=0.0,
+            near_half_width=approach_width_m / 2,
+            divergence_ratio=divergence_ratio,
+            elevations=_elevs1,
+        )
+
+    # Section 2 contours
+    if second_section_length_m > 0 and second_section_slope > 0:
+        _elevs2 = _cu.contour_elevations(height_first_end, height_second_end, contour_interval_m)
+        _all_specs += _cu.contour_specs_for_linear_section(
+            z_section_start=height_first_end,
+            z_section_end=height_second_end,
+            slope=second_section_slope,
+            d_offset=dist_first_end,
+            near_half_width=approach_width_m / 2,
+            divergence_ratio=divergence_ratio,
+            elevations=_elevs2,
+        )
+
+    if _all_specs:
+        _clayer = QgsVectorLayer(
+            "LineStringZ?crs=" + map_srid,
+            "RWY_ApproachSurface_Contours",
+            "memory",
+        )
+        _clayer.dataProvider().addAttributes([
+            QgsField('ID', QVariant.Int),
+            QgsField('surface_elevation', QVariant.Double),
+        ])
+        _clayer.updateFields()
+
+        _cfeats = []
+        for _i, _spec in enumerate(_all_specs):
+            _ctr = pt_01.project(_spec.distance_from_origin, azimuth)
+            _l2d = _ctr.project(_spec.half_width, azimuth + 90)
+            _r2d = _ctr.project(_spec.half_width, azimuth - 90)
+            _lpt = QgsPoint(_l2d.x(), _l2d.y(), _spec.elevation)
+            _rpt = QgsPoint(_r2d.x(), _r2d.y(), _spec.elevation)
+            _feat = QgsFeature()
+            _feat.setGeometry(QgsGeometry(QgsLineString([_lpt, _rpt])))
+            _feat.setAttributes([_i + 1, _spec.elevation])
+            _cfeats.append(_feat)
+        _clayer.dataProvider().addFeatures(_cfeats)
+
+        _sym = QgsLineSymbol.createSimple({'color': 'red', 'width': '0.5'})
+        _clayer.setRenderer(QgsSingleSymbolRenderer(_sym))
+
+        _pal = QgsPalLayerSettings()
+        _pal.fieldName = 'surface_elevation'
+        _pal.enabled = True
+        _clayer.setLabeling(QgsVectorLayerSimpleLabeling(_pal))
+        _clayer.setLabelsEnabled(True)
+
+        QgsProject.instance().addMapLayers([_clayer])
+        _clayer.triggerRepaint()
+        print(f"QOLS: Approach contour layer added — {len(_cfeats)} lines at {contour_interval_m} m interval")
+    else:
+        print(f"QOLS: No approach contour lines — no elevation levels in range for interval {contour_interval_m} m")
+
 # Clean up globals
 set(globals().keys()).difference(myglobals)
 for g in set(globals().keys()).difference(myglobals):

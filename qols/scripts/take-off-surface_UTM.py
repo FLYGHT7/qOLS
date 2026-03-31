@@ -12,6 +12,7 @@ from qgis.PyQt.QtGui import *
 from qgis.gui import *
 from qgis.utils import iface
 from math import *
+import traceback
 
 # Qgis message-level compat (QGIS 3/Qt5: Qgis.Info  QGIS 4/Qt6: Qgis.MessageLevel.Info)
 try:
@@ -327,6 +328,71 @@ canvas.zoomScale(sc)
 
 print("TakeOffSurface: Surface creation completed successfully")
 iface.messageBar().pushMessage("QPANSOPY:", "TakeOff Climb Surface Calculation Finished", level=_ML.Success)
+
+# -----------------------------------------------------------------------
+# Contour layer (CT-17 – CT-21)
+# -----------------------------------------------------------------------
+contour_interval_m = int(globals().get('contour_interval_m', 0))
+if contour_interval_m > 0:
+    import importlib.util as _ilu, os as _os, sys as _sys
+    _utils_path = _os.path.join(_os.path.dirname(__file__), '_contour_utils.py')
+    _cu_spec = _ilu.spec_from_file_location('_contour_utils', _utils_path)
+    _cu = _ilu.module_from_spec(_cu_spec)
+    _sys.modules['_contour_utils'] = _cu          # must precede exec_module (Python 3.14+)
+    _cu_spec.loader.exec_module(_cu)
+
+    _z_end = ZE + surfaceLength * slope_ratio
+    _elevs = _cu.contour_elevations(ZE, _z_end, contour_interval_m)
+    _all_specs = _cu.contour_specs_for_takeoff(
+        z_start=ZE,
+        slope_ratio=slope_ratio,
+        distance_to_max_width=distance_to_max_width,
+        surface_length=surfaceLength,
+        near_half_width=widthDep / 2,
+        max_half_width=maxWidthDep / 2,
+        divergence_ratio=divergence_ratio,
+        elevations=_elevs,
+    )
+
+    if _all_specs:
+        _clayer = QgsVectorLayer(
+            "LineStringZ?crs=" + map_srid,
+            "RWY_TakeOffSurface_Contours",
+            "memory",
+        )
+        _clayer.dataProvider().addAttributes([
+            QgsField('ID', QVariant.Int),
+            QgsField('surface_elevation', QVariant.Double),
+        ])
+        _clayer.updateFields()
+
+        _cfeats = []
+        for _i, _spec in enumerate(_all_specs):
+            _ctr = pt_01D.project(_spec.distance_from_origin, bazimuth)
+            _l2d = _ctr.project(_spec.half_width, bazimuth + 90)
+            _r2d = _ctr.project(_spec.half_width, bazimuth - 90)
+            _lpt = QgsPoint(_l2d.x(), _l2d.y(), _spec.elevation)
+            _rpt = QgsPoint(_r2d.x(), _r2d.y(), _spec.elevation)
+            _feat = QgsFeature()
+            _feat.setGeometry(QgsGeometry(QgsLineString([_lpt, _rpt])))
+            _feat.setAttributes([_i + 1, _spec.elevation])
+            _cfeats.append(_feat)
+        _clayer.dataProvider().addFeatures(_cfeats)
+
+        _sym = QgsLineSymbol.createSimple({'color': 'red', 'width': '0.5'})
+        _clayer.setRenderer(QgsSingleSymbolRenderer(_sym))
+
+        _pal = QgsPalLayerSettings()
+        _pal.fieldName = 'surface_elevation'
+        _pal.enabled = True
+        _clayer.setLabeling(QgsVectorLayerSimpleLabeling(_pal))
+        _clayer.setLabelsEnabled(True)
+
+        QgsProject.instance().addMapLayers([_clayer])
+        _clayer.triggerRepaint()
+        print(f"TakeOffSurface: Contour layer added — {len(_cfeats)} lines at {contour_interval_m} m interval")
+    else:
+        print(f"TakeOffSurface: No contour lines — no elevation levels in range for interval {contour_interval_m} m")
 
 # Cleanup globals - match original pattern
 newglobals = set(globals().keys())
