@@ -11,6 +11,7 @@ from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
 from qgis.gui import *
 from math import *
+import json
 
 # Qgis message-level compat (QGIS 3/Qt5: Qgis.Info  QGIS 4/Qt6: Qgis.MessageLevel.Info)
 try:
@@ -306,7 +307,7 @@ if first_section_length_m > 0:
     pt_05L = pt_05.project(half_w_first_end, azimuth + 90)
     pt_05R = pt_05.project(half_w_first_end, azimuth - 90)
     construction_points.extend((pt_05, pt_05L, pt_05R))
-    features_to_create.append((next_id, 'Approach First Section', [pt_05R, pt_05L, pt_01AL, pt_01AR]))
+    features_to_create.append((next_id, 'Approach First Section', [pt_05R, pt_05L, pt_01AL, pt_01AR], start_elevation_m, height_first_end))
     next_id += 1
 else:
     # If L1 = 0 treat pt_05 as the origin of later sections
@@ -326,7 +327,7 @@ if second_section_length_m > 0:
     pt_06L = pt_06.project(half_w_second_end, azimuth + 90)
     pt_06R = pt_06.project(half_w_second_end, azimuth - 90)
     construction_points.extend((pt_06, pt_06L, pt_06R))
-    features_to_create.append((next_id, 'Approach Second Section', [pt_06R, pt_06L, pt_05L, pt_05R]))
+    features_to_create.append((next_id, 'Approach Second Section', [pt_06R, pt_06L, pt_05L, pt_05R], height_first_end, height_second_end))
     next_id += 1
 else:
     # If omitted, second section end coincides with first section end for horizontal start
@@ -345,7 +346,7 @@ if second_section_length_m > 0 and horizontal_section_length_m > 0:
     pt_07L = pt_07.project(half_w_horizontal_end, azimuth + 90)
     pt_07R = pt_07.project(half_w_horizontal_end, azimuth - 90)
     construction_points.extend((pt_07, pt_07L, pt_07R))
-    features_to_create.append((next_id, 'Approach Horizontal Section', [pt_07R, pt_07L, pt_06L, pt_06R]))
+    features_to_create.append((next_id, 'Approach Horizontal Section', [pt_07R, pt_07L, pt_06L, pt_06R], height_second_end, height_second_end))
     next_id += 1
 
 print(f"QOLS: Generated {len(construction_points)} construction points; sections created: {len(features_to_create)}")
@@ -359,14 +360,33 @@ name_field = QgsField('SurfaceName', QVariant.String)
 type_field = QgsField('SurfaceType', QVariant.String)
 code_field = QgsField('Code', QVariant.Int)
 rule_field = QgsField('rule_set', QVariant.String)
-approach_layer.dataProvider().addAttributes([id_field, name_field, type_field, code_field, rule_field])
+start_elev_field = QgsField('surface_start_elev', QVariant.Double)
+end_elev_field = QgsField('surface_end_elev', QVariant.Double)
+params_json_field = QgsField('params_json', QVariant.String)
+approach_layer.dataProvider().addAttributes([id_field, name_field, type_field, code_field, rule_field, start_elev_field, end_elev_field, params_json_field])
 approach_layer.updateFields()
 
+_params_json = json.dumps({
+    'Z0': round(start_elevation_m, 3),
+    'ZE': round(end_elevation_m, 3),
+    'ARPH': round(arp_elevation_m, 3),
+    'L1_m': first_section_length_m,
+    'L2_m': second_section_length_m,
+    'LH_m': horizontal_section_length_m,
+    'slope1_pct': round(first_section_slope * 100, 3),
+    'slope2_pct': round(second_section_slope * 100, 3),
+    'divergence_pct': round(divergence_ratio * 100, 3),
+    'width_m': approach_width_m,
+    'rwy_classification': rwy_classification,
+    'runway_code': runway_code,
+    'rule_set': globals().get('active_rule_set', None),
+})
+
 provider = approach_layer.dataProvider()
-for fid, name, surface_area in features_to_create:
+for fid, name, surface_area, sec_start_elev, sec_end_elev in features_to_create:
     feature = QgsFeature()
     feature.setGeometry(QgsPolygon(QgsLineString(surface_area), rings=[]))
-    feature.setAttributes([fid, name, rwy_classification, runway_code, globals().get('active_rule_set', None)])
+    feature.setAttributes([fid, name, rwy_classification, runway_code, globals().get('active_rule_set', None), round(sec_start_elev, 3), round(sec_end_elev, 3), _params_json])
     provider.addFeatures([feature])
 
 # Load PolygonZ Layer to map canvas 
