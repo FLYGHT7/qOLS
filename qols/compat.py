@@ -9,6 +9,7 @@ branching on the Qt version inline.
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QPainter
 from qgis.PyQt.QtWidgets import QDialogButtonBox
+from qgis.core import Qgis
 
 # ---------------------------------------------------------------------------
 # Dock-widget area constants
@@ -66,10 +67,27 @@ try:
 except AttributeError:
     RENDER_ANTIALIAS = QPainter.Antialiasing  # type: ignore[attr-defined]
 
+# ---------------------------------------------------------------------------
+# Qgis message-level constants
+# QGIS 3 / Qt5:  Qgis.Info, Qgis.Warning, Qgis.Critical, Qgis.Success
+# QGIS 4 / Qt6:  Qgis.MessageLevel.Info, etc.
+# ---------------------------------------------------------------------------
+try:
+    MSG_INFO = Qgis.MessageLevel.Info
+    MSG_WARNING = Qgis.MessageLevel.Warning
+    MSG_CRITICAL = Qgis.MessageLevel.Critical
+    MSG_SUCCESS = Qgis.MessageLevel.Success
+except AttributeError:
+    MSG_INFO = Qgis.Info        # type: ignore[attr-defined]
+    MSG_WARNING = Qgis.Warning  # type: ignore[attr-defined]
+    MSG_CRITICAL = Qgis.Critical  # type: ignore[attr-defined]
+    MSG_SUCCESS = Qgis.Success  # type: ignore[attr-defined]
+
 __all__ = [
     "DOCK_RIGHT", "DOCK_LEFT",
     "BTN_SAVE", "BTN_CANCEL",
     "TOOLTIP_ROLE",
     "COLOR_LIGHT_GRAY", "COLOR_DARK_GRAY",
     "RENDER_ANTIALIAS",
+    "MSG_INFO", "MSG_WARNING", "MSG_CRITICAL", "MSG_SUCCESS",
 ]

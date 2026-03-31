@@ -26,7 +26,7 @@ from ..surface_types import SurfaceType
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, Qt, QTimer
 from qgis.PyQt.QtWidgets import QCheckBox, QComboBox, QDockWidget, QLabel, QLineEdit, QToolTip
-from ..compat import TOOLTIP_ROLE
+from ..compat import TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL
 from qgis.core import QgsMapLayerProxyModel, QgsProject, Qgis, QgsWkbTypes, QgsVectorLayer
 
 # Load the UI file
@@ -1669,7 +1669,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.iface.messageBar().pushMessage(
                 "QOLS Info", 
                 message, 
-                level=Qgis.Info,
+                level=MSG_INFO,
                 duration=3
             )
         except Exception as e:
@@ -1681,7 +1681,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.iface.messageBar().pushMessage(
                 "QOLS Error", 
                 message, 
-                level=Qgis.Critical,
+                level=MSG_CRITICAL,
                 duration=5
             )
         except Exception as e:
