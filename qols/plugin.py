@@ -9,7 +9,7 @@ import os
 import sys
 import math
 import traceback
-from .compat import DOCK_RIGHT
+from .compat import DOCK_RIGHT, MSG_INFO, MSG_WARNING, MSG_CRITICAL, MSG_SUCCESS
 from qgis.PyQt.QtCore import QCoreApplication, QVariant
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtWidgets import QAction, QInputDialog
@@ -152,7 +152,7 @@ class QOLS:
                 self.iface.messageBar().pushMessage(
                     "QOLS", 
                     "Panel closed!", 
-                    level=Qgis.Info,
+                    level=MSG_INFO,
                     duration=2
                 )
                 return
@@ -179,7 +179,7 @@ class QOLS:
             self.iface.messageBar().pushMessage(
                 "QOLS", 
                 "Panel opened!", 
-                level=Qgis.Info,
+                level=MSG_INFO,
                 duration=2
             )
             
@@ -189,7 +189,7 @@ class QOLS:
             self.iface.messageBar().pushMessage(
                 "QOLS Error", 
                 f"Error showing panel: {str(e)}", 
-                level=Qgis.Critical
+                level=MSG_CRITICAL
             )
 
     def on_close_panel(self):
@@ -204,7 +204,7 @@ class QOLS:
             registry = rule_mgr.list_rule_sets()
             names = sorted(list(registry.keys()))
             if not names:
-                self.iface.messageBar().pushMessage("QOLS", "No rule files found in qols/rules", level=Qgis.Warning, duration=4)
+                self.iface.messageBar().pushMessage("QOLS", "No rule files found in qols/rules", level=MSG_WARNING, duration=4)
                 return
             current = rule_mgr.get_active_rule_set_name() or ''
             # Display selection dialog
@@ -213,7 +213,7 @@ class QOLS:
                 return
             rule_mgr.set_active_rule_set_name(name)
             # Notify user
-            self.iface.messageBar().pushMessage("QOLS", f"Active rule set: {name}", level=Qgis.Info, duration=3)
+            self.iface.messageBar().pushMessage("QOLS", f"Active rule set: {name}", level=MSG_INFO, duration=3)
             # Refresh defaults in panel if open
             if self.panel and self.panel.isVisible():
                 try:
@@ -229,7 +229,7 @@ class QOLS:
         """Force reload of rule JSON files and refresh panel defaults."""
         try:
             rule_mgr.reload_rules()
-            self.iface.messageBar().pushMessage("QOLS", "Rule files reloaded", level=Qgis.Info, duration=3)
+            self.iface.messageBar().pushMessage("QOLS", "Rule files reloaded", level=MSG_INFO, duration=3)
             # Refresh defaults if panel open
             if self.panel and self.panel.isVisible():
                 try:
@@ -248,7 +248,7 @@ class QOLS:
                 name = dlg.selected_rule_set()
                 if name:
                     rule_mgr.set_active_rule_set_name(name)
-                    self.iface.messageBar().pushMessage("QOLS", f"Active rule set: {name}", level=Qgis.Info, duration=3)
+                    self.iface.messageBar().pushMessage("QOLS", f"Active rule set: {name}", level=MSG_INFO, duration=3)
                     # Refresh defaults if panel is open
                     if self.panel and self.panel.isVisible():
                         try:
@@ -264,7 +264,7 @@ class QOLS:
         try:
             params = self.panel.get_parameters()
             if not params:
-                self.iface.messageBar().pushMessage("QOLS", "Error getting parameters", level=Qgis.Critical)
+                self.iface.messageBar().pushMessage("QOLS", "Error getting parameters", level=MSG_CRITICAL)
                 return
                 
             surface_type = params.get('surface_type')
@@ -280,7 +280,7 @@ class QOLS:
             try:
                 st = SurfaceType.from_tab_text(surface_type)
             except ValueError:
-                self.iface.messageBar().pushMessage("QOLS", "Please select a surface type", level=Qgis.Warning)
+                self.iface.messageBar().pushMessage("QOLS", "Please select a surface type", level=MSG_WARNING)
                 return
 
             if st == SurfaceType.APPROACH:
@@ -304,13 +304,13 @@ class QOLS:
             self.iface.messageBar().pushMessage(
                 "QOLS Success", 
                 f"{surface_type} calculation completed successfully", 
-                level=Qgis.Success
+                level=MSG_SUCCESS
             )
                 
         except Exception as e:
             print(f"QOLS: Error in on_calculate: {e}")
             traceback.print_exc()
-            self.iface.messageBar().pushMessage("QOLS Error", f"Error calculating surface: {str(e)}", level=Qgis.Critical)
+            self.iface.messageBar().pushMessage("QOLS Error", f"Error calculating surface: {str(e)}", level=MSG_CRITICAL)
 
     def execute_approach_surface(self, params):
         """Execute the approach surface calculation script with parameters"""
@@ -392,7 +392,7 @@ class QOLS:
             self.iface.messageBar().pushMessage(
                 "QOLS Error", 
                 f"Combined surface execution error: {str(e)}", 
-                level=Qgis.Critical
+                level=MSG_CRITICAL
             )
             raise
 
@@ -538,5 +538,6 @@ class QOLS:
         except Exception as e:
             print(f"QOLS: Error executing script {script_path}: {e}")
             traceback.print_exc()
-            self.iface.messageBar().pushMessage("QOLS Error", f"Script execution error: {str(e)}", level=Qgis.Critical)
+            self.iface.messageBar().pushMessage("QOLS Error", f"Script execution error: {str(e)}", level=MSG_CRITICAL)
             raise
+

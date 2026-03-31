@@ -14,6 +14,13 @@ from qgis.utils import iface
 from math import *
 import traceback
 
+# Qgis message-level compat (QGIS 3/Qt5: Qgis.Info  QGIS 4/Qt6: Qgis.MessageLevel.Info)
+try:
+    _ML = Qgis.MessageLevel
+except AttributeError:
+    _ML = Qgis  # QGIS 3: level constants sit directly on Qgis
+import traceback
+
 def _normalize_polyline_points(geometry: 'QgsGeometry', iface=None):
     """Return a list of QgsPoint representing a single polyline.
     Accepts LineString or MultiLineString; for MultiLineString picks the longest part.
@@ -35,7 +42,7 @@ def _normalize_polyline_points(geometry: 'QgsGeometry', iface=None):
             return total
         longest = max(parts, key=length_of)
         if iface and len(parts) > 1:
-            iface.messageBar().pushMessage("TakeOffSurface Info", "MultiLineString detected; using longest part as centerline.", level=Qgis.Info)
+            iface.messageBar().pushMessage("TakeOffSurface Info", "MultiLineString detected; using longest part as centerline.", level=_ML.Info)
         return [QgsPoint(p) for p in longest]
     poly = geometry.asPolyline()
     if poly and len(poly) >= 2:
@@ -158,7 +165,7 @@ try:
     
 except Exception as e:
     print(f"TakeOffSurface: Error with Runway Layer Centerline: {e}")
-    iface.messageBar().pushMessage("TakeOffSurface Error", f"Runway Layer Centerline error: {str(e)}", level=Qgis.Critical)
+    iface.messageBar().pushMessage("TakeOffSurface Error", f"Runway Layer Centerline error: {str(e)}", level=_ML.Critical)
     raise
 
 # ORIGINAL ZIHs calculation (kept for compatibility; not used in geometry below)
@@ -233,7 +240,7 @@ try:
 
 except Exception as e:
     print(f"TakeOffSurface: Error with threshold layer: {e}")
-    iface.messageBar().pushMessage("TakeOffSurface Error", f"Threshold layer error: {str(e)}", level=Qgis.Critical)
+    iface.messageBar().pushMessage("TakeOffSurface Error", f"Threshold layer error: {str(e)}", level=_ML.Critical)
     raise
 
 # Get x,y from threshold - EXACTLY as original
@@ -320,7 +327,7 @@ print(sc)
 canvas.zoomScale(sc)
 
 print("TakeOffSurface: Surface creation completed successfully")
-iface.messageBar().pushMessage("QPANSOPY:", "TakeOff Climb Surface Calculation Finished", level=Qgis.Success)
+iface.messageBar().pushMessage("QPANSOPY:", "TakeOff Climb Surface Calculation Finished", level=_ML.Success)
 
 # -----------------------------------------------------------------------
 # Contour layer (CT-17 – CT-21)
@@ -397,3 +404,6 @@ for var in (newglobals - myglobals):
             pass
 
 print(f"TakeOffSurface: Globals cleanup completed")
+
+
+

@@ -12,6 +12,7 @@ from .surface_types import SurfaceType
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, Qt, QTimer
 from qgis.PyQt.QtWidgets import QDockWidget, QToolTip
+from .compat import TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL
 from qgis.core import QgsMapLayerProxyModel, QgsProject, Qgis, QgsWkbTypes, QgsVectorLayer
 
 # Load the UI file
@@ -221,7 +222,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_radius_outer', 'spin_height_outer',
                 'spin_widthDep_takeoff', 'spin_maxWidthDep_takeoff',
                 'spin_CWYLength_takeoff', 'spin_Z0_takeoff',
-                'spin_contour_interval', 'spin_contour_interval_takeoff',
                 'spin_widthApp_transitional', 'spin_Z0_transitional', 'spin_ZE_transitional',
                 'spin_ARPH_transitional', 'spin_Tslope_transitional'
             ]
@@ -233,8 +233,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_L_inner': '4000.00', 'spin_height_inner': '45.00',
                 'spin_width_ofz': '120.00', 'spin_Z0_ofz': '2548.00', 'spin_ZE_ofz': '2546.50',
                 'spin_ARPH_ofz': '2548.00', 'spin_IHSlope_ofz': '33.30',
-                'spin_radius_outer': '15000.00', 'spin_height_outer': '150.00',
-                'spin_contour_interval': '10', 'spin_contour_interval_takeoff': '10'
+                'spin_radius_outer': '15000.00', 'spin_height_outer': '150.00'
             }
             
             # Allow unlimited decimals; optional sign and decimal part
@@ -931,7 +930,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self._last_threshold_count = current_threshold_count
             
             # Force update tooltips using multiple methods for maximum compatibility
-            _Qt_ToolTipRole = getattr(Qt, 'ToolTipRole', None) or Qt.ItemDataRole.ToolTipRole
             try:
                 # Update runway combo tooltips - focus on tooltip data only
                 runway_model = self.runwayLayerCombo.model()
@@ -944,11 +942,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                         
                         # Method 1: Set via model data (most reliable for QgsMapLayerComboBox)
                         index = runway_model.index(i, 0)
-                        runway_model.setData(index, tooltip, _Qt_ToolTipRole)
+                        runway_model.setData(index, tooltip, TOOLTIP_ROLE)
                         
                         # Method 2: Set via item data (backup method)
                         try:
-                            self.runwayLayerCombo.setItemData(i, tooltip, _Qt_ToolTipRole)
+                            self.runwayLayerCombo.setItemData(i, tooltip, TOOLTIP_ROLE)
                         except:
                             pass
                 
@@ -963,11 +961,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                         
                         # Method 1: Set via model data (most reliable for QgsMapLayerComboBox)
                         index = threshold_model.index(i, 0)
-                        threshold_model.setData(index, tooltip, _Qt_ToolTipRole)
+                        threshold_model.setData(index, tooltip, TOOLTIP_ROLE)
                         
                         # Method 2: Set via item data (backup method)
                         try:
-                            self.thresholdLayerCombo.setItemData(i, tooltip, _Qt_ToolTipRole)
+                            self.thresholdLayerCombo.setItemData(i, tooltip, TOOLTIP_ROLE)
                         except:
                             pass
                 
@@ -1660,7 +1658,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.iface.messageBar().pushMessage(
                 "QOLS Info", 
                 message, 
-                level=Qgis.Info,
+                level=MSG_INFO,
                 duration=3
             )
         except Exception as e:
@@ -1672,7 +1670,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.iface.messageBar().pushMessage(
                 "QOLS Error", 
                 message, 
-                level=Qgis.Critical,
+                level=MSG_CRITICAL,
                 duration=5
             )
         except Exception as e:
@@ -1800,8 +1798,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'divergence_ratio': getattr(self, '_approach_divergence_ratio', 0.15),
                     'first_section_slope': getattr(self, '_approach_slope1', 0.02),
                     'second_section_slope': getattr(self, '_approach_slope2', 0.025),
-                    'threshold_offset_m': getattr(self, '_approach_threshold_offset', 60.0),
-                    'contour_interval_m': int(round(self.get_numeric_value('spin_contour_interval')))
+                    'threshold_offset_m': getattr(self, '_approach_threshold_offset', 60.0)
                 }
             elif surface_type == SurfaceType.CONICAL:
                 specific_params = {
@@ -1884,8 +1881,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'startDistance': float(self.spin_startDistance_takeoff.text() or "60") if hasattr(self, 'spin_startDistance_takeoff') else 60.0,
                     'surfaceLength': float(self.spin_surfaceLength_takeoff.text() or "15000") if hasattr(self, 'spin_surfaceLength_takeoff') else 15000.0,
                     'slopePct': float(self.spin_slope_takeoff.text() or "2.0") if hasattr(self, 'spin_slope_takeoff') else 2.0,
-                    'direction': s_value,
-                    'contour_interval_m': int(round(self.get_numeric_value('spin_contour_interval_takeoff')))
+                    'direction': s_value
                 }
                 print(f"QOLS DEBUG: Take-off Surface specific_params = {specific_params}")
             elif surface_type == SurfaceType.TRANSITIONAL:
