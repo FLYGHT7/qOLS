@@ -221,8 +221,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
     def setup_numeric_lineedit_validation(self):
         """Configure numeric input validation for all QLineEdit widgets (formerly QDoubleSpinBox)."""
         try:
-            from qgis.PyQt.QtCore import QRegExp
-            from qgis.PyQt.QtGui import QRegExpValidator
+            from qgis.PyQt.QtCore import QRegularExpression
+            from qgis.PyQt.QtGui import QRegularExpressionValidator
             
             print("QOLS: Setting up numeric validation for QLineEdit widgets")
             
@@ -253,8 +253,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             
             # Allow unlimited decimals; optional sign and decimal part
             decimal_pattern = r'^-?\d*(?:\.\d*)?$'
-            regex = QRegExp(decimal_pattern)
-            validator = QRegExpValidator(regex)
+            regex = QRegularExpression(decimal_pattern)
+            validator = QRegularExpressionValidator(regex)
             
             configured_count = 0
             for name in lineedit_names:
@@ -1111,6 +1111,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self._last_threshold_count = current_threshold_count
             
             # Force update tooltips using multiple methods for maximum compatibility
+            _Qt_ToolTipRole = getattr(Qt, 'ToolTipRole', None) or Qt.ItemDataRole.ToolTipRole
             try:
                 # Update runway combo tooltips - focus on tooltip data only
                 runway_model = self.runwayLayerCombo.model()
@@ -1123,11 +1124,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                         
                         # Method 1: Set via model data (most reliable for QgsMapLayerComboBox)
                         index = runway_model.index(i, 0)
-                        runway_model.setData(index, tooltip, Qt.ToolTipRole)
+                        runway_model.setData(index, tooltip, _Qt_ToolTipRole)
                         
                         # Method 2: Set via item data (backup method)
                         try:
-                            self.runwayLayerCombo.setItemData(i, tooltip, Qt.ToolTipRole)
+                            self.runwayLayerCombo.setItemData(i, tooltip, _Qt_ToolTipRole)
                         except:
                             pass
                 
@@ -1142,11 +1143,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                         
                         # Method 1: Set via model data (most reliable for QgsMapLayerComboBox)
                         index = threshold_model.index(i, 0)
-                        threshold_model.setData(index, tooltip, Qt.ToolTipRole)
+                        threshold_model.setData(index, tooltip, _Qt_ToolTipRole)
                         
                         # Method 2: Set via item data (backup method)
                         try:
-                            self.thresholdLayerCombo.setItemData(i, tooltip, Qt.ToolTipRole)
+                            self.thresholdLayerCombo.setItemData(i, tooltip, _Qt_ToolTipRole)
                         except:
                             pass
                 

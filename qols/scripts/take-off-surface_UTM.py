@@ -7,8 +7,8 @@ Procedure to be used in Projected Coordinate System Only
 myglobals = set(globals().keys())
 
 from qgis.core import *
-from PyQt5.QtCore import *
-from PyQt5.QtGui import *
+from qgis.PyQt.QtCore import *
+from qgis.PyQt.QtGui import *
 from qgis.gui import *
 from qgis.PyQt.QtCore import QVariant
 from qgis.utils import iface

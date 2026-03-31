@@ -153,7 +153,8 @@ class QOLS:
                 print("QOLS: Creating new panel")
                 self.panel = QolsDockWidget(self.iface)
                 # Add panel to RIGHT SIDE instead of left
-                self.iface.addDockWidget(Qt.RightDockWidgetArea, self.panel)
+                _dock_area = getattr(Qt, 'RightDockWidgetArea', None) or Qt.DockWidgetArea.RightDockWidgetArea
+                self.iface.addDockWidget(_dock_area, self.panel)
                 self.panel.closingPlugin.connect(self.on_close_panel)
                 self.panel.calculateClicked.connect(self.on_calculate)
                 self.panel.closeClicked.connect(self.on_close_panel)
