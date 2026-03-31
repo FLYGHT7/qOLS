@@ -199,11 +199,11 @@ def contour_specs_for_linear_section(
 
 | ID    | Task                                                                         | Risk | Status |
 | ----- | ---------------------------------------------------------------------------- | ---- | ------ |
-| CT-17 | Import `_contour_utils` inside `take-off-surface_UTM.py` via `importlib`     | Low  | ⏳     |
-| CT-18 | Read `contour_interval_m` from globals (default 0 = disabled)                | None | ⏳     |
-| CT-19 | Compute contour specs along slope for width-expanding + constant-width zones | None | ⏳     |
-| CT-20 | Create `LineStringZ` layer `RWY_TakeOffSurface_Contours` with same schema    | Low  | ⏳     |
-| CT-21 | Add features, style, labeling, add to project                                | None | ⏳     |
+| CT-17 | Import `_contour_utils` inside `take-off-surface_UTM.py` via `importlib`     | Low  | ✅     |
+| CT-18 | Read `contour_interval_m` from globals (default 0 = disabled)                | None | ✅     |
+| CT-19 | Compute contour specs along slope for width-expanding + constant-width zones | None | ✅     |
+| CT-20 | Create `LineStringZ` layer `RWY_TakeOffSurface_Contours` with same schema    | Low  | ✅     |
+| CT-21 | Add features, style, labeling, add to project                                | None | ✅     |
 
 ### Phase 5 — Integration tests
 
@@ -266,9 +266,10 @@ contour_layer.setLabelsEnabled(True)
 
 ## Changelog
 
-| Date       | Entry                                                                                                                                            |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2026-03-30 | Feature plan created. Branch `feature/84-stepped-surface-contours` created from `main`.                                                          |
-| 2026-03-30 | Phase 1 complete — `_contour_utils.py` (CT-01) and `test_contour_utils.py` (CT-02) committed. 26/26 tests pass.                                  |
-| 2026-03-30 | Phase 2 complete — `spin_contour_interval` / `spin_contour_interval_takeoff` added to UI, validation and `get_parameters()` wired (CT-03–CT-07). |
+| Date       | Entry                                                                                                                                                           |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-03-30 | Feature plan created. Branch `feature/84-stepped-surface-contours` created from `main`.                                                                         |
+| 2026-03-30 | Phase 1 complete — `_contour_utils.py` (CT-01) and `test_contour_utils.py` (CT-02) committed. 26/26 tests pass.                                                 |
+| 2026-03-30 | Phase 2 complete — `spin_contour_interval` / `spin_contour_interval_takeoff` added to UI, validation and `get_parameters()` wired (CT-03–CT-07).                |
 | 2026-03-30 | Phase 3 complete — Approach Surface contour layer `RWY_ApproachSurface_Contours` generated (CT-08–CT-16). `__file__` injected into exec_namespace in `qols.py`. |
+| 2026-03-30 | Phase 4 complete — Take-Off Surface contour layer `RWY_TakeOffSurface_Contours` generated (CT-17–CT-21). |
