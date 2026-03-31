@@ -1829,7 +1829,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'divergence_ratio': getattr(self, '_approach_divergence_ratio', 0.15),
                     'first_section_slope': getattr(self, '_approach_slope1', 0.02),
                     'second_section_slope': getattr(self, '_approach_slope2', 0.025),
-                    'threshold_offset_m': getattr(self, '_approach_threshold_offset', 60.0)
+                    'threshold_offset_m': getattr(self, '_approach_threshold_offset', 60.0),
+                    'contour_interval_m': int(round(self.get_numeric_value('spin_contour_interval')))
                 }
             elif surface_type == SurfaceType.CONICAL:
                 specific_params = {
@@ -1912,7 +1913,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'startDistance': float(self.spin_startDistance_takeoff.text() or "60"),
                     'surfaceLength': float(self.spin_surfaceLength_takeoff.text() or "15000"),
                     'slopePct': float(self.spin_slope_takeoff.text() or "2.0"),
-                    'direction': s_value
+                    'direction': s_value,
+                    'contour_interval_m': int(round(self.get_numeric_value('spin_contour_interval_takeoff')))
                 }
                 print(f"QOLS DEBUG: Take-off Surface specific_params = {specific_params}")
             elif surface_type == SurfaceType.TRANSITIONAL:
