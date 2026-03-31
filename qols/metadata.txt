@@ -1,6 +1,7 @@
 [general]
 name=QOLS
 qgisMinimumVersion=3.0
+qgisMaximumVersion=4.99
 description=Obstacle Limitation Surfaces plugin for QGIS
 version=0.1.0
 author=Your Name

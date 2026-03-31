@@ -26,6 +26,7 @@ from ..surface_types import SurfaceType
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, Qt, QTimer
 from qgis.PyQt.QtWidgets import QCheckBox, QComboBox, QDockWidget, QLabel, QLineEdit, QToolTip
+from ..compat import TOOLTIP_ROLE
 from qgis.core import QgsMapLayerProxyModel, QgsProject, Qgis, QgsWkbTypes, QgsVectorLayer
 
 # Load the UI file
@@ -962,11 +963,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                         
                         # Method 1: Set via model data (most reliable for QgsMapLayerComboBox)
                         index = runway_model.index(i, 0)
-                        runway_model.setData(index, tooltip, Qt.ToolTipRole)
+                        runway_model.setData(index, tooltip, TOOLTIP_ROLE)
                         
                         # Method 2: Set via item data (backup method)
                         try:
-                            self.runwayLayerCombo.setItemData(i, tooltip, Qt.ToolTipRole)
+                            self.runwayLayerCombo.setItemData(i, tooltip, TOOLTIP_ROLE)
                         except:
                             pass
                 
@@ -981,11 +982,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                         
                         # Method 1: Set via model data (most reliable for QgsMapLayerComboBox)
                         index = threshold_model.index(i, 0)
-                        threshold_model.setData(index, tooltip, Qt.ToolTipRole)
+                        threshold_model.setData(index, tooltip, TOOLTIP_ROLE)
                         
                         # Method 2: Set via item data (backup method)
                         try:
-                            self.thresholdLayerCombo.setItemData(i, tooltip, Qt.ToolTipRole)
+                            self.thresholdLayerCombo.setItemData(i, tooltip, TOOLTIP_ROLE)
                         except:
                             pass
                 

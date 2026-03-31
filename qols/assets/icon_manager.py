@@ -7,6 +7,7 @@ import os
 from qgis.PyQt.QtGui import QIcon, QPixmap, QPainter
 from qgis.PyQt.QtCore import QSize
 from qgis.PyQt.QtSvg import QSvgRenderer
+from ..compat import COLOR_LIGHT_GRAY, COLOR_DARK_GRAY, RENDER_ANTIALIAS
 
 class QolsIconManager:
     """Manager for custom qOLS icons"""
@@ -61,19 +62,18 @@ class QolsIconManager:
         pixmap.fill(0x00000000)  # Transparent background
         
         painter = QPainter(pixmap)
-        painter.setRenderHint(QPainter.Antialiasing)
-        
+        painter.setRenderHint(RENDER_ANTIALIAS)
+
         # Draw a simple layer representation
         from qgis.PyQt.QtGui import QBrush, QPen
-        from qgis.PyQt.QtCore import Qt
-        
+
         # Background circle
-        painter.setBrush(QBrush(Qt.lightGray))
-        painter.setPen(QPen(Qt.darkGray, 1))
+        painter.setBrush(QBrush(COLOR_LIGHT_GRAY))
+        painter.setPen(QPen(COLOR_DARK_GRAY, 1))
         painter.drawEllipse(1, 1, size-2, size-2)
-        
+
         # Layer lines
-        painter.setPen(QPen(Qt.darkGray, 1))
+        painter.setPen(QPen(COLOR_DARK_GRAY, 1))
         for i in range(3):
             y = 4 + i * 3
             painter.drawLine(4, y, size-4, y)
