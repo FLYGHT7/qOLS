@@ -209,8 +209,8 @@ def contour_specs_for_linear_section(
 
 | ID    | Task                                                                                       | Risk | Status |
 | ----- | ------------------------------------------------------------------------------------------ | ---- | ------ |
-| CT-22 | Integration tests for approach contour output (line count, elevations, geometry positions) | None | ⏳     |
-| CT-23 | Integration tests for take-off contour output                                              | None | ⏳     |
+| CT-22 | Integration tests for approach contour output (line count, elevations, geometry positions) | None | ✅     |
+| CT-23 | Integration tests for take-off contour output                                              | None | ✅     |
 
 ### Phase 6 — Remaining surfaces (future)
 
@@ -273,3 +273,4 @@ contour_layer.setLabelsEnabled(True)
 | 2026-03-30 | Phase 2 complete — `spin_contour_interval` / `spin_contour_interval_takeoff` added to UI, validation and `get_parameters()` wired (CT-03–CT-07).                |
 | 2026-03-30 | Phase 3 complete — Approach Surface contour layer `RWY_ApproachSurface_Contours` generated (CT-08–CT-16). `__file__` injected into exec_namespace in `qols.py`. |
 | 2026-03-30 | Phase 4 complete — Take-Off Surface contour layer `RWY_TakeOffSurface_Contours` generated (CT-17–CT-21). |
+| 2026-03-30 | Phase 5 complete — Integration tests `test_contour_integration.py` added: 27 tests (13 approach, 14 take-off), 53/53 pass. |
