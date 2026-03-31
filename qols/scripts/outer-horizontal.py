@@ -13,7 +13,6 @@ from qgis.core import *
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
 from qgis.gui import *
-from qgis.PyQt.QtCore import QVariant
 from math import *
 
 # Work exclusively in projected coordinate system - no transformations needed

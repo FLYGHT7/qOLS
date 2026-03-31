@@ -1,7 +1,16 @@
+"""qOLS QGIS Plugin entrypoint.
+
+Defines the :class:`QOLS` class that QGIS instantiates via
+``classFactory(iface)`` when the plugin is loaded.  Owns the toolbar
+action, manages the dock widget lifecycle, and dispatches script
+execution requests.
+"""
 import os
 import sys
 import math
-from qgis.PyQt.QtCore import QCoreApplication, Qt, QVariant
+import traceback
+from .compat import DOCK_RIGHT
+from qgis.PyQt.QtCore import QCoreApplication, QVariant
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtWidgets import QAction, QInputDialog
 from qgis.core import (QgsProject, QgsMessageLog, Qgis, QgsVectorLayer, 
@@ -10,9 +19,10 @@ from qgis.core import (QgsProject, QgsMessageLog, Qgis, QgsVectorLayer,
                       QgsVectorFileWriter, QgsCoordinateTransform,
                       QgsCoordinateReferenceSystem)
 
-from .qols_dockwidget import QolsDockWidget
-from .settings_dialog import RulesSettingsDialog
-from . import rules_manager as rule_mgr
+from .ui.dockwidget import QolsDockWidget
+from .ui.settings_dialog import RulesSettingsDialog
+from .surface_types import SurfaceType
+from .rules import manager as rule_mgr
 
 class QOLS:
     """QGIS Plugin Implementation."""
@@ -120,7 +130,6 @@ class QOLS:
                 print(f"QOLS: Error adding 'Settings' action: {e}")
         except Exception as e:
             print(f"QOLS: Error in initGui: {e}")
-            import traceback
             traceback.print_exc()
 
     def unload(self):
@@ -153,8 +162,7 @@ class QOLS:
                 print("QOLS: Creating new panel")
                 self.panel = QolsDockWidget(self.iface)
                 # Add panel to RIGHT SIDE instead of left
-                _dock_area = getattr(Qt, 'RightDockWidgetArea', None) or Qt.DockWidgetArea.RightDockWidgetArea
-                self.iface.addDockWidget(_dock_area, self.panel)
+                self.iface.addDockWidget(DOCK_RIGHT, self.panel)
                 self.panel.closingPlugin.connect(self.on_close_panel)
                 self.panel.calculateClicked.connect(self.on_calculate)
                 self.panel.closeClicked.connect(self.on_close_panel)
@@ -177,7 +185,6 @@ class QOLS:
             
         except Exception as e:
             print(f"QOLS Error in show_panel: {e}")
-            import traceback
             traceback.print_exc()
             self.iface.messageBar().pushMessage(
                 "QOLS Error", 
@@ -237,7 +244,7 @@ class QOLS:
         """Open the QOLS Settings dialog (QPANSOPY-like minimal settings)."""
         try:
             dlg = RulesSettingsDialog(self.iface.mainWindow())
-            if dlg.exec_() == dlg.Accepted:
+            if dlg.exec() == dlg.Accepted:
                 name = dlg.selected_rule_set()
                 if name:
                     rule_mgr.set_active_rule_set_name(name)
@@ -269,25 +276,29 @@ class QOLS:
             print(f"QOLS DEBUG: specific_params type: {type(specific_params)}")
             print(f"QOLS DEBUG: specific_params keys: {list(specific_params.keys())}")
             
-            if surface_type == 'Approach Surface':
-                self.execute_approach_surface(params)
-            elif surface_type == 'Conical':
-                self.execute_conical_surface(params)
-            elif surface_type == 'Inner Horizontal':
-                self.execute_inner_horizontal_surface(params)
-            elif surface_type == 'Inner Horizontal & Conical':
-                self.execute_combined_inner_conical_surface(params)
-            elif surface_type == 'OFZ':
-                self.execute_ofz_surface(params)
-            elif surface_type == 'Outer Horizontal':
-                self.execute_outer_horizontal_surface(params)
-            elif surface_type == 'Take-Off Surface':
-                self.execute_takeoff_surface(params)
-            elif surface_type == 'Transitional Surface' or surface_type == 'Transitional':
-                self.execute_transitional_surface(params)
-            else:
+            # Normalise to SurfaceType enum to catch typos early (R-03)
+            try:
+                st = SurfaceType.from_tab_text(surface_type)
+            except ValueError:
                 self.iface.messageBar().pushMessage("QOLS", "Please select a surface type", level=Qgis.Warning)
                 return
+
+            if st == SurfaceType.APPROACH:
+                self.execute_approach_surface(params)
+            elif st == SurfaceType.CONICAL:
+                self.execute_conical_surface(params)
+            elif st == SurfaceType.INNER_HORIZONTAL:
+                self.execute_inner_horizontal_surface(params)
+            elif st == SurfaceType.INNER_CONICAL:
+                self.execute_combined_inner_conical_surface(params)
+            elif st == SurfaceType.OFZ:
+                self.execute_ofz_surface(params)
+            elif st == SurfaceType.OUTER_HORIZONTAL:
+                self.execute_outer_horizontal_surface(params)
+            elif st == SurfaceType.TAKEOFF:
+                self.execute_takeoff_surface(params)
+            elif st == SurfaceType.TRANSITIONAL:
+                self.execute_transitional_surface(params)
             
             # Show success message
             self.iface.messageBar().pushMessage(
@@ -298,7 +309,6 @@ class QOLS:
                 
         except Exception as e:
             print(f"QOLS: Error in on_calculate: {e}")
-            import traceback
             traceback.print_exc()
             self.iface.messageBar().pushMessage("QOLS Error", f"Error calculating surface: {str(e)}", level=Qgis.Critical)
 
@@ -378,7 +388,6 @@ class QOLS:
             
         except Exception as e:
             print(f"QOLS: Error in combined Inner Horizontal & Conical execution: {e}")
-            import traceback
             traceback.print_exc()
             self.iface.messageBar().pushMessage(
                 "QOLS Error", 
@@ -387,92 +396,99 @@ class QOLS:
             )
             raise
 
+    # ------------------------------------------------------------------
+    # BUG-04 — Centralised layer validation (called from execute_script)
+    # ------------------------------------------------------------------
+
+    def _validate_layers_for_execution(self, params: dict) -> None:
+        """Raise a descriptive exception if *params* contains invalid layers.
+
+        This consolidates the eight layer checks that were previously scattered
+        across :meth:`execute_script` so that the validation logic lives in a
+        single place (BUG-04).
+
+        Args:
+            params: The parameter dict returned by
+                    :meth:`~qols_dockwidget.QolsDockWidget.get_parameters`.
+
+        Raises:
+            ValueError: With a human-readable message on the first failing check.
+        """
+        runway_layer = params.get('runway_layer')
+        threshold_layer = params.get('threshold_layer')
+
+        if runway_layer is None:
+            raise ValueError("No Runway Layer Centerline in parameters. Execution aborted.")
+        if threshold_layer is None:
+            raise ValueError("No threshold layer in parameters. Execution aborted.")
+
+        if not isinstance(runway_layer, QgsVectorLayer):
+            raise ValueError(f"Runway Layer Centerline is not a valid QgsVectorLayer: {type(runway_layer)}")
+        if not isinstance(threshold_layer, QgsVectorLayer):
+            raise ValueError(f"Threshold layer is not a valid QgsVectorLayer: {type(threshold_layer)}")
+
+        project_layers = list(QgsProject.instance().mapLayers().values())
+        if runway_layer not in project_layers:
+            raise ValueError(f"Runway Layer Centerline '{runway_layer.name()}' not found in current project.")
+        if threshold_layer not in project_layers:
+            raise ValueError(f"Threshold layer '{threshold_layer.name()}' not found in current project.")
+
+        if not runway_layer.isValid():
+            raise ValueError(f"Runway Layer Centerline '{runway_layer.name()}' is invalid or corrupted.")
+        if not threshold_layer.isValid():
+            raise ValueError(f"Threshold layer '{threshold_layer.name()}' is invalid or corrupted.")
+
+        if runway_layer.featureCount() == 0:
+            raise ValueError(f"Runway Layer Centerline '{runway_layer.name()}' contains no features.")
+        if threshold_layer.featureCount() == 0:
+            raise ValueError(f"Threshold layer '{threshold_layer.name()}' contains no features.")
+
+        use_runway_selected = params.get('use_runway_selected', False)
+        use_threshold_selected = params.get('use_threshold_selected', False)
+        if use_runway_selected and len(runway_layer.selectedFeatures()) == 0:
+            raise ValueError("use_runway_selected=True but no runway features selected.")
+        if use_threshold_selected and len(threshold_layer.selectedFeatures()) == 0:
+            raise ValueError("use_threshold_selected=True but no threshold features selected.")
+
     def execute_script(self, script_path, params=None):
         """Execute a script with dynamic parameters and robust validation."""
         try:
-            # CRITICAL VALIDATION: Ensure parameters exist
             if params is None:
-                raise Exception("CRITICAL ERROR: No parameters provided to script execution.")
-            
-            # CRITICAL VALIDATION: Verify essential parameters
-            runway_layer = params.get('runway_layer')
-            threshold_layer = params.get('threshold_layer')
-            
-            if runway_layer is None:
-                raise Exception("CRITICAL ERROR: No Runway Layer Centerline in parameters. Execution aborted.")
-            
-            if threshold_layer is None:
-                raise Exception("CRITICAL ERROR: No threshold layer in parameters. Execution aborted.")
-            
-            # SAFETY CHECK: Ensure layer objects are valid QGIS layers
-            if not isinstance(runway_layer, QgsVectorLayer):
-                raise Exception(f"CRITICAL ERROR: Runway Layer Centerline is not a valid QgsVectorLayer: {type(runway_layer)}")
-            
-            if not isinstance(threshold_layer, QgsVectorLayer):
-                raise Exception(f"CRITICAL ERROR: Threshold layer is not a valid QgsVectorLayer: {type(threshold_layer)}")
-            
-            # SAFETY CHECK: Ensure layers still exist in project
-            project_layers = list(QgsProject.instance().mapLayers().values())
-            if runway_layer not in project_layers:
-                raise Exception(f"CRITICAL ERROR: Runway Layer Centerline '{runway_layer.name()}' not found in current project.")
-            
-            if threshold_layer not in project_layers:
-                raise Exception(f"CRITICAL ERROR: Threshold layer '{threshold_layer.name()}' not found in current project.")
-            
-            # SAFETY CHECK: Verify layer validity and accessibility
-            if not runway_layer.isValid():
-                raise Exception(f"CRITICAL ERROR: Runway Layer Centerline '{runway_layer.name()}' is invalid or corrupted.")
-            
-            if not threshold_layer.isValid():
-                raise Exception(f"CRITICAL ERROR: Threshold layer '{threshold_layer.name()}' is invalid or corrupted.")
-            
-            # SAFETY CHECK: Verify layers have features
-            if runway_layer.featureCount() == 0:
-                raise Exception(f"CRITICAL ERROR: Runway Layer Centerline '{runway_layer.name()}' contains no features.")
-            
-            if threshold_layer.featureCount() == 0:
-                raise Exception(f"CRITICAL ERROR: Threshold layer '{threshold_layer.name()}' contains no features.")
-            
-            # FINAL VALIDATION: Log critical parameters for debugging
+                raise ValueError("No parameters provided to script execution.")
+
+            # BUG-04: single validation call replaces the 8 inline checks
+            self._validate_layers_for_execution(params)
+
+            runway_layer = params['runway_layer']
+            threshold_layer = params['threshold_layer']
             use_runway_selected = params.get('use_runway_selected', False)
             use_threshold_selected = params.get('use_threshold_selected', False)
-            
+
             print(f"QOLS: EXECUTING SCRIPT WITH VALIDATED PARAMETERS:")
             print(f"  Script: {script_path}")
             print(f"  Runway Layer Centerline: '{runway_layer.name()}' ({runway_layer.featureCount()} features)")
             print(f"  Threshold Layer: '{threshold_layer.name()}' ({threshold_layer.featureCount()} features)")
             print(f"  Use Runway Selected: {use_runway_selected}")
             print(f"  Use Threshold Selected: {use_threshold_selected}")
-            
-            if use_runway_selected:
-                runway_selected_count = len(runway_layer.selectedFeatures())
-                print(f"  Runway Selected Features: {runway_selected_count}")
-                if runway_selected_count == 0:
-                    raise Exception("CRITICAL ERROR: use_runway_selected=True but no runway features selected.")
-            
-            if use_threshold_selected:
-                threshold_selected_count = len(threshold_layer.selectedFeatures())
-                print(f"  Threshold Selected Features: {threshold_selected_count}")
-                if threshold_selected_count == 0:
-                    raise Exception("CRITICAL ERROR: use_threshold_selected=True but no threshold features selected.")
-            
-            # Read the script file
+
             if not os.path.exists(script_path):
-                raise Exception(f"CRITICAL ERROR: Script file not found: {script_path}")
-                
+                raise ValueError(f"Script file not found: {script_path}")
+
             with open(script_path, 'r', encoding='utf-8') as f:
                 script_content = f.read()
-            
+
             print(f"QOLS: Executing script: {script_path}")
-            
-            # Extract specific parameters and add them to the main params
+
             specific_params = params.get('specific_params', {})
-            
+
             print(f"QOLS DEBUG: About to create exec_namespace")
             print(f"QOLS DEBUG: specific_params before namespace: {specific_params}")
-            
-            # Create execution namespace with parameters
-            exec_namespace = {
+
+            # BUG-02: Build namespace explicitly with visible priority order.
+            # Priority (low → high): QGIS API stubs < params < specific_params.
+            # Using .update() instead of double **-unpack makes key collisions
+            # visible and prevents silent overwrites.
+            exec_namespace: dict = {
                 '__file__': script_path,  # Allow scripts to locate sibling files (e.g. _contour_utils.py)
                 'iface': self.iface,
                 'QgsProject': QgsProject,
@@ -493,26 +509,34 @@ class QOLS:
                 'os': os,
                 'sys': sys,
                 'math': math,
-                # Map UI parameter names to script parameter names
+                # Convenience aliases
                 'use_selected_feature': params.get('use_threshold_selected', False),
-                # Active rule set name for attribution in outputs
                 'active_rule_set': rule_mgr.get_active_rule_set_name(),
-                **params,  # Add all parameters
-                **specific_params  # Add specific parameters directly
             }
-            
+            # params overrides QGIS stubs (runway_layer, threshold_layer, surface_type …)
+            exec_namespace.update(params)
+            # specific_params overrides params (Z0, ZE, code, widthDep …)
+            exec_namespace.update(specific_params)
+            # BUG-01: success sentinel — scripts should set _script_success = True when
+            # they finish successfully.  Existing scripts don't yet set it, so we emit
+            # a warning rather than raising to keep backward compatibility.
+            exec_namespace['_script_success'] = False
+
             print(f"QOLS DEBUG: exec_namespace keys related to params: {[k for k in exec_namespace.keys() if k in ['code', 'typeAPP', 'widthDep', 'maxWidthDep', 'Z0', 'ZE', 'ARPH', 'specific_params', 'runway_layer', 'threshold_layer']]}")
             print(f"QOLS DEBUG: exec_namespace['code'] = {exec_namespace.get('code', 'NOT_FOUND')}")
             print(f"QOLS DEBUG: exec_namespace['widthDep'] = {exec_namespace.get('widthDep', 'NOT_FOUND')}")
-            
+
             # Execute the script
             exec(script_content, exec_namespace)
-            
+
+            # BUG-01: warn if script did not signal successful completion
+            if not exec_namespace.get('_script_success', False):
+                print(f"QOLS: Warning — script did not set _script_success=True: {script_path}")
+
             print(f"QOLS: Script executed successfully: {script_path}")
-            
+
         except Exception as e:
             print(f"QOLS: Error executing script {script_path}: {e}")
-            import traceback
             traceback.print_exc()
             self.iface.messageBar().pushMessage("QOLS Error", f"Script execution error: {str(e)}", level=Qgis.Critical)
             raise

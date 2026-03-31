@@ -9,7 +9,6 @@ from qgis.core import *
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
 from qgis.gui import *
-from qgis.PyQt.QtCore import QVariant
 from math import *
 
 def _normalize_polyline_points(geometry: 'QgsGeometry', iface=None):

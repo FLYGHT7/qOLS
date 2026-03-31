@@ -1,13 +1,27 @@
-*.zip
+# Ignore development docs
+/doc/
+.vscode/
+.idea/
+.venv/
+pyproject.toml
 
-# Ignore the tests/ directory
-tests/
-pytest.ini
+# ignore agent
+.agent/
+.agents/
+.claude/
+skills-lock.json
 
 # Python cache
 __pycache__/
+*.py[cod]
 .pytest_cache/
-*.pyc
 
-#docs
-doc/
+# Tests
+tests/
+pytest.ini
+
+# Ignore md
+REFACTOR_PLAN.md
+CONTRIBUTING.md
+qols.zip
+qols_v1.zip
