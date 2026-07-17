@@ -23,7 +23,6 @@ from ..surfaces.icao import (
 from ..rules import manager as rule_mgr
 from ..surfaces.approach import get_approach_defaults as icao_get_approach_defaults
 from ..surfaces.new_ols_approach import get_new_ols_approach_defaults
-from ..surfaces.new_ols_transitional import get_new_ols_transitional_defaults
 from ..surface_types import SurfaceType
 from .. import logger  # CR-01
 from qgis.PyQt import uic
@@ -105,12 +104,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         'spin_ZE_ofs':             2546.5,
         'spin_ARPH_ofs':           2548.0,
         'spin_contour_interval_ofs':  10.0,
-        # New OLS OES Transitional (#109)
-        'spin_widthApp_oes':         155.0,
-        'spin_Z0_oes':             2548.0,
-        'spin_ZE_oes':             2546.5,
-        'spin_ARPH_oes':           2548.0,
-        'spin_slope_oes':             20.0,
     }
 
     # Widgets declared in qols_panel_base.ui, guaranteed available after setupUi() (R-04)
@@ -146,11 +139,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
     spin_Z0_ofs: QLineEdit
     spin_ZE_ofs: QLineEdit
     spin_ARPH_ofs: QLineEdit
-    spin_widthApp_oes: QLineEdit
-    spin_Z0_oes: QLineEdit
-    spin_ZE_oes: QLineEdit
-    spin_ARPH_oes: QLineEdit
-    spin_slope_oes: QLineEdit
 
     def __init__(self, iface, parent=None):
         """Constructor with enhanced error handling and layer management."""
@@ -340,8 +328,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_rwyWidth_ofs', 'spin_distThr_ofs', 'spin_innerEdge_ofs',
                 'spin_divergence_ofs', 'spin_length_ofs', 'spin_slope_ofs',
                 'spin_Z0_ofs', 'spin_ZE_ofs', 'spin_ARPH_ofs', 'spin_contour_interval_ofs',
-                # New OLS OES
-                'spin_widthApp_oes', 'spin_Z0_oes', 'spin_ZE_oes', 'spin_ARPH_oes', 'spin_slope_oes',
             ]
 
             # Allow unlimited decimals; optional sign and decimal part
@@ -693,28 +679,13 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.set_numeric_value('spin_divergence_ofs', d['divergence_pct'])
             self.set_numeric_value('spin_length_ofs', d['length_m'])
             self.set_numeric_value('spin_slope_ofs', d['slope_pct'])
-            self.apply_oes_transitional_defaults()
         except Exception as e:
             logger.warning(f"Unhandled error: {e}")
 
     @pyqtSlot()
     def apply_oes_transitional_defaults(self):
-        """Populate OES Transitional fields (New OLS #109).
-
-        The OES width tracks the OFS Approach inner edge.
-        """
-        try:
-            d = get_new_ols_transitional_defaults()
-            self.set_numeric_value('spin_slope_oes', d['slope_pct'])
-            inner_edge_text = getattr(self, 'spin_innerEdge_ofs', None)
-            if inner_edge_text and hasattr(inner_edge_text, 'text'):
-                try:
-                    inner_val = float(inner_edge_text.text() or "155")
-                    self.set_numeric_value('spin_widthApp_oes', inner_val)
-                except ValueError:
-                    pass
-        except Exception as e:
-            logger.warning(f"Unhandled error: {e}")
+        """OES is TO BE DEVELOPED — no defaults to populate."""
+        pass
 
     @pyqtSlot()
     def _show_adg_help_dialog(self):
@@ -1936,18 +1907,13 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'contour_interval_m': int(round(self.get_numeric_value('spin_contour_interval_ofs'))),
                 }
             elif surface_type == SurfaceType.NEW_OLS_OES_TRANSITIONAL:
-                s_value = 0 if self.direction_start_to_end else -1
-                specific_params = {
-                    'width_m': self.get_numeric_value('spin_widthApp_oes'),
-                    'start_elevation_m': self.get_numeric_value('spin_Z0_oes'),
-                    'highest_thr_elev_m': self.get_numeric_value('spin_ARPH_oes'),
-                    'slope_pct': self.get_numeric_value('spin_slope_oes'),
-                    'cap_height_m': 60.0,
-                    'approach_slope_pct': self.get_numeric_value('spin_slope_ofs'),
-                    'divergence_ratio': self.get_numeric_value('spin_divergence_ofs') / 100.0,
-                    'distance_from_threshold_m': self.get_numeric_value('spin_distThr_ofs'),
-                    'direction': s_value,
-                }
+                try:
+                    self.iface.messageBar().pushMessage(
+                        "QOLS New OLS", "OES surface: TO BE DEVELOPED",
+                        level=MSG_INFO, duration=4)
+                except Exception:
+                    pass
+                return None
             elif surface_type == SurfaceType.OFZ:
                 specific_params = {
                     'code': self.get_code_value('spin_code_ofz'),  # QComboBox

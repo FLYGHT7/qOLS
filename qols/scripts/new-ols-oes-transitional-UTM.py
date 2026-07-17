@@ -60,6 +60,10 @@ try:
     divergence_ratio = globals().get('divergence_ratio', 0.10)
     distance_from_threshold_m = globals().get('distance_from_threshold_m', 60.0)
     direction = globals().get('direction', 0)
+    end_elevation_m = globals().get('end_elevation_m', 0.0)
+    opp_thr_x = globals().get('opp_thr_x', None)
+    opp_thr_y = globals().get('opp_thr_y', None)
+    opp_start_elevation_m = globals().get('opp_start_elevation_m', 0.0)
     runway_layer = globals().get('runway_layer', None)
     threshold_layer = globals().get('threshold_layer', None)
     use_selected_feature = globals().get('use_selected_feature', True)
@@ -218,7 +222,51 @@ feat_r.setAttributes([
     slope_pct, round(cap_elevation, 3), round(d_cap, 1), round(lateral_near, 1),
 ])
 
-oes_layer.dataProvider().addFeatures([feat_l, feat_r])
+# ---------------------------------------------------------------------------
+# Rectangular runway strips (left and right) from THR1 to THR2
+# ---------------------------------------------------------------------------
+rwy_feats = []
+if opp_thr_x is not None and opp_thr_y is not None:
+    opp_thr_pt2 = QgsPoint(opp_thr_x, opp_thr_y)
+    opp_thr_pt2.addZValue(opp_start_elevation_m)
+
+    # Near end anchored at pt_start (same origin as the approach wings) so
+    # there is no gap between the wing near-edge and the strip near-edge.
+    # Outer edge at half_inner + lateral_near from centreline, Z = cap_elevation.
+    rwy_ni_l = pt_start.project(half_inner, azimuth + 90)
+    rwy_ni_l.setZ(start_elevation_m)
+    rwy_no_l = pt_start.project(half_inner + lateral_near, azimuth + 90)
+    rwy_no_l.setZ(cap_elevation)
+    rwy_fi_l = opp_thr_pt2.project(half_inner, azimuth + 90)
+    rwy_fi_l.setZ(opp_start_elevation_m)
+    rwy_fo_l = opp_thr_pt2.project(half_inner + lateral_near, azimuth + 90)
+    rwy_fo_l.setZ(cap_elevation)
+
+    rwy_ni_r = pt_start.project(half_inner, azimuth - 90)
+    rwy_ni_r.setZ(start_elevation_m)
+    rwy_no_r = pt_start.project(half_inner + lateral_near, azimuth - 90)
+    rwy_no_r.setZ(cap_elevation)
+    rwy_fi_r = opp_thr_pt2.project(half_inner, azimuth - 90)
+    rwy_fi_r.setZ(opp_start_elevation_m)
+    rwy_fo_r = opp_thr_pt2.project(half_inner + lateral_near, azimuth - 90)
+    rwy_fo_r.setZ(cap_elevation)
+
+    feat_rwy_l = QgsFeature()
+    feat_rwy_l.setGeometry(QgsPolygon(QgsLineString([rwy_ni_l, rwy_no_l, rwy_fo_l, rwy_fi_l, rwy_ni_l])))
+    feat_rwy_l.setAttributes([
+        5, 'New OLS OES Transitional', 'runway_left',
+        slope_pct, round(cap_elevation, 3), round(d_cap, 1), round(lateral_near, 1),
+    ])
+
+    feat_rwy_r = QgsFeature()
+    feat_rwy_r.setGeometry(QgsPolygon(QgsLineString([rwy_ni_r, rwy_fi_r, rwy_fo_r, rwy_no_r, rwy_ni_r])))
+    feat_rwy_r.setAttributes([
+        6, 'New OLS OES Transitional', 'runway_right',
+        slope_pct, round(cap_elevation, 3), round(d_cap, 1), round(lateral_near, 1),
+    ])
+    rwy_feats = [feat_rwy_l, feat_rwy_r]
+
+oes_layer.dataProvider().addFeatures([feat_l, feat_r] + rwy_feats)
 
 QgsProject.instance().addMapLayers([oes_layer])
 oes_layer.renderer().symbol().setColor(QColor("#87CEEB"))  # sky blue

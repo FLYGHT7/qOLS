@@ -1635,97 +1635,31 @@ QPushButton:checked:hover {
            </layout>
           </widget>
 
-          <!-- OES TAB — Obstacle Evaluation Surface: Transitional -->
+          <!-- OES TAB — placeholder until geometry is defined (#113) -->
           <widget class="QWidget" name="tab_oes">
            <attribute name="title">
             <string>OES</string>
            </attribute>
-           <layout class="QFormLayout" name="formLayout_oes">
-            <property name="fieldGrowthPolicy">
-             <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
-            </property>
-            <property name="labelAlignment">
-             <set>Qt::AlignRight|Qt::AlignVCenter</set>
-            </property>
-            <property name="horizontalSpacing"><number>15</number></property>
-            <property name="verticalSpacing"><number>6</number></property>
-
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_widthApp_oes">
-              <property name="text"><string>Width App (m):</string></property>
+           <layout class="QVBoxLayout" name="tab_oes_layout">
+            <item>
+             <spacer name="oes_spacer_top">
+              <property name="orientation"><enum>Qt::Vertical</enum></property>
+              <property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_oes_wip">
+              <property name="text"><string>TO BE DEVELOPED</string></property>
+              <property name="alignment"><set>Qt::AlignCenter</set></property>
+              <property name="styleSheet"><string>QLabel { font-size: 14px; color: grey; }</string></property>
              </widget>
             </item>
-            <item row="0" column="1">
-             <widget class="QLineEdit" name="spin_widthApp_oes">
-              <property name="text"><string>155.00</string></property>
-              <property name="toolTip">
-               <string>Approach inner edge width from OFS tab. Auto-populated; editable.</string>
-              </property>
-             </widget>
+            <item>
+             <spacer name="oes_spacer_bottom">
+              <property name="orientation"><enum>Qt::Vertical</enum></property>
+              <property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property>
+             </spacer>
             </item>
-
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_Z0_oes">
-              <property name="text"><string>Start Elevation (m):</string></property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QLineEdit" name="spin_Z0_oes">
-              <property name="text"><string>2548.00</string></property>
-             </widget>
-            </item>
-
-            <item row="2" column="0">
-             <widget class="QLabel" name="label_ZE_oes">
-              <property name="text"><string>End Elevation (m):</string></property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QLineEdit" name="spin_ZE_oes">
-              <property name="text"><string>2546.50</string></property>
-             </widget>
-            </item>
-
-            <item row="3" column="0">
-             <widget class="QLabel" name="label_ARPH_oes">
-              <property name="text"><string>Highest THR Elev (m):</string></property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QLineEdit" name="spin_ARPH_oes">
-              <property name="text"><string>2548.00</string></property>
-              <property name="toolTip">
-               <string>Elevation of the highest threshold of the runway. Upper edge = this value + 60 m.</string>
-              </property>
-             </widget>
-            </item>
-
-            <item row="4" column="0">
-             <widget class="QLabel" name="label_slope_oes">
-              <property name="text"><string>Slope (%):</string></property>
-             </widget>
-            </item>
-            <item row="4" column="1">
-             <widget class="QLineEdit" name="spin_slope_oes">
-              <property name="text"><string>20.00</string></property>
-              <property name="toolTip">
-               <string>Transitional surface slope in percent. Default 20 %; editable.</string>
-              </property>
-             </widget>
-            </item>
-
-            <item row="5" column="0" colspan="2">
-             <widget class="QLabel" name="label_oes_note">
-              <property name="text">
-               <string>Upper edge at 60 m above the highest threshold elevation. Lateral extent = 60 / (slope/100) from approach edge.</string>
-              </property>
-              <property name="wordWrap"><bool>true</bool></property>
-              <property name="styleSheet">
-               <string>QLabel { font-size: 11px; padding: 4px; }</string>
-              </property>
-             </widget>
-            </item>
-
            </layout>
           </widget>
 
