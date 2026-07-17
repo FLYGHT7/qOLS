@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>NewOLSDockWidgetBase</class>
+ <widget class="QDockWidget" name="NewOLSDockWidgetBase">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>300</width>
+    <height>500</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>New OLS</string>
+  </property>
+  <widget class="QWidget" name="dockWidgetContents">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="spacing">
+     <number>4</number>
+    </property>
+    <property name="margin">
+     <number>4</number>
+    </property>
+
+    <item>
+     <widget class="QScrollArea" name="scrollArea">
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAsNeeded</enum>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>580</width>
+         <height>600</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="scrollLayout">
+        <property name="spacing">
+         <number>6</number>
+        </property>
+        <property name="margin">
+         <number>6</number>
+        </property>
+
+    <!-- LAYER SELECTION -->
+    <item>
+     <widget class="QGroupBox" name="layersGroup">
+      <property name="title">
+       <string>Input Layers</string>
+      </property>
+      <layout class="QVBoxLayout" name="layersMainLayout">
+       <property name="spacing"><number>6</number></property>
+       <property name="margin"><number>2</number></property>
+
+       <item>
+        <widget class="QFrame" name="runwayFrame">
+         <property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
+         <layout class="QVBoxLayout" name="runwayCompactLayout">
+          <property name="spacing"><number>4</number></property>
+          <property name="margin"><number>4</number></property>
+          <item>
+           <widget class="QLabel" name="runwayTitleLabel">
+            <property name="text"><string>Runway Layer Centerline</string></property>
+            <property name="styleSheet"><string>QLabel { font-weight: bold; }</string></property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="runwayControlLayout">
+            <property name="spacing"><number>8</number></property>
+            <item>
+             <widget class="QgsMapLayerComboBox" name="runwayLayerCombo">
+              <property name="minimumHeight"><number>24</number></property>
+              <property name="maximumHeight"><number>28</number></property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch><verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="useSelectedRunwayCheckBox">
+              <property name="text"><string>Selected Only</string></property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch><verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="runwaySelectionStatusLabel">
+            <property name="text"><string>No selection</string></property>
+            <property name="styleSheet"><string>QLabel { font-weight: bold; font-size: 11px; }</string></property>
+            <property name="minimumHeight"><number>16</number></property>
+            <property name="maximumHeight"><number>16</number></property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+
+       <item>
+        <widget class="QFrame" name="thresholdFrame">
+         <property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
+         <layout class="QVBoxLayout" name="thresholdCompactLayout">
+          <property name="spacing"><number>4</number></property>
+          <property name="margin"><number>4</number></property>
+          <item>
+           <widget class="QLabel" name="thresholdTitleLabel">
+            <property name="text"><string>Threshold Layer</string></property>
+            <property name="styleSheet"><string>QLabel { font-weight: bold; }</string></property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="thresholdControlLayout">
+            <property name="spacing"><number>8</number></property>
+            <item>
+             <widget class="QgsMapLayerComboBox" name="thresholdLayerCombo">
+              <property name="minimumHeight"><number>24</number></property>
+              <property name="maximumHeight"><number>28</number></property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch><verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="useSelectedThresholdCheckBox">
+              <property name="text"><string>Selected Only</string></property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch><verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="thresholdSelectionStatusLabel">
+            <property name="text"><string>No selection</string></property>
+            <property name="styleSheet"><string>QLabel { font-weight: bold; font-size: 11px; }</string></property>
+            <property name="minimumHeight"><number>16</number></property>
+            <property name="maximumHeight"><number>16</number></property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+
+      </layout>
+     </widget>
+    </item>
+
+    <!-- NEW OLS TABS (OFS / OES) -->
+    <item>
+     <widget class="QTabWidget" name="newOlsTabWidget">
+      <property name="tabPosition">
+       <enum>QTabWidget::North</enum>
+      </property>
+
+      <!-- OFS TAB -->
+      <widget class="QWidget" name="tab_ofs">
+       <attribute name="title"><string>OFS</string></attribute>
+       <layout class="QFormLayout" name="formLayout_ofs">
+        <property name="fieldGrowthPolicy"><enum>QFormLayout::AllNonFixedFieldsGrow</enum></property>
+        <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>
+        <property name="horizontalSpacing"><number>15</number></property>
+        <property name="verticalSpacing"><number>6</number></property>
+
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_rwyType_ofs">
+          <property name="text"><string>Runway Type:</string></property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QComboBox" name="combo_rwyType_ofs">
+          <property name="minimumHeight"><number>22</number></property>
+          <item><property name="text"><string>Non-instrument</string></property></item>
+          <item><property name="text"><string>Instrument</string></property></item>
+         </widget>
+        </item>
+
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_adg_ofs">
+          <property name="text"><string>ADG Group:</string></property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QComboBox" name="combo_adg_ofs">
+          <property name="minimumHeight"><number>22</number></property>
+          <property name="currentIndex"><number>2</number></property>
+          <item><property name="text"><string>I</string></property></item>
+          <item><property name="text"><string>IIA-IIB</string></property></item>
+          <item><property name="text"><string>IIC</string></property></item>
+          <item><property name="text"><string>III</string></property></item>
+          <item><property name="text"><string>IV</string></property></item>
+          <item><property name="text"><string>V</string></property></item>
+         </widget>
+        </item>
+
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_rwyWidth_ofs">
+          <property name="text"><string>Runway Width (m):</string></property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="spin_rwyWidth_ofs">
+          <property name="text"><string>45.00</string></property>
+          <property name="toolTip"><string>Runway pavement width in metres.</string></property>
+         </widget>
+        </item>
+
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_distThr_ofs">
+          <property name="text"><string>Distance from THR (m):</string></property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLineEdit" name="spin_distThr_ofs">
+          <property name="text"><string>60.00</string></property>
+         </widget>
+        </item>
+
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_innerEdge_ofs">
+          <property name="text"><string>Inner Edge Length (m):</string></property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLineEdit" name="spin_innerEdge_ofs">
+          <property name="text"><string>155.00</string></property>
+          <property name="toolTip"><string>Width of the inner edge. Auto-computed from ADG; editable.</string></property>
+         </widget>
+        </item>
+
+        <item row="5" column="0">
+         <widget class="QLabel" name="label_divergence_ofs">
+          <property name="text"><string>Divergence (%):</string></property>
+         </widget>
+        </item>
+        <item row="5" column="1">
+         <widget class="QLineEdit" name="spin_divergence_ofs">
+          <property name="text"><string>10.00</string></property>
+         </widget>
+        </item>
+
+        <item row="6" column="0">
+         <widget class="QLabel" name="label_length_ofs">
+          <property name="text"><string>Length (m):</string></property>
+         </widget>
+        </item>
+        <item row="6" column="1">
+         <widget class="QLineEdit" name="spin_length_ofs">
+          <property name="text"><string>4500.00</string></property>
+         </widget>
+        </item>
+
+        <item row="7" column="0">
+         <widget class="QLabel" name="label_slope_ofs">
+          <property name="text"><string>Slope (%):</string></property>
+         </widget>
+        </item>
+        <item row="7" column="1">
+         <widget class="QLineEdit" name="spin_slope_ofs">
+          <property name="text"><string>3.33</string></property>
+          <property name="toolTip"><string>Approach surface slope in percent.</string></property>
+         </widget>
+        </item>
+
+        <item row="8" column="0">
+         <widget class="QLabel" name="label_Z0_ofs">
+          <property name="text"><string>Start Elevation (m):</string></property>
+         </widget>
+        </item>
+        <item row="8" column="1">
+         <widget class="QLineEdit" name="spin_Z0_ofs">
+          <property name="text"><string>2548.00</string></property>
+         </widget>
+        </item>
+
+        <item row="9" column="0">
+         <widget class="QLabel" name="label_ZE_ofs">
+          <property name="text"><string>End Elevation (m):</string></property>
+         </widget>
+        </item>
+        <item row="9" column="1">
+         <widget class="QLineEdit" name="spin_ZE_ofs">
+          <property name="text"><string>2546.50</string></property>
+         </widget>
+        </item>
+
+        <item row="10" column="0">
+         <widget class="QLabel" name="label_ARPH_ofs">
+          <property name="text"><string>ARPH (m):</string></property>
+         </widget>
+        </item>
+        <item row="10" column="1">
+         <widget class="QLineEdit" name="spin_ARPH_ofs">
+          <property name="text"><string>2548.00</string></property>
+         </widget>
+        </item>
+
+        <item row="11" column="0">
+         <widget class="QLabel" name="label_contour_interval_ofs">
+          <property name="text"><string>Contour Interval (m):</string></property>
+         </widget>
+        </item>
+        <item row="11" column="1">
+         <widget class="QLineEdit" name="spin_contour_interval_ofs">
+          <property name="text"><string>10</string></property>
+          <property name="toolTip"><string>Elevation interval for contour lines. Set to 0 to disable.</string></property>
+         </widget>
+        </item>
+
+        <item row="12" column="0" colspan="2">
+         <widget class="QPushButton" name="btn_adg_help">
+          <property name="text"><string>ADG Reference Table</string></property>
+          <property name="toolTip"><string>Show the Aeroplane Design Group (ADG) reference table (ICAO Table 1-2)</string></property>
+         </widget>
+        </item>
+
+        <item row="13" column="0" colspan="2">
+         <widget class="QLabel" name="label_approach_note_ofs">
+          <property name="text">
+           <string>Note: The OFS Approach surface establishes the airspace to be maintained free from obstacles during the visual approach phase.</string>
+          </property>
+          <property name="wordWrap"><bool>true</bool></property>
+          <property name="styleSheet"><string>QLabel { font-size: 11px; padding: 4px; }</string></property>
+         </widget>
+        </item>
+
+       </layout>
+      </widget>
+
+      <!-- OES TAB -->
+      <widget class="QWidget" name="tab_oes">
+       <attribute name="title"><string>OES</string></attribute>
+       <layout class="QFormLayout" name="formLayout_oes">
+        <property name="fieldGrowthPolicy"><enum>QFormLayout::AllNonFixedFieldsGrow</enum></property>
+        <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>
+        <property name="horizontalSpacing"><number>15</number></property>
+        <property name="verticalSpacing"><number>6</number></property>
+
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_widthApp_oes">
+          <property name="text"><string>Width App (m):</string></property>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLineEdit" name="spin_widthApp_oes">
+          <property name="text"><string>155.00</string></property>
+          <property name="toolTip"><string>Approach inner edge width from OFS tab. Auto-populated; editable.</string></property>
+         </widget>
+        </item>
+
+        <item row="1" column="0">
+         <widget class="QLabel" name="label_Z0_oes">
+          <property name="text"><string>Start Elevation (m):</string></property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <widget class="QLineEdit" name="spin_Z0_oes">
+          <property name="text"><string>2548.00</string></property>
+         </widget>
+        </item>
+
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_ZE_oes">
+          <property name="text"><string>End Elevation (m):</string></property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="spin_ZE_oes">
+          <property name="text"><string>2546.50</string></property>
+         </widget>
+        </item>
+
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_ARPH_oes">
+          <property name="text"><string>Highest THR Elev (m):</string></property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QLineEdit" name="spin_ARPH_oes">
+          <property name="text"><string>2548.00</string></property>
+          <property name="toolTip"><string>Elevation of the highest threshold. Upper edge = this + 60 m.</string></property>
+         </widget>
+        </item>
+
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_slope_oes">
+          <property name="text"><string>Slope (%):</string></property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QLineEdit" name="spin_slope_oes">
+          <property name="text"><string>20.00</string></property>
+          <property name="toolTip"><string>Transitional surface slope in percent. Default 20%.</string></property>
+         </widget>
+        </item>
+
+        <item row="5" column="0" colspan="2">
+         <widget class="QLabel" name="label_oes_note">
+          <property name="text">
+           <string>Upper edge at 60 m above the highest threshold elevation. Lateral extent = 60 / (slope/100) from approach edge.</string>
+          </property>
+          <property name="wordWrap"><bool>true</bool></property>
+          <property name="styleSheet"><string>QLabel { font-size: 11px; padding: 4px; }</string></property>
+         </widget>
+        </item>
+
+       </layout>
+      </widget>
+
+     </widget>
+    </item>
+
+       </layout>
+      </widget>
+     </widget>
+    </item>
+
+    <!-- BUTTONS -->
+    <item>
+     <widget class="QFrame" name="buttonFrame">
+      <property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
+      <layout class="QHBoxLayout" name="buttonLayout">
+       <property name="spacing"><number>6</number></property>
+       <property name="margin"><number>6</number></property>
+       <item>
+        <widget class="QPushButton" name="directionButton">
+         <property name="text"><string>Direction: Start to End</string></property>
+         <property name="checkable"><bool>true</bool></property>
+         <property name="minimumHeight"><number>30</number></property>
+         <property name="maximumHeight"><number>32</number></property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer">
+         <property name="orientation"><enum>Qt::Horizontal</enum></property>
+         <property name="sizeHint" stdset="0">
+          <size><width>10</width><height>20</height></size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="calculateButton">
+         <property name="text"><string>Calculate</string></property>
+         <property name="minimumHeight"><number>32</number></property>
+         <property name="maximumHeight"><number>34</number></property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="cancelButton">
+         <property name="text"><string>Close</string></property>
+         <property name="minimumHeight"><number>30</number></property>
+         <property name="maximumHeight"><number>32</number></property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+
+   </layout>
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QgsMapLayerComboBox</class>
+   <extends>QComboBox</extends>
+   <header>qgsmaplayercombobox.h</header>
+  </customwidget>
+ </customwidgets>
+</ui>

@@ -20,6 +20,7 @@ from qgis.core import (QgsProject, Qgis, QgsVectorLayer,
                        QgsCoordinateReferenceSystem)
 
 from .ui.dockwidget import QolsDockWidget
+from .ui.new_ols_dockwidget import NewOlsDockWidget
 from .ui.settings_dialog import RulesSettingsDialog
 from .surface_types import SurfaceType
 from .rules import manager as rule_mgr
@@ -36,6 +37,7 @@ class QOLS:
         self.menu = self.tr(u'&QOLS')
         self.first_start = True
         self.panel = None
+        self.panel_new_ols = None
         try:
             _ = rule_mgr.list_rule_sets()
         except Exception:
@@ -81,6 +83,12 @@ class QOLS:
                 text=self.tr(u'QOLS'),
                 callback=self.show_panel,
                 parent=self.iface.mainWindow())
+            self.add_action(
+                icon_path,
+                text=self.tr(u'New OLS'),
+                callback=self.show_new_ols_panel,
+                status_tip=self.tr('Open New OLS Panel'),
+                parent=self.iface.mainWindow())
             self.first_start = True
 
             rules_action = QAction(self.tr('Select Rule Set…'), self.iface.mainWindow())
@@ -108,6 +116,9 @@ class QOLS:
         if self.panel:
             self.panel.close()
             self.panel = None
+        if self.panel_new_ols:
+            self.panel_new_ols.close()
+            self.panel_new_ols = None
 
     def show_panel(self):
         """Toggle the QOLS dockwidget panel (show/hide)."""
@@ -139,6 +150,69 @@ class QOLS:
         """Hide the panel when close is clicked."""
         if self.panel:
             self.panel.hide()
+
+    def show_new_ols_panel(self):
+        """Toggle the New OLS dock widget (show/hide)."""
+        try:
+            if self.panel_new_ols and self.panel_new_ols.isVisible():
+                self.panel_new_ols.hide()
+                self.iface.messageBar().pushMessage(
+                    "New OLS", "Panel closed!", level=MSG_INFO, duration=2)
+                return
+            if self.panel_new_ols is None:
+                self.panel_new_ols = NewOlsDockWidget(self.iface)
+                self.iface.addDockWidget(DOCK_RIGHT, self.panel_new_ols)
+                self.panel_new_ols.closingPlugin.connect(self.on_close_new_ols_panel)
+                self.panel_new_ols.calculateClicked.connect(self.on_calculate_new_ols)
+                self.panel_new_ols.closeClicked.connect(self.on_close_new_ols_panel)
+            self.panel_new_ols.show()
+            self.panel_new_ols.raise_()
+            self.iface.messageBar().pushMessage(
+                "New OLS", "Panel opened!", level=MSG_INFO, duration=2)
+        except Exception as e:
+            logger.error(f"Error in show_new_ols_panel: {e}\n{traceback.format_exc()}")
+            self.iface.messageBar().pushMessage(
+                "New OLS Error", f"Error showing panel: {str(e)}", level=MSG_CRITICAL)
+
+    def on_close_new_ols_panel(self):
+        """Hide the New OLS panel when close is clicked."""
+        if self.panel_new_ols:
+            self.panel_new_ols.hide()
+
+    def on_calculate_new_ols(self):
+        """Execute the selected New OLS surface calculation script with parameters."""
+        try:
+            params = self.panel_new_ols.get_parameters()
+            if not params:
+                self.iface.messageBar().pushMessage(
+                    "New OLS", "Error getting parameters", level=MSG_CRITICAL)
+                return
+
+            st = params.get('surface_type')
+            if not isinstance(st, SurfaceType):
+                self.iface.messageBar().pushMessage(
+                    "New OLS", "Please select a surface type", level=MSG_WARNING)
+                return
+
+            if st == SurfaceType.NEW_OLS_OFS_APPROACH:
+                self.execute_new_ols_ofs_approach(params)
+            elif st == SurfaceType.NEW_OLS_OES_TRANSITIONAL:
+                self.execute_new_ols_oes_transitional(params)
+            else:
+                raise ValueError(f"Unhandled New OLS surface type: {st!r}")
+
+            if params.get('_script_success', False):
+                self.iface.messageBar().pushMessage(
+                    "New OLS Success",
+                    f"{st} calculation completed successfully",
+                    level=MSG_SUCCESS)
+            else:
+                logger.warning(f"{st} completed but script did not set _script_success=True")
+
+        except Exception as e:
+            logger.error(f"Error in on_calculate_new_ols: {e}\n{traceback.format_exc()}")
+            self.iface.messageBar().pushMessage(
+                "New OLS Error", f"Error calculating surface: {str(e)}", level=MSG_CRITICAL)
 
     # CR-07: single method instead of repeated hasattr checks
     def _refresh_panel_defaults(self):
@@ -231,6 +305,8 @@ class QOLS:
                 self.execute_transitional_surface(params)
             elif st == SurfaceType.NEW_OLS_OFS_APPROACH:
                 self.execute_new_ols_ofs_approach(params)
+            elif st == SurfaceType.NEW_OLS_OES_TRANSITIONAL:
+                self.execute_new_ols_oes_transitional(params)
             else:
                 raise ValueError(f"Unhandled surface type: {st!r}")
 
@@ -315,6 +391,10 @@ class QOLS:
             'opp_start_elevation_m': ofs.get('end_elevation_m', 0.0),
         }
         self.execute_script(trans_path, trans_params)
+
+    def execute_new_ols_oes_transitional(self, params):
+        script_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-oes-transitional-UTM.py')
+        self.execute_script(script_path, params)
 
     def execute_combined_inner_conical_surface(self, params):
         """Execute Inner Horizontal then Conical using per-surface parameters."""

@@ -22,17 +22,16 @@ from ..surfaces.icao import (
 )
 from ..rules import manager as rule_mgr
 from ..surfaces.approach import get_approach_defaults as icao_get_approach_defaults
-from ..surfaces.new_ols_approach import get_new_ols_approach_defaults
 from ..surface_types import SurfaceType
 from .. import logger  # CR-01
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot, QRegularExpression
 from qgis.PyQt.QtGui import QRegularExpressionValidator
 from qgis.PyQt.QtWidgets import (
-    QApplication, QCheckBox, QComboBox, QDockWidget,
-    QLabel, QLineEdit, QMessageBox, QToolTip,
+    QApplication, QCheckBox, QComboBox, QDialog, QDockWidget,
+    QLabel, QLineEdit, QMessageBox, QTextBrowser, QToolTip, QVBoxLayout,
 )
-from ..compat import TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL
+from ..compat import EVENT_MOUSE_MOVE, TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL
 from qgis.core import QgsMapLayerProxyModel, QgsProject, QgsWkbTypes, QgsVectorLayer
 
 # Load the UI file
@@ -93,17 +92,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         'spin_ZE_transitional':      2546.5,
         'spin_ARPH_transitional':    2548.0,
         'spin_Tslope_transitional':    14.3,
-        # New OLS OFS Approach (#108)
-        'spin_rwyWidth_ofs':          45.0,
-        'spin_distThr_ofs':           60.0,
-        'spin_innerEdge_ofs':        155.0,
-        'spin_divergence_ofs':        10.0,
-        'spin_length_ofs':          4500.0,
-        'spin_slope_ofs':             3.33,
-        'spin_Z0_ofs':             2548.0,
-        'spin_ZE_ofs':             2546.5,
-        'spin_ARPH_ofs':           2548.0,
-        'spin_contour_interval_ofs':  10.0,
     }
 
     # Widgets declared in qols_panel_base.ui, guaranteed available after setupUi() (R-04)
@@ -127,18 +115,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
     spin_maxWidthDep_takeoff: QLineEdit
     runwaySelectionStatusLabel: QLabel
     thresholdSelectionStatusLabel: QLabel
-    # New OLS concept widgets (issues #107-#109)
-    combo_rwyType_ofs: QComboBox
-    combo_adg_ofs: QComboBox
-    spin_rwyWidth_ofs: QLineEdit
-    spin_distThr_ofs: QLineEdit
-    spin_innerEdge_ofs: QLineEdit
-    spin_divergence_ofs: QLineEdit
-    spin_length_ofs: QLineEdit
-    spin_slope_ofs: QLineEdit
-    spin_Z0_ofs: QLineEdit
-    spin_ZE_ofs: QLineEdit
-    spin_ARPH_ofs: QLineEdit
 
     def __init__(self, iface, parent=None):
         """Constructor with enhanced error handling and layer management."""
@@ -248,18 +224,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self._connect(self.runwayLayerCombo.layerChanged, self.validate_layer_change)
             self._connect(self.thresholdLayerCombo.layerChanged, self.validate_layer_change)
 
-            # New OLS concept tab signals (#107-#109)
-            try:
-                self._connect(self.combo_rwyType_ofs.currentIndexChanged,
-                              self.apply_ofs_approach_defaults)
-                self._connect(self.combo_adg_ofs.currentIndexChanged,
-                              self.apply_ofs_approach_defaults)
-                self._connect(self.spin_rwyWidth_ofs.editingFinished,
-                              self.apply_ofs_approach_defaults)
-                self._connect(self.btn_adg_help.clicked, self._show_adg_help_dialog)
-            except Exception as e:
-                logger.warning(f"Could not connect New OLS OFS defaults handlers: {e}")
-
             # Connect signals
             self._connect(self.calculateButton.clicked, self.on_calculate_clicked)
             self._connect(self.cancelButton.clicked, self.on_close_clicked)
@@ -324,10 +288,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'spin_CWYLength_takeoff', 'spin_Z0_takeoff',
                 'spin_widthApp_transitional', 'spin_Z0_transitional', 'spin_ZE_transitional',
                 'spin_ARPH_transitional', 'spin_Tslope_transitional',
-                # New OLS OFS
-                'spin_rwyWidth_ofs', 'spin_distThr_ofs', 'spin_innerEdge_ofs',
-                'spin_divergence_ofs', 'spin_length_ofs', 'spin_slope_ofs',
-                'spin_Z0_ofs', 'spin_ZE_ofs', 'spin_ARPH_ofs', 'spin_contour_interval_ofs',
             ]
 
             # Allow unlimited decimals; optional sign and decimal part
@@ -436,8 +396,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         self.apply_ofz_defaults_from_selection()
         self.apply_transitional_defaults_from_selection()
         self.apply_combined_inner_conical_defaults_from_selection()
-        self.apply_ofs_approach_defaults()
-        self.apply_oes_transitional_defaults()
 
     def _wire_combined_inner_conical_defaults(self):
         """Connect change signals to apply defaults when RWY/Code change in combined tab."""
@@ -679,13 +637,28 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.set_numeric_value('spin_divergence_ofs', d['divergence_pct'])
             self.set_numeric_value('spin_length_ofs', d['length_m'])
             self.set_numeric_value('spin_slope_ofs', d['slope_pct'])
+            self.apply_oes_transitional_defaults()
         except Exception as e:
             logger.warning(f"Unhandled error: {e}")
 
     @pyqtSlot()
     def apply_oes_transitional_defaults(self):
-        """OES is TO BE DEVELOPED — no defaults to populate."""
-        pass
+        """Populate OES Transitional fields (New OLS #109).
+
+        The OES width tracks the OFS Approach inner edge.
+        """
+        try:
+            d = get_new_ols_transitional_defaults()
+            self.set_numeric_value('spin_slope_oes', d['slope_pct'])
+            inner_edge_text = getattr(self, 'spin_innerEdge_ofs', None)
+            if inner_edge_text and hasattr(inner_edge_text, 'text'):
+                try:
+                    inner_val = float(inner_edge_text.text() or "155")
+                    self.set_numeric_value('spin_widthApp_oes', inner_val)
+                except ValueError:
+                    pass
+        except Exception as e:
+            logger.warning(f"Unhandled error: {e}")
 
     @pyqtSlot()
     def _show_adg_help_dialog(self):
@@ -727,9 +700,9 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             layout = QVBoxLayout(dlg)
             layout.addWidget(browser)
             dlg.setLayout(layout)
-            dlg.exec_()
+            dlg.exec()  # exec() works in both PyQt5 and PyQt6
         except Exception as e:
-            logger.warning(f"Unhandled error: {e}")
+            logger.warning(f"Unhandled error in ADG help dialog: {e}")
 
     @pyqtSlot()
     def apply_ofz_defaults_from_selection(self):
@@ -1446,23 +1419,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         except Exception as e:
             logger.warning(f"Unhandled error: {e}")
 
-    def _validate_project_crs(self) -> bool:
-        """Return True only when the project CRS is projected (not geographic).
-
-        Shows QMessageBox.critical and returns False when the CRS is geographic,
-        because all OLS geometry scripts require a projected (metric) CRS.
-        """
-        crs = QgsProject.instance().crs()
-        if crs.isGeographic():
-            QMessageBox.critical(
-                None,
-                "Projected CRS Required",
-                f"The project CRS ({crs.authid()} — {crs.description()}) is geographic. "
-                "All OLS calculations require a projected (metric) coordinate system.",
-            )
-            return False
-        return True
-
     @pyqtSlot()
     def on_calculate_clicked(self):
         """Handle calculate button click with validation."""
@@ -1712,37 +1668,13 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Get direction
             direction = 0 if self.direction_start_to_end else -1
 
-            # Determine surface type from concept tab and surface tab
-            concept_index = getattr(self, 'conceptTabWidget', None)
-            if concept_index is not None and hasattr(concept_index, 'currentIndex'):
-                if concept_index.currentIndex() == 1:
-                    # New OLS concept — dispatch by OFS/OES sub-tab
-                    new_ols_widget = getattr(self, 'newOlsTabWidget', None)
-                    ofs_oes_index = (
-                        new_ols_widget.currentIndex()
-                        if new_ols_widget and hasattr(new_ols_widget, 'currentIndex')
-                        else 0
-                    )
-                    surface_type = (
-                        SurfaceType.NEW_OLS_OFS_APPROACH
-                        if ofs_oes_index == 0
-                        else SurfaceType.NEW_OLS_OES_TRANSITIONAL
-                    )
-                else:
-                    current_tab_index = self.scriptTabWidget.currentIndex()
-                    _tab_text = self.scriptTabWidget.tabText(current_tab_index)
-                    try:
-                        surface_type = SurfaceType.from_tab_text(_tab_text)
-                    except ValueError:
-                        raise Exception(f"Unknown surface type tab: {_tab_text!r}")
-            else:
-                # Fallback: no conceptTabWidget (tests / legacy)
-                current_tab_index = self.scriptTabWidget.currentIndex()
-                _tab_text = self.scriptTabWidget.tabText(current_tab_index)
-                try:
-                    surface_type = SurfaceType.from_tab_text(_tab_text)
-                except ValueError:
-                    raise Exception(f"Unknown surface type tab: {_tab_text!r}")
+            # Determine surface type from active tab
+            current_tab_index = self.scriptTabWidget.currentIndex()
+            _tab_text = self.scriptTabWidget.tabText(current_tab_index)
+            try:
+                surface_type = SurfaceType.from_tab_text(_tab_text)
+            except ValueError:
+                raise Exception(f"Unknown surface type tab: {_tab_text!r}")
 
             # Get parameters based on current tab
             if surface_type == SurfaceType.APPROACH:
@@ -1886,34 +1818,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'Tslope': float(self.spin_Tslope_transitional.text() or "0") / 100.0,  # % → decimal
                     's': s_value  # Special parameter for transitional runway direction
                 }
-            elif surface_type == SurfaceType.NEW_OLS_OFS_APPROACH:
-                s_value = 0 if self.direction_start_to_end else -1
-                z0_ui = self.get_numeric_value('spin_Z0_ofs')
-                ze_ui = self.get_numeric_value('spin_ZE_ofs')
-                z0_calc, ze_calc = (z0_ui, ze_ui) if s_value == 0 else (ze_ui, z0_ui)
-                specific_params = {
-                    'rwy_type': self.combo_rwyType_ofs.currentText(),
-                    'adg': self.combo_adg_ofs.currentText(),
-                    'runway_width_m': self.get_numeric_value('spin_rwyWidth_ofs'),
-                    'distance_from_threshold_m': self.get_numeric_value('spin_distThr_ofs'),
-                    'inner_edge_m': self.get_numeric_value('spin_innerEdge_ofs'),
-                    'divergence_ratio': self.get_numeric_value('spin_divergence_ofs') / 100.0,
-                    'length_m': self.get_numeric_value('spin_length_ofs'),
-                    'slope_pct': self.get_numeric_value('spin_slope_ofs'),
-                    'start_elevation_m': z0_calc,
-                    'end_elevation_m': ze_calc,
-                    'arp_elevation_m': self.get_numeric_value('spin_ARPH_ofs'),
-                    'direction': s_value,
-                    'contour_interval_m': int(round(self.get_numeric_value('spin_contour_interval_ofs'))),
-                }
-            elif surface_type == SurfaceType.NEW_OLS_OES_TRANSITIONAL:
-                try:
-                    self.iface.messageBar().pushMessage(
-                        "QOLS New OLS", "OES surface: TO BE DEVELOPED",
-                        level=MSG_INFO, duration=4)
-                except Exception:
-                    pass
-                return None
             elif surface_type == SurfaceType.OFZ:
                 specific_params = {
                     'code': self.get_code_value('spin_code_ofz'),  # QComboBox
