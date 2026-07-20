@@ -278,9 +278,7 @@ class QOLS:
         """Execute the selected surface calculation script with parameters."""
         try:
             params = self.panel.get_parameters()
-            if not params:
-                self.iface.messageBar().pushMessage(
-                    "QOLS", "Error getting parameters", level=MSG_CRITICAL)
+            if params is None:
                 return
 
             st = params.get('surface_type')
@@ -356,8 +354,43 @@ class QOLS:
         self.execute_script(script_path, params)
 
     def execute_new_ols_ofs_approach(self, params):
-        script_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-ofs-approach-UTM.py')
-        self.execute_script(script_path, params)
+        approach_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-ofs-approach-UTM.py')
+        trans_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-oes-transitional-UTM.py')
+
+        # Run approach from the selected threshold only (one direction per user choice)
+        self.execute_script(approach_path, params)
+        ofs = params.get('specific_params', {})
+
+        # Locate the opposite threshold — needed only for the runway strip endpoints
+        threshold_layer = params['threshold_layer']
+        original_ids = [f.id() for f in threshold_layer.selectedFeatures()]
+        other_features = [f for f in threshold_layer.getFeatures()
+                          if f.id() not in original_ids]
+
+        opp_thr_x = opp_thr_y = None
+        if other_features:
+            opp_geom = other_features[0].geometry().asPoint()
+            opp_thr_x = opp_geom.x()
+            opp_thr_y = opp_geom.y()
+
+        # Run transitional ONCE — approach wings + rectangular strips in a single layer
+        trans_params = params.copy()
+        trans_params['specific_params'] = {
+            'width_m': ofs.get('inner_edge_m', 175.0),
+            'start_elevation_m': ofs.get('start_elevation_m', 0.0),
+            'end_elevation_m': ofs.get('end_elevation_m', 0.0),
+            'highest_thr_elev_m': ofs.get('arp_elevation_m', 0.0),
+            'slope_pct': 20.0,
+            'cap_height_m': 60.0,
+            'approach_slope_pct': ofs.get('slope_pct', 3.33),
+            'divergence_ratio': ofs.get('divergence_ratio', 0.10),
+            'distance_from_threshold_m': ofs.get('distance_from_threshold_m', 60.0),
+            'direction': ofs.get('direction', 0),
+            'opp_thr_x': opp_thr_x,
+            'opp_thr_y': opp_thr_y,
+            'opp_start_elevation_m': ofs.get('end_elevation_m', 0.0),
+        }
+        self.execute_script(trans_path, trans_params)
 
     def execute_new_ols_oes_transitional(self, params):
         script_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-oes-transitional-UTM.py')
