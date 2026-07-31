@@ -97,10 +97,6 @@ for feat in selection:
     line_pts = _normalize_polyline_points(feat.geometry())
     break
 
-start_point = line_pts[0]
-end_point = line_pts[-1]
-base_azimuth_deg = start_point.azimuth(end_point)
-
 # ---------------------------------------------------------------------------
 # Threshold layer
 # ---------------------------------------------------------------------------
@@ -119,17 +115,36 @@ except Exception as e:
     iface.messageBar().pushMessage("QOLS Error", str(e), level=MSG_CRITICAL)
     raise
 
-thr_geom = threshold_sel[0].geometry().asPoint()
+
+def _closest_feature(features, pt):
+    return min(
+        features,
+        key=lambda f: hypot(f.geometry().asPoint().x() - pt.x(), f.geometry().asPoint().y() - pt.y()),
+    )
+
+
+# direction picks the runway-centerline endpoint directly (0 = Start to
+# End, -1 = End to Start), mirroring the legacy TransitionalSurface_UTM.py
+# line_pts[-1-s]/line_pts[s] convention — no threshold-distance matching or
+# post-hoc azimuth flip needed.
+s = direction
+near_end_pt = line_pts[s]
+far_end_pt = line_pts[-1 - s]
+azimuth = far_end_pt.azimuth(near_end_pt)
+
+# Anchored to the selected threshold (threshold_sel), same as legacy
+# TransitionalSurface_UTM.py — direction changes azimuth (which way the
+# surface points), not which threshold is used. In "Selected Only" mode
+# with a single feature selected, re-selecting the matching threshold when
+# toggling direction is the user's responsibility (same as legacy); in
+# "All" mode threshold_sel already covers every feature, so the nearest
+# match still follows direction automatically.
+near_thr_feat = _closest_feature(threshold_sel, near_end_pt)
+thr_geom = near_thr_feat.geometry().asPoint()
 new_geom = QgsPoint(thr_geom)
 new_geom.addZValue(start_elevation_m)
 
-dist_to_start = hypot(new_geom.x() - start_point.x(), new_geom.y() - start_point.y())
-dist_to_end = hypot(new_geom.x() - end_point.x(), new_geom.y() - end_point.y())
-selected_end = 'start' if dist_to_start <= dist_to_end else 'end'
-outward_azimuth = base_azimuth_deg if selected_end == 'start' else (base_azimuth_deg + 180) % 360
-azimuth = (outward_azimuth + 180) % 360 if direction == 0 else outward_azimuth
-
-print(f"QOLS New OLS OFS: azimuth={azimuth:.2f}°, selected_end={selected_end}")
+print(f"QOLS New OLS OFS: azimuth={azimuth:.2f}°, direction={direction}")
 
 # ---------------------------------------------------------------------------
 # Surface geometry — single trapezoidal section
