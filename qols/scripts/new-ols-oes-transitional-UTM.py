@@ -1,14 +1,26 @@
 """
 New OLS Concept — OES Transitional Surface
-Two triangular wings flanking the OFS Approach surface, per ICAO Figure 4-1.
+One connected pentagon per side (approach wing + runway strip merged),
+flanking the OFS Approach surface, per ICAO Figure 4-1. Layer/figure
+construction mirrors the legacy TransitionalSurface_UTM.py script: a single
+closed ring per side built from a list of shared points, one feature per
+side, no separate wing/strip pieces.
 
-Geometry (plan view, one wing):
-  near_inner  — approach inner edge at start, Z = start_elevation
-  near_outer  — start + lateral_near outward, Z = cap_elevation
-  far_vertex  — approach inner edge at d_cap, Z = cap_elevation
+Geometry (plan view, one side):
+  near_inner — runway-strip edge at the selected threshold, Z = start_elevation
+  near_outer — near_inner + lateral_near outward, Z = cap_elevation
+  far_outer  — runway-strip edge at the opposite threshold, offset by
+               lateral_far outward, Z = cap_elevation
+  far_inner  — runway-strip edge at the opposite threshold, Z = opp_start_elevation
+  far_vertex — approach inner edge at d_cap from near_inner, Z = cap_elevation
 where:
-  d_cap        = cap_height / approach_slope   (≈ 1 802 m for 3.33 %, 60 m cap)
-  lateral_near = cap_height / trans_slope      (≈ 300 m for 20 % slope)
+  d_cap        = cap_height / approach_slope     (≈ 1 802 m for 3.33 %, 60 m cap)
+  lateral_near = (cap_elevation - start_elevation)     / trans_slope
+  lateral_far  = (cap_elevation - opp_start_elevation) / trans_slope
+
+lateral_near and lateral_far are computed independently from each
+threshold's own elevation, matching how the legacy Transitional surface
+derives width from Z0 (near) vs ZE (far) rather than a single shared value.
 
 Procedure to be used in Projected Coordinate System Only.
 """
@@ -61,8 +73,6 @@ try:
     distance_from_threshold_m = globals().get('distance_from_threshold_m', 60.0)
     direction = globals().get('direction', 0)
     end_elevation_m = globals().get('end_elevation_m', 0.0)
-    opp_thr_x = globals().get('opp_thr_x', None)
-    opp_thr_y = globals().get('opp_thr_y', None)
     opp_start_elevation_m = globals().get('opp_start_elevation_m', 0.0)
     runway_layer = globals().get('runway_layer', None)
     threshold_layer = globals().get('threshold_layer', None)
@@ -83,6 +93,11 @@ try:
     d_cap = height_to_cap / approach_slope
     lateral_near = height_to_cap / slope_ratio
     far_half_width = half_inner + d_cap * divergence_ratio
+
+    # lateral_far (width at the opposite threshold) is resolved further
+    # down, once the opposite threshold feature has been matched via
+    # direction + the runway centerline — placeholder until then.
+    lateral_far = lateral_near
 
     print(
         f"QOLS New OLS OES: slope={slope_pct}%, cap_elev={cap_elevation:.1f}m, "
@@ -117,10 +132,6 @@ for feat in selection:
     line_pts = _normalize_polyline_points(feat.geometry())
     break
 
-start_point = line_pts[0]
-end_point = line_pts[-1]
-base_azimuth_deg = start_point.azimuth(end_point)
-
 # ---------------------------------------------------------------------------
 # Threshold layer
 # ---------------------------------------------------------------------------
@@ -139,29 +150,74 @@ except Exception as e:
     iface.messageBar().pushMessage("QOLS Error", str(e), level=MSG_CRITICAL)
     raise
 
-thr_geom = threshold_sel[0].geometry().asPoint()
+
+def _closest_feature(features, pt):
+    return min(
+        features,
+        key=lambda f: hypot(f.geometry().asPoint().x() - pt.x(), f.geometry().asPoint().y() - pt.y()),
+    )
+
+
+# direction picks the runway-centerline endpoint directly (0 = Start to
+# End, -1 = End to Start), mirroring the legacy TransitionalSurface_UTM.py
+# line_pts[-1-s]/line_pts[s] convention — no threshold-distance matching or
+# post-hoc azimuth flip needed.
+s = direction
+near_end_pt = line_pts[s]
+far_end_pt = line_pts[-1 - s]
+azimuth = far_end_pt.azimuth(near_end_pt)
+
+# Anchored to the selected threshold (threshold_sel), same as legacy
+# TransitionalSurface_UTM.py — direction changes azimuth (which way the
+# surface points), not which threshold is used. In "Selected Only" mode
+# with a single feature selected, re-selecting the matching threshold when
+# toggling direction is the user's responsibility (same as legacy); in
+# "All" mode threshold_sel already covers every feature, so the nearest
+# match still follows direction automatically.
+near_thr_feat = _closest_feature(threshold_sel, near_end_pt)
+thr_geom = near_thr_feat.geometry().asPoint()
 thr_point = QgsPoint(thr_geom)
 thr_point.addZValue(start_elevation_m)
 
-dist_to_start = hypot(thr_point.x() - start_point.x(), thr_point.y() - start_point.y())
-dist_to_end = hypot(thr_point.x() - end_point.x(), thr_point.y() - end_point.y())
-selected_end = 'start' if dist_to_start <= dist_to_end else 'end'
-outward_azimuth = base_azimuth_deg if selected_end == 'start' else (base_azimuth_deg + 180) % 360
-azimuth = (outward_azimuth + 180) % 360 if direction == 0 else outward_azimuth
+# Opposite/far anchor — taken directly from the runway centerline's far
+# endpoint (far_end_pt), exactly like legacy's pt_02T = start_point.project(...).
+# It is NOT matched against the threshold layer: the runway strip always
+# runs to the far end of *this* runway centerline, regardless of whether a
+# threshold point feature happens to sit there, and it stays consistent
+# with azimuth (both derive from the same direction-selected endpoints).
+has_opposite_threshold = (far_end_pt.x(), far_end_pt.y()) != (near_end_pt.x(), near_end_pt.y())
+opp_thr_x = opp_thr_y = None
+if has_opposite_threshold:
+    height_to_cap_far = cap_elevation - opp_start_elevation_m
+    if height_to_cap_far <= 0:
+        raise Exception(
+            f"OES Transitional: degenerate parameters — "
+            f"height_to_cap_far={height_to_cap_far:.1f}"
+        )
+    lateral_far = height_to_cap_far / slope_ratio
+    opp_thr_x, opp_thr_y = far_end_pt.x(), far_end_pt.y()
 
-print(f"QOLS New OLS OES: azimuth={azimuth:.2f}°, selected_end={selected_end}")
+print(f"QOLS New OLS OES: azimuth={azimuth:.2f}°, direction={direction}, lateral_far={lateral_far:.1f}m")
 
 # ---------------------------------------------------------------------------
-# Transitional surface geometry — two triangular wings (ICAO Figure 4-1)
+# Transitional surface geometry — one connected pentagon per side, merging
+# the approach wing with the runway strip (ICAO Figure 4-1). Vertex order
+# and single-ring-per-side construction mirror the legacy
+# TransitionalSurface_UTM.py SurfaceArea = [pt_08, pt_01T, pt_02T, pt_02, pt_01A]
+# pattern, so wing and strip are never separate features and can't show a
+# seam.
 #
-# At the near end (approach inner edge start):
+# At the near end (selected threshold, approach inner edge start):
 #   inner point: half_inner from centreline, Z = start_elevation_m
 #   outer point: half_inner + lateral_near from centreline, Z = cap_elevation
+# At the far end (opposite threshold):
+#   inner point: half_inner from centreline, Z = opp_start_elevation_m
+#   outer point: half_inner + lateral_far from centreline, Z = cap_elevation
+# lateral_near/lateral_far are each derived from that end's own elevation —
+# not a single shared value — so the band narrows/widens realistically.
 #
 # At d_cap along the approach, the approach elevation = cap_elevation → wings
 # converge to a single point at approach-edge width from centreline, Z = cap_elevation.
-#
-# Each wing is a triangle: [near_inner, near_outer, far_vertex].
 # ---------------------------------------------------------------------------
 
 # Origin: start of approach inner edge
@@ -172,7 +228,7 @@ pt_start.setZ(start_elevation_m)
 pt_far_axis = pt_start.project(d_cap, azimuth)
 pt_far_axis.setZ(cap_elevation)
 
-# Left wing
+# Left side — near end (selected threshold)
 near_inner_l = pt_start.project(half_inner, azimuth + 90)
 near_inner_l.setZ(start_elevation_m)
 
@@ -182,7 +238,7 @@ near_outer_l.setZ(cap_elevation)
 far_l = pt_far_axis.project(far_half_width, azimuth + 90)
 far_l.setZ(cap_elevation)
 
-# Right wing
+# Right side — near end (selected threshold)
 near_inner_r = pt_start.project(half_inner, azimuth - 90)
 near_inner_r.setZ(start_elevation_m)
 
@@ -191,6 +247,29 @@ near_outer_r.setZ(cap_elevation)
 
 far_r = pt_far_axis.project(far_half_width, azimuth - 90)
 far_r.setZ(cap_elevation)
+
+if has_opposite_threshold:
+    opp_thr_pt2 = QgsPoint(opp_thr_x, opp_thr_y)
+    opp_thr_pt2.addZValue(opp_start_elevation_m)
+
+    far_inner_l = opp_thr_pt2.project(half_inner, azimuth + 90)
+    far_inner_l.setZ(opp_start_elevation_m)
+    far_outer_l = opp_thr_pt2.project(half_inner + lateral_far, azimuth + 90)
+    far_outer_l.setZ(cap_elevation)
+
+    far_inner_r = opp_thr_pt2.project(half_inner, azimuth - 90)
+    far_inner_r.setZ(opp_start_elevation_m)
+    far_outer_r = opp_thr_pt2.project(half_inner + lateral_far, azimuth - 90)
+    far_outer_r.setZ(cap_elevation)
+
+    # Same vertex order for both sides — mirroring comes from azimuth + 90
+    # vs azimuth - 90 in the point projections above, not from reordering.
+    left_ring = [far_l, near_outer_l, far_outer_l, far_inner_l, near_inner_l]
+    right_ring = [far_r, near_outer_r, far_outer_r, far_inner_r, near_inner_r]
+else:
+    # No opposite threshold available — fall back to the wing-only triangle.
+    left_ring = [near_inner_l, near_outer_l, far_l]
+    right_ring = [near_inner_r, near_outer_r, far_r]
 
 # ---------------------------------------------------------------------------
 # Memory layer
@@ -209,64 +288,20 @@ oes_layer.dataProvider().addAttributes([
 oes_layer.updateFields()
 
 feat_l = QgsFeature()
-feat_l.setGeometry(QgsPolygon(QgsLineString([near_inner_l, near_outer_l, far_l, near_inner_l])))
+feat_l.setGeometry(QgsPolygon(QgsLineString(left_ring + [left_ring[0]])))
 feat_l.setAttributes([
     1, 'New OLS OES Transitional', 'left',
     slope_pct, round(cap_elevation, 3), round(d_cap, 1), round(lateral_near, 1),
 ])
 
 feat_r = QgsFeature()
-feat_r.setGeometry(QgsPolygon(QgsLineString([near_inner_r, far_r, near_outer_r, near_inner_r])))
+feat_r.setGeometry(QgsPolygon(QgsLineString(right_ring + [right_ring[0]])))
 feat_r.setAttributes([
     2, 'New OLS OES Transitional', 'right',
     slope_pct, round(cap_elevation, 3), round(d_cap, 1), round(lateral_near, 1),
 ])
 
-# ---------------------------------------------------------------------------
-# Rectangular runway strips (left and right) from THR1 to THR2
-# ---------------------------------------------------------------------------
-rwy_feats = []
-if opp_thr_x is not None and opp_thr_y is not None:
-    opp_thr_pt2 = QgsPoint(opp_thr_x, opp_thr_y)
-    opp_thr_pt2.addZValue(opp_start_elevation_m)
-
-    # Near end anchored at pt_start (same origin as the approach wings) so
-    # there is no gap between the wing near-edge and the strip near-edge.
-    # Outer edge at half_inner + lateral_near from centreline, Z = cap_elevation.
-    rwy_ni_l = pt_start.project(half_inner, azimuth + 90)
-    rwy_ni_l.setZ(start_elevation_m)
-    rwy_no_l = pt_start.project(half_inner + lateral_near, azimuth + 90)
-    rwy_no_l.setZ(cap_elevation)
-    rwy_fi_l = opp_thr_pt2.project(half_inner, azimuth + 90)
-    rwy_fi_l.setZ(opp_start_elevation_m)
-    rwy_fo_l = opp_thr_pt2.project(half_inner + lateral_near, azimuth + 90)
-    rwy_fo_l.setZ(cap_elevation)
-
-    rwy_ni_r = pt_start.project(half_inner, azimuth - 90)
-    rwy_ni_r.setZ(start_elevation_m)
-    rwy_no_r = pt_start.project(half_inner + lateral_near, azimuth - 90)
-    rwy_no_r.setZ(cap_elevation)
-    rwy_fi_r = opp_thr_pt2.project(half_inner, azimuth - 90)
-    rwy_fi_r.setZ(opp_start_elevation_m)
-    rwy_fo_r = opp_thr_pt2.project(half_inner + lateral_near, azimuth - 90)
-    rwy_fo_r.setZ(cap_elevation)
-
-    feat_rwy_l = QgsFeature()
-    feat_rwy_l.setGeometry(QgsPolygon(QgsLineString([rwy_ni_l, rwy_no_l, rwy_fo_l, rwy_fi_l, rwy_ni_l])))
-    feat_rwy_l.setAttributes([
-        5, 'New OLS OES Transitional', 'runway_left',
-        slope_pct, round(cap_elevation, 3), round(d_cap, 1), round(lateral_near, 1),
-    ])
-
-    feat_rwy_r = QgsFeature()
-    feat_rwy_r.setGeometry(QgsPolygon(QgsLineString([rwy_ni_r, rwy_fi_r, rwy_fo_r, rwy_no_r, rwy_ni_r])))
-    feat_rwy_r.setAttributes([
-        6, 'New OLS OES Transitional', 'runway_right',
-        slope_pct, round(cap_elevation, 3), round(d_cap, 1), round(lateral_near, 1),
-    ])
-    rwy_feats = [feat_rwy_l, feat_rwy_r]
-
-oes_layer.dataProvider().addFeatures([feat_l, feat_r] + rwy_feats)
+oes_layer.dataProvider().addFeatures([feat_l, feat_r])
 
 QgsProject.instance().addMapLayers([oes_layer])
 oes_layer.renderer().symbol().setColor(QColor("#87CEEB"))  # sky blue
@@ -283,8 +318,9 @@ if sc < 20000:
 canvas.zoomScale(sc)
 
 print(
-    f"QOLS New OLS OES: wings created — d_cap={d_cap:.1f}m, "
-    f"lateral_near={lateral_near:.1f}m, cap={cap_elevation:.1f}m"
+    f"QOLS New OLS OES: surfaces created — d_cap={d_cap:.1f}m, "
+    f"lateral_near={lateral_near:.1f}m, lateral_far={lateral_far:.1f}m, "
+    f"cap={cap_elevation:.1f}m"
 )
 iface.messageBar().pushMessage(
     "QOLS Success",

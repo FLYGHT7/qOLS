@@ -361,19 +361,10 @@ class QOLS:
         self.execute_script(approach_path, params)
         ofs = params.get('specific_params', {})
 
-        # Locate the opposite threshold — needed only for the runway strip endpoints
-        threshold_layer = params['threshold_layer']
-        original_ids = [f.id() for f in threshold_layer.selectedFeatures()]
-        other_features = [f for f in threshold_layer.getFeatures()
-                          if f.id() not in original_ids]
-
-        opp_thr_x = opp_thr_y = None
-        if other_features:
-            opp_geom = other_features[0].geometry().asPoint()
-            opp_thr_x = opp_geom.x()
-            opp_thr_y = opp_geom.y()
-
-        # Run transitional ONCE — approach wings + rectangular strips in a single layer
+        # Run transitional ONCE — approach wings + rectangular strips in a single layer.
+        # The script resolves the near/opposite threshold itself from
+        # threshold_layer + direction (mirrors the runway centerline endpoint
+        # picked by direction, same as the legacy Transitional surface).
         trans_params = params.copy()
         trans_params['specific_params'] = {
             'width_m': ofs.get('inner_edge_m', 175.0),
@@ -386,8 +377,6 @@ class QOLS:
             'divergence_ratio': ofs.get('divergence_ratio', 0.10),
             'distance_from_threshold_m': ofs.get('distance_from_threshold_m', 60.0),
             'direction': ofs.get('direction', 0),
-            'opp_thr_x': opp_thr_x,
-            'opp_thr_y': opp_thr_y,
             'opp_start_elevation_m': ofs.get('end_elevation_m', 0.0),
         }
         self.execute_script(trans_path, trans_params)
