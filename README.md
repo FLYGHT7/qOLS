@@ -4,14 +4,11 @@ Obstacle Limitation Surfaces Creation in accordance with Annex 14 Vol I and Vol 
 # Key Constraints
 - Single runway systems only at the moment, if you need more than one runway you will need to analyze separately.
 - Projected Coordinate Systems used, no geodetic calculations. (Simplifies calculations)
+- Current OLS implemented
+- New OLS being implemented
 
 # Installation
-While this plugin is added to the official repository the correct way to install is by using the Releases
-<img width="1292" height="636" alt="Image" src="https://github.com/user-attachments/assets/dcc9d005-b603-4778-8a3f-475e54666f0d" />
-then
-<img width="1212" height="194" alt="Image" src="https://github.com/user-attachments/assets/bd01fead-0fef-4b5b-a90b-b6759d30645f" />
-it should look like this then
-<img width="1039" height="710" alt="Image" src="https://github.com/user-attachments/assets/247035c1-b0cd-4a2a-a6a9-dc353cd25e39" />
+The recommended way to install this plugin is from the official QGIS repository.
 
 Make sure the plugins toolbar is enabled  
 <img width="283" height="280" alt="image" src="https://github.com/user-attachments/assets/21751f3a-34fc-4d80-b2e4-baa34c2b427a" />  
