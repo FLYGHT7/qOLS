@@ -9,7 +9,7 @@ branching on the Qt version inline.
 from qgis.PyQt.QtCore import Qt, QEvent
 from qgis.PyQt.QtGui import QPainter
 from qgis.PyQt.QtWidgets import QDialogButtonBox
-from qgis.core import Qgis
+from qgis.core import Qgis, QgsWkbTypes
 
 # ---------------------------------------------------------------------------
 # Dock-widget area constants
@@ -93,6 +93,16 @@ try:
 except AttributeError:
     EVENT_MOUSE_MOVE = QEvent.MouseMove  # type: ignore[attr-defined]
 
+# ---------------------------------------------------------------------------
+# Geometry-type constant for QgsRubberBand
+# QGIS 3:  QgsWkbTypes.PolygonGeometry
+# QGIS 4:  Qgis.GeometryType.Polygon
+# ---------------------------------------------------------------------------
+try:
+    GEOM_TYPE_POLYGON = Qgis.GeometryType.Polygon
+except AttributeError:
+    GEOM_TYPE_POLYGON = QgsWkbTypes.PolygonGeometry  # type: ignore[attr-defined]
+
 __all__ = [
     "DOCK_RIGHT", "DOCK_LEFT",
     "BTN_SAVE", "BTN_CANCEL",
@@ -101,4 +111,5 @@ __all__ = [
     "RENDER_ANTIALIAS",
     "MSG_INFO", "MSG_WARNING", "MSG_CRITICAL", "MSG_SUCCESS",
     "EVENT_MOUSE_MOVE",
+    "GEOM_TYPE_POLYGON",
 ]
