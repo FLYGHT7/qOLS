@@ -9,7 +9,7 @@ branching on the Qt version inline.
 from qgis.PyQt.QtCore import Qt, QEvent
 from qgis.PyQt.QtGui import QPainter
 from qgis.PyQt.QtWidgets import QDialogButtonBox
-from qgis.core import Qgis
+from qgis.core import Qgis, QgsAction
 
 # ---------------------------------------------------------------------------
 # Dock-widget area constants
@@ -93,6 +93,16 @@ try:
 except AttributeError:
     EVENT_MOUSE_MOVE = QEvent.MouseMove  # type: ignore[attr-defined]
 
+# ---------------------------------------------------------------------------
+# QgsAction generic-Python action type (for register_parameters_action, #118)
+# QGIS 3 / Qt5:  QgsAction.GenericPython
+# QGIS 4 / Qt6:  QgsAction.ActionType.GenericPython
+# ---------------------------------------------------------------------------
+try:
+    ACTION_TYPE_GENERIC_PYTHON = QgsAction.ActionType.GenericPython
+except AttributeError:
+    ACTION_TYPE_GENERIC_PYTHON = QgsAction.GenericPython  # type: ignore[attr-defined]
+
 __all__ = [
     "DOCK_RIGHT", "DOCK_LEFT",
     "BTN_SAVE", "BTN_CANCEL",
@@ -101,4 +111,5 @@ __all__ = [
     "RENDER_ANTIALIAS",
     "MSG_INFO", "MSG_WARNING", "MSG_CRITICAL", "MSG_SUCCESS",
     "EVENT_MOUSE_MOVE",
+    "ACTION_TYPE_GENERIC_PYTHON",
 ]

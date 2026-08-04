@@ -290,13 +290,37 @@ v_layer.dataProvider().addAttributes([NameField])
 v_layer.dataProvider().addAttributes([RuleField])
 v_layer.updateFields()
 
+# Store the full input parameter set as HTML-inspectable JSON (#118)
+from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
+
+_active_rule_set = globals().get('active_rule_set', None)
+_params_json = build_parameters_json('Take-Off Climb Surface', {
+    'code': code,
+    'widthApp': widthApp,
+    'widthDep': widthDep,
+    'maxWidthDep': maxWidthDep,
+    'CWYLength': CWYLength,
+    'Z0': Z0,
+    'ZE': ZE,
+    'ARPH': ARPH,
+    'divergencePct': divergencePct,
+    'startDistance': startDistance,
+    'surfaceLength': surfaceLength,
+    'slopePct': slopePct,
+    'direction': s,
+    'rule_set': _active_rule_set,
+})
+add_parameters_field(v_layer)
+
 # Take Off Climb Surface Creation - EXACTLY as original
 SurfaceArea = [pt_03DR,pt_03DL,pt_02DL,pt_01DL,pt_01DR,pt_02DR]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([13,'TakeOff Climb Surface', globals().get('active_rule_set', None)])
+seg.setAttributes([13,'TakeOff Climb Surface', _active_rule_set, _params_json])
 pr.addFeatures( [ seg ] )
+
+register_parameters_action(v_layer)
 
 # Load PolygonZ Layer to map canvas - EXACTLY as original
 QgsProject.instance().addMapLayers([v_layer])

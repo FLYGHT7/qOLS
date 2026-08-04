@@ -30,6 +30,7 @@ from qgis.core import *
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
 from math import sqrt, hypot
+from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
 
 _script_success = False
 
@@ -284,14 +285,33 @@ oes_layer.dataProvider().addAttributes([
     QgsField('cap_elevation_m', QVariant.Double),
     QgsField('d_cap_m', QVariant.Double),
     QgsField('lateral_near_m', QVariant.Double),
+    QgsField('rule_set', QVariant.String),  # was missing vs. every other script (#118)
 ])
 oes_layer.updateFields()
+
+# Store the full input parameter set as HTML-inspectable JSON (#118)
+_active_rule_set = globals().get('active_rule_set', None)
+_params_json = build_parameters_json('New OLS OES Transitional', {
+    'width_m': width_m,
+    'start_elevation_m': round(start_elevation_m, 3),
+    'end_elevation_m': round(end_elevation_m, 3),
+    'highest_thr_elev_m': round(highest_thr_elev_m, 3),
+    'slope_pct': slope_pct,
+    'cap_height_m': cap_height_m,
+    'approach_slope_pct': approach_slope_pct,
+    'divergence_ratio': divergence_ratio,
+    'distance_from_threshold_m': distance_from_threshold_m,
+    'direction': direction,
+    'rule_set': _active_rule_set,
+})
+add_parameters_field(oes_layer)
 
 feat_l = QgsFeature()
 feat_l.setGeometry(QgsPolygon(QgsLineString(left_ring + [left_ring[0]])))
 feat_l.setAttributes([
     1, 'New OLS OES Transitional', 'left',
     slope_pct, round(cap_elevation, 3), round(d_cap, 1), round(lateral_near, 1),
+    _active_rule_set, _params_json,
 ])
 
 feat_r = QgsFeature()
@@ -299,9 +319,12 @@ feat_r.setGeometry(QgsPolygon(QgsLineString(right_ring + [right_ring[0]])))
 feat_r.setAttributes([
     2, 'New OLS OES Transitional', 'right',
     slope_pct, round(cap_elevation, 3), round(d_cap, 1), round(lateral_near, 1),
+    _active_rule_set, _params_json,
 ])
 
 oes_layer.dataProvider().addFeatures([feat_l, feat_r])
+
+register_parameters_action(oes_layer)
 
 QgsProject.instance().addMapLayers([oes_layer])
 oes_layer.renderer().symbol().setColor(QColor("#87CEEB"))  # sky blue

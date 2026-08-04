@@ -66,6 +66,18 @@ v_layer_provider.addAttributes([
 ])
 v_layer.updateFields()
 
+# Store the full input parameter set as HTML-inspectable JSON (#118)
+from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
+
+_active_rule_set = globals().get('active_rule_set', None)
+_params_json = build_parameters_json('Outer Horizontal Surface', {
+    'code': code,
+    'radius_m': radius,
+    'height_m': height,
+    'rule_set': _active_rule_set,
+})
+add_parameters_field(v_layer)
+
 # Process each ARP point
 features_created = 0
 for feat in selection:
@@ -96,9 +108,10 @@ for feat in selection:
         code,
         radius,
         height,
-        globals().get('active_rule_set', None),
+        _active_rule_set,
         arp_x,
-        arp_y
+        arp_y,
+        _params_json,
     ])
 
     # Add feature to layer
@@ -109,6 +122,8 @@ for feat in selection:
 
 v_layer.updateExtents()
 print(f"OuterHorizontal: Created {features_created} outer horizontal surface(s)")
+
+register_parameters_action(v_layer)
 
 # Add to map
 QgsProject.instance().addMapLayers([v_layer])

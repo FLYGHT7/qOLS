@@ -299,12 +299,36 @@ v_layer.dataProvider().addAttributes([NameField])
 v_layer.dataProvider().addAttributes([RuleField])
 v_layer.updateFields()
 
+# Store the full input parameter set as HTML-inspectable JSON (#118)
+from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
+
+_active_rule_set = globals().get('active_rule_set', None)
+_params_json = build_parameters_json('Obstacle Free Zone', {
+    'code': code,
+    'rwy_classification': rwyClassification,
+    'width': width,
+    'Z0': Z0,
+    'ZE': ZE,
+    'ARPH': ARPH,
+    'IHSlope': IHSlope,
+    'IA_width': IA_width,
+    'IA_distance_from_thr': IA_distance_from_thr,
+    'IA_length': IA_length,
+    'IA_slope': IA_slope,
+    'BL_width': BL_width,
+    'BL_distance_from_thr': BL_distance_from_thr,
+    'BL_divergence': BL_divergence,
+    'BL_slope': BL_slope,
+    'rule_set': _active_rule_set,
+})
+add_parameters_field(v_layer)
+
 # Runway Inner Strip Surface Polygon
 SurfaceArea = [pt_03,pt_03L,pt_0L,pt_01L,pt_01,pt_01R,pt_0R,pt_03R]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([1,'Runway Inner Strip', globals().get('active_rule_set', None)])
+seg.setAttributes([1,'Runway Inner Strip', _active_rule_set, _params_json])
 pr.addFeatures( [ seg ] )
 
 # Inner Approach Surface Polygon
@@ -312,7 +336,7 @@ SurfaceArea = [pt_01,pt_01L,pt_02L,pt_02,pt_02R,pt_01R]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([2,'Inner Approach Surface', globals().get('active_rule_set', None)])
+seg.setAttributes([2,'Inner Approach Surface', _active_rule_set, _params_json])
 pr.addFeatures( [ seg ] )
 
 # Balked Landing Surface Polygon
@@ -320,7 +344,7 @@ SurfaceArea = [pt_04,pt_04L,pt_03L,pt_03,pt_03R,pt_04R]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([3,'Balked Landing Surface', globals().get('active_rule_set', None)])
+seg.setAttributes([3,'Balked Landing Surface', _active_rule_set, _params_json])
 pr.addFeatures( [ seg ] )
 
 # Inner Transitional Right Surface Polygon
@@ -328,7 +352,7 @@ SurfaceArea = [pt_04R,pt_03R,pt_0R,pt_01R,pt_02R,pt_I02R,pt_I01R,pt_I0R,pt_I03R]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([4,'Inner Transitional Surface - Right Side', globals().get('active_rule_set', None)])
+seg.setAttributes([4,'Inner Transitional Surface - Right Side', _active_rule_set, _params_json])
 pr.addFeatures( [ seg ] )
 
 # Inner Transitional Left Surface Polygon
@@ -336,8 +360,10 @@ SurfaceArea = [pt_04L,pt_03L,pt_0L,pt_01L,pt_02L,pt_I02L,pt_I01L,pt_I0L,pt_I03L]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([5,'Inner Transitional Surface - Left Side', globals().get('active_rule_set', None)])
+seg.setAttributes([5,'Inner Transitional Surface - Left Side', _active_rule_set, _params_json])
 pr.addFeatures( [ seg ] )
+
+register_parameters_action(v_layer)
 
 QgsProject.instance().addMapLayers([v_layer])
 

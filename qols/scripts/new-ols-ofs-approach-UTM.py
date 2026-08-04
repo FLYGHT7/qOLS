@@ -10,7 +10,7 @@ from qgis.core import *
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
 from math import sqrt, hypot
-import json
+from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
 
 _script_success = False
 
@@ -186,11 +186,11 @@ approach_layer.dataProvider().addAttributes([
     QgsField('slope_pct', QVariant.Double),
     QgsField('surface_start_elev', QVariant.Double),
     QgsField('surface_end_elev', QVariant.Double),
-    QgsField('params_json', QVariant.String),
 ])
 approach_layer.updateFields()
 
-_params_json = json.dumps({
+# Store the full input parameter set as HTML-inspectable JSON (#118)
+_params_json = build_parameters_json('New OLS OFS Approach', {
     'rwy_type': rwy_type,
     'adg': adg,
     'runway_width_m': runway_width_m,
@@ -202,6 +202,7 @@ _params_json = json.dumps({
     'start_elevation_m': round(start_elevation_m, 3),
     'end_elevation_m': round(end_elevation_m, 3),
 })
+add_parameters_field(approach_layer)
 
 feat = QgsFeature()
 feat.setGeometry(QgsPolygon(QgsLineString([pt_inner_r, pt_inner_l, pt_outer_l, pt_outer_r, pt_inner_r])))
@@ -211,6 +212,8 @@ feat.setAttributes([
     round(start_elevation_m, 3), round(height_outer, 3), _params_json,
 ])
 approach_layer.dataProvider().addFeatures([feat])
+
+register_parameters_action(approach_layer)
 
 QgsProject.instance().addMapLayers([approach_layer])
 approach_layer.renderer().symbol().setColor(QColor("#FF69B4"))  # pink — matches diagram
