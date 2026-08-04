@@ -10,19 +10,26 @@ from ..surfaces.new_ols_approach import get_new_ols_approach_defaults
 from ..surfaces.new_ols_transitional import get_new_ols_transitional_defaults
 from ..surface_types import SurfaceType
 from .. import logger
+from ..direction_marker import build_marker_geometry
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot, QRegularExpression
-from qgis.PyQt.QtGui import QRegularExpressionValidator
+from qgis.PyQt.QtGui import QColor, QRegularExpressionValidator
 from qgis.PyQt.QtWidgets import (
     QApplication, QComboBox, QDialog, QDockWidget,
     QLabel, QLineEdit, QMessageBox, QPushButton, QTextBrowser, QToolTip, QVBoxLayout,
 )
-from ..compat import EVENT_MOUSE_MOVE, TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL
-from ..parameters_inspector import show_project_parameters_table
+from ..compat import EVENT_MOUSE_MOVE, TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL, GEOM_TYPE_POLYGON
 from qgis.core import QgsMapLayerProxyModel, QgsProject, QgsWkbTypes, QgsVectorLayer
+from qgis.gui import QgsRubberBand
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'new_ols_panel.ui'))
+
+# Direction-marker triangle dimensions in screen pixels (converted to map
+# units via mapUnitsPerPixel so it stays a constant, visible size at any
+# zoom level) — matches qpansopy's OMNI SID DER marker (#117).
+_DIRECTION_MARKER_LENGTH_PX = 24
+_DIRECTION_MARKER_HALF_WIDTH_PX = 12
 
 
 class NewOlsDockWidget(QDockWidget, FORM_CLASS):
@@ -81,6 +88,12 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
         self._last_threshold_count = 0
         self._connections: list = []
 
+        # Live direction-preview marker (OFS/OES tabs, #117)
+        self._direction_marker_band = QgsRubberBand(iface.mapCanvas(), GEOM_TYPE_POLYGON)
+        self._direction_marker_band.setColor(QColor(0, 170, 0, 120))
+        self._direction_marker_band.setStrokeColor(QColor(0, 120, 0, 220))
+        self._direction_marker_band.setWidth(1)
+
         try:
             self.setupUi(self)
             self.setup_numeric_lineedit_validation()
@@ -121,17 +134,15 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             self._connect(self.cancelButton.clicked, self.on_close_clicked)
             self._connect(self.directionButton.clicked, self.toggle_direction)
 
-            # "Show Table" button — view stored surface parameters as HTML (#118)
-            self.showTableButton = QPushButton("Show Table")
-            self.showTableButton.setMinimumHeight(30)
-            self.showTableButton.setMaximumHeight(32)
-            self.showTableButton.setToolTip("View calculated surfaces' stored parameters as an HTML table")
-            self.buttonLayout.insertWidget(self.buttonLayout.indexOf(self.cancelButton), self.showTableButton)
-            self._connect(self.showTableButton.clicked, self.show_parameters_table)
+            # Live direction-preview marker: update on layer change and zoom (#117)
+            self._connect(self.runwayLayerCombo.layerChanged, self._update_direction_marker)
+            self._connect(self.thresholdLayerCombo.layerChanged, self._update_direction_marker)
+            self._connect(self.iface.mapCanvas().scaleChanged, self._update_direction_marker)
 
             self.direction_start_to_end = True
             self.update_direction_button()
             self.update_selection_info()
+            self._update_direction_marker()
 
             try:
                 self.connect_layer_selection_signals()
@@ -677,12 +688,43 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
     def toggle_direction(self):
         self.direction_start_to_end = not self.direction_start_to_end
         self.update_direction_button()
+        self._update_direction_marker()
 
     def update_direction_button(self):
         if self.direction_start_to_end:
             self.directionButton.setText("Direction: Start to End")
         else:
             self.directionButton.setText("Direction: End to Start")
+
+    def _update_direction_marker(self):
+        """Refresh the live direction-preview triangle (#117) for the
+        current runway/threshold selection and direction. Never raises:
+        this runs on every layer/direction/zoom change."""
+        try:
+            direction = 0 if self.direction_start_to_end else -1
+            runway_layer = self.runwayLayerCombo.currentLayer()
+            threshold_layer = self.thresholdLayerCombo.currentLayer()
+            use_selected_feature = self.useSelectedThresholdCheckBox.isChecked()
+            map_units_per_pixel = self.iface.mapCanvas().mapUnitsPerPixel()
+
+            geometry = build_marker_geometry(
+                runway_layer, threshold_layer, direction, use_selected_feature,
+                _DIRECTION_MARKER_LENGTH_PX, _DIRECTION_MARKER_HALF_WIDTH_PX,
+                map_units_per_pixel,
+            )
+            if geometry is None:
+                self._clear_direction_marker()
+                return
+            self._direction_marker_band.setToGeometry(geometry, None)
+        except Exception as e:
+            logger.warning(f"Could not update direction marker: {e}")
+            self._clear_direction_marker()
+
+    def _clear_direction_marker(self):
+        try:
+            self._direction_marker_band.reset(GEOM_TYPE_POLYGON)
+        except Exception:
+            pass
 
     @pyqtSlot()
     def update_selection_info(self):
@@ -833,6 +875,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                     pass
             self._connections.clear()
             self.disconnect_layer_selection_signals()
+            self._clear_direction_marker()
             self.closingPlugin.emit()
             event.accept()
         except Exception:

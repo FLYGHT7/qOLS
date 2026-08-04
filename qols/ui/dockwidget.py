@@ -24,16 +24,23 @@ from ..rules import manager as rule_mgr
 from ..surfaces.approach import get_approach_defaults as icao_get_approach_defaults
 from ..surface_types import SurfaceType
 from .. import logger  # CR-01
+from ..direction_marker import build_marker_geometry
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot, QRegularExpression
-from qgis.PyQt.QtGui import QRegularExpressionValidator
+from qgis.PyQt.QtGui import QColor, QRegularExpressionValidator
 from qgis.PyQt.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QDockWidget,
     QLabel, QLineEdit, QMessageBox, QPushButton, QTextBrowser, QToolTip, QVBoxLayout,
 )
-from ..compat import EVENT_MOUSE_MOVE, TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL
-from ..parameters_inspector import show_project_parameters_table
+from ..compat import EVENT_MOUSE_MOVE, TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL, GEOM_TYPE_POLYGON
 from qgis.core import QgsMapLayerProxyModel, QgsProject, QgsWkbTypes, QgsVectorLayer
+from qgis.gui import QgsRubberBand
+
+# Direction-marker triangle dimensions in screen pixels (converted to map
+# units via mapUnitsPerPixel so it stays a constant, visible size at any
+# zoom level) — matches qpansopy's OMNI SID DER marker (#117).
+_DIRECTION_MARKER_LENGTH_PX = 24
+_DIRECTION_MARKER_HALF_WIDTH_PX = 12
 
 # Load the UI file
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -135,6 +142,12 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         self._connections: list = []
         # Cached approach defaults — always exists so get_parameters() never needs getattr fallback
         self._approach_state: _ApproachState = _ApproachState()
+
+        # Live direction-preview marker (Approach/Transitional tabs only, #117)
+        self._direction_marker_band = QgsRubberBand(iface.mapCanvas(), GEOM_TYPE_POLYGON)
+        self._direction_marker_band.setColor(QColor(0, 170, 0, 120))
+        self._direction_marker_band.setStrokeColor(QColor(0, 120, 0, 220))
+        self._direction_marker_band.setWidth(1)
 
         try:
             self.setupUi(self)
@@ -242,6 +255,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Connect tab change to reinitialize defaults (helpful for widget visibility)
             self._connect(self.scriptTabWidget.currentChanged, self.on_tab_changed)
 
+            # Live direction-preview marker: update on layer change and zoom (#117)
+            self._connect(self.runwayLayerCombo.layerChanged, self._update_direction_marker)
+            self._connect(self.thresholdLayerCombo.layerChanged, self._update_direction_marker)
+            self._connect(self.iface.mapCanvas().scaleChanged, self._update_direction_marker)
+
             # Set initial direction
             self.direction_start_to_end = True
             self.transitional_direction_normal = True  # True = normal (s=0), False = rotated (s=-1)
@@ -250,6 +268,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.update_direction_button()
             self.update_transitional_direction_button()
             self.update_selection_info()
+            self._update_direction_marker()
 
             # Apply initial OFZ visibility state after UI setup
             try:
@@ -1376,6 +1395,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         """Toggle direction between Start to End and End to Start."""
         self.direction_start_to_end = not self.direction_start_to_end
         self.update_direction_button()
+        self._update_direction_marker()
 
     def update_direction_button(self):
         """Update the direction button text."""
@@ -1388,6 +1408,46 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         """Toggle transitional runway direction between normal and rotated."""
         self.transitional_direction_normal = not self.transitional_direction_normal
         self.update_transitional_direction_button()
+        self._update_direction_marker()
+
+    def _update_direction_marker(self):
+        """Refresh the live direction-preview triangle (#117) for the
+        currently active tab. Approach/Transitional only — hidden otherwise.
+        Never raises: this runs on every layer/direction/zoom change."""
+        try:
+            current_tab = self.scriptTabWidget.widget(self.scriptTabWidget.currentIndex())
+            tab_name = current_tab.objectName().lower() if current_tab else ''
+            if 'approach' in tab_name:
+                direction = 0 if self.direction_start_to_end else -1
+            elif 'transitional' in tab_name:
+                direction = 0 if self.transitional_direction_normal else -1
+            else:
+                self._clear_direction_marker()
+                return
+
+            runway_layer = self.runwayLayerCombo.currentLayer()
+            threshold_layer = self.thresholdLayerCombo.currentLayer()
+            use_selected_feature = self.useSelectedThresholdCheckBox.isChecked()
+            map_units_per_pixel = self.iface.mapCanvas().mapUnitsPerPixel()
+
+            geometry = build_marker_geometry(
+                runway_layer, threshold_layer, direction, use_selected_feature,
+                _DIRECTION_MARKER_LENGTH_PX, _DIRECTION_MARKER_HALF_WIDTH_PX,
+                map_units_per_pixel,
+            )
+            if geometry is None:
+                self._clear_direction_marker()
+                return
+            self._direction_marker_band.setToGeometry(geometry, None)
+        except Exception as e:
+            logger.warning(f"Could not update direction marker: {e}")
+            self._clear_direction_marker()
+
+    def _clear_direction_marker(self):
+        try:
+            self._direction_marker_band.reset(GEOM_TYPE_POLYGON)
+        except Exception:
+            pass
 
     def update_transitional_direction_button(self):
         """Update the transitional direction button text and style."""
@@ -1409,6 +1469,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
 
                 if 'transitional' in tab_name.lower():
                     self.apply_transitional_defaults_from_selection()
+
+            self._update_direction_marker()
 
         except Exception as e:
             logger.warning(f"Unhandled error: {e}")
@@ -1902,6 +1964,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     pass
             self._connections.clear()
             self.disconnect_layer_selection_signals()
+            self._clear_direction_marker()
 
             self.closingPlugin.emit()
             event.accept()
