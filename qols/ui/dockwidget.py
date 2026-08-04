@@ -1888,12 +1888,22 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 # IMPORTANT: For transitional, use the specific rotation button instead of general direction
                 s_value = 0 if self.transitional_direction_normal else -1  # s = 0 for normal, s = -1 for rotated
 
+                # Swap Start/End elevation on inversion, same as the APPROACH
+                # branch above (#119) — Z0 must always be the datum at the
+                # computation start point, ZE at the far point (see #119).
+                z0_ui = float(self.spin_Z0_transitional.text() or "0")  # UI-labeled Start Elevation (m)
+                ze_ui = float(self.spin_ZE_transitional.text() or "0")  # UI-labeled End Elevation (m)
+                if s_value == 0:  # Normal direction
+                    Z0_calc, ZE_calc = z0_ui, ze_ui
+                else:  # Inverted direction
+                    Z0_calc, ZE_calc = ze_ui, z0_ui
+
                 specific_params = {
                     'code': self.get_code_value('spin_code_transitional'),  # QComboBox
                     'rwyClassification': self.combo_rwyClassification_transitional.currentText(),
                     'widthApp': float(self.spin_widthApp_transitional.text() or "0"),  # QLineEdit
-                    'Z0': float(self.spin_Z0_transitional.text() or "0"),              # QLineEdit
-                    'ZE': float(self.spin_ZE_transitional.text() or "0"),              # QLineEdit
+                    'Z0': Z0_calc,
+                    'ZE': ZE_calc,
                     'ARPH': float(self.spin_ARPH_transitional.text() or "0"),          # QLineEdit
                     'Tslope': float(self.spin_Tslope_transitional.text() or "0") / 100.0,  # % → decimal
                     's': s_value  # Special parameter for transitional runway direction
