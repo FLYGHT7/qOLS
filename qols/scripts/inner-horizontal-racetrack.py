@@ -133,6 +133,19 @@ v_layer_provider.addAttributes([
 ])
 v_layer.updateFields()
 
+# Store the full input parameter set as HTML-inspectable JSON (#118)
+from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
+
+_active_rule_set = globals().get('active_rule_set', None)
+_params_json = build_parameters_json('Inner Horizontal Surface', {
+    'radius_m': L,
+    'height_m': height,
+    'rule_set': _active_rule_set,
+    'rwy_classification': rwy_classification,
+    'runway_code': int(runway_code),
+})
+add_parameters_field(v_layer)
+
 features_created = 0
 
 # Process each runway feature
@@ -349,14 +362,15 @@ for feat in selection:
         "Inner Horizontal",
         L,
         height,
-        globals().get('active_rule_set', None),
+        _active_rule_set,
         start_point.x(),
         start_point.y(),
         end_point.x(),
         end_point.y(),
         azimuth,
         rwy_classification,
-        int(runway_code)
+        int(runway_code),
+        _params_json,
     ])
 
     # Add feature to layer
@@ -367,6 +381,8 @@ for feat in selection:
 
 v_layer.updateExtents()
 print(f"InnerHorizontal: Created {features_created} inner horizontal surface(s)")
+
+register_parameters_action(v_layer)
 
 # Add to map
 QgsProject.instance().addMapLayers([v_layer])

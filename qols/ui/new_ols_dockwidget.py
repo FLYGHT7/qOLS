@@ -16,7 +16,7 @@ from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot, QRegularExpression
 from qgis.PyQt.QtGui import QColor, QRegularExpressionValidator
 from qgis.PyQt.QtWidgets import (
     QApplication, QComboBox, QDialog, QDockWidget,
-    QLabel, QLineEdit, QMessageBox, QTextBrowser, QToolTip, QVBoxLayout,
+    QLabel, QLineEdit, QMessageBox, QPushButton, QTextBrowser, QToolTip, QVBoxLayout,
 )
 from ..compat import EVENT_MOUSE_MOVE, TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL, GEOM_TYPE_POLYGON
 from qgis.core import QgsMapLayerProxyModel, QgsProject, QgsWkbTypes, QgsVectorLayer
@@ -675,6 +675,15 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
         except Exception as e:
             self.show_error_message(f"Error collecting parameters: {str(e)}")
             return None
+
+    def show_parameters_table(self):
+        """Show every calculated surface's stored parameters as an HTML
+        table (#118) — lets a user review what inputs produced a surface
+        without re-running Calculate."""
+        try:
+            show_project_parameters_table()
+        except Exception as e:
+            logger.warning(f"Could not show parameters table: {e}")
 
     def toggle_direction(self):
         self.direction_start_to_end = not self.direction_start_to_end

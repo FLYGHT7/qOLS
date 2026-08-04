@@ -349,11 +349,13 @@ code_field = QgsField('Code', QVariant.Int)
 rule_field = QgsField('rule_set', QVariant.String)
 start_elev_field = QgsField('surface_start_elev', QVariant.Double)
 end_elev_field = QgsField('surface_end_elev', QVariant.Double)
-params_json_field = QgsField('params_json', QVariant.String)
-approach_layer.dataProvider().addAttributes([id_field, name_field, type_field, code_field, rule_field, start_elev_field, end_elev_field, params_json_field])
+approach_layer.dataProvider().addAttributes([id_field, name_field, type_field, code_field, rule_field, start_elev_field, end_elev_field])
 approach_layer.updateFields()
 
-_params_json = json.dumps({
+# Store the full input parameter set as HTML-inspectable JSON (#118)
+from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
+
+_params_json = build_parameters_json('Approach Surface', {
     'Z0': round(start_elevation_m, 3),
     'ZE': round(end_elevation_m, 3),
     'ARPH': round(arp_elevation_m, 3),
@@ -368,6 +370,7 @@ _params_json = json.dumps({
     'runway_code': runway_code,
     'rule_set': globals().get('active_rule_set', None),
 })
+add_parameters_field(approach_layer)
 
 provider = approach_layer.dataProvider()
 for fid, name, surface_area, sec_start_elev, sec_end_elev in features_to_create:
@@ -375,6 +378,8 @@ for fid, name, surface_area, sec_start_elev, sec_end_elev in features_to_create:
     feature.setGeometry(QgsPolygon(QgsLineString(surface_area), rings=[]))
     feature.setAttributes([fid, name, rwy_classification, runway_code, globals().get('active_rule_set', None), round(sec_start_elev, 3), round(sec_end_elev, 3), _params_json])
     provider.addFeatures([feature])
+
+register_parameters_action(approach_layer)
 
 # Load PolygonZ Layer to map canvas
 QgsProject.instance().addMapLayers([approach_layer])

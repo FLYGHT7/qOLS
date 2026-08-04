@@ -30,7 +30,7 @@ from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot, QRegularExpression
 from qgis.PyQt.QtGui import QColor, QRegularExpressionValidator
 from qgis.PyQt.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QDockWidget,
-    QLabel, QLineEdit, QMessageBox, QTextBrowser, QToolTip, QVBoxLayout,
+    QLabel, QLineEdit, QMessageBox, QPushButton, QTextBrowser, QToolTip, QVBoxLayout,
 )
 from ..compat import EVENT_MOUSE_MOVE, TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL, GEOM_TYPE_POLYGON
 from qgis.core import QgsMapLayerProxyModel, QgsProject, QgsWkbTypes, QgsVectorLayer
@@ -243,6 +243,14 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self._connect(self.cancelButton.clicked, self.on_close_clicked)
             self._connect(self.directionButton.clicked, self.toggle_direction)
             self._connect(self.button_rotate_transitional.clicked, self.toggle_transitional_direction)
+
+            # "Show Table" button — view stored surface parameters as HTML (#118)
+            self.showTableButton = QPushButton("Show Table")
+            self.showTableButton.setMinimumHeight(30)
+            self.showTableButton.setMaximumHeight(32)
+            self.showTableButton.setToolTip("View calculated surfaces' stored parameters as an HTML table")
+            self.buttonLayout.insertWidget(self.buttonLayout.indexOf(self.cancelButton), self.showTableButton)
+            self._connect(self.showTableButton.clicked, self.show_parameters_table)
 
             # Connect tab change to reinitialize defaults (helpful for widget visibility)
             self._connect(self.scriptTabWidget.currentChanged, self.on_tab_changed)
@@ -1373,6 +1381,15 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
 
         except Exception as e:
             return f"Error getting layer summary: {e}"
+
+    def show_parameters_table(self):
+        """Show every calculated surface's stored parameters as an HTML
+        table (#118) — lets a user review what inputs produced a surface
+        without re-running Calculate."""
+        try:
+            show_project_parameters_table()
+        except Exception as e:
+            logger.warning(f"Could not show parameters table: {e}")
 
     def toggle_direction(self):
         """Toggle direction between Start to End and End to Start."""

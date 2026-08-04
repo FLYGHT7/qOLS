@@ -229,6 +229,20 @@ v_layer_provider.addAttributes([
 ])
 v_layer.updateFields()
 
+# Store the full input parameter set as HTML-inspectable JSON (#118)
+from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
+
+_active_rule_set = globals().get('active_rule_set', None)
+_params_json = build_parameters_json('Conical Surface', {
+    'radius_m': L,
+    'height_m': height,
+    'rule_set': _active_rule_set,
+    'azimuth': angle0,
+    'rwy_classification': rwy_classification,
+    'runway_code': int(runway_code),
+})
+add_parameters_field(v_layer)
+
 print(f"Conical: Creating unified 3D surface with radius {L}m at height {height}m")
 
 polygon_points = []
@@ -364,14 +378,15 @@ feature.setAttributes([
     "Conical",
     L,
     height,
-    globals().get('active_rule_set', None),
+    _active_rule_set,
     start_point.x(),
     start_point.y(),
     end_point.x(),
     end_point.y(),
     angle0,
     rwy_classification,
-    int(runway_code)
+    int(runway_code),
+    _params_json,
 ])
 
 # Add feature to layer
@@ -379,6 +394,8 @@ v_layer_provider.addFeatures([feature])
 
 v_layer.updateExtents()
 print(f"Conical: Created conical 3D surface")
+
+register_parameters_action(v_layer)
 
 # Add to map
 QgsProject.instance().addMapLayers([v_layer])
