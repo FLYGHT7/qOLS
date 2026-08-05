@@ -1210,6 +1210,19 @@ QPushButton:checked:hover {
           </property>
          </widget>
         </item>
+        <item row="8" column="0" colspan="2">
+         <widget class="QCheckBox" name="check_merge_transitional">
+          <property name="text">
+           <string>Merge with existing Transitional Surface layer</string>
+          </property>
+          <property name="toolTip">
+           <string>When checked, the next Calculate updates the existing 'RWY_Transition Surface' layer in place — combining this run's Left/Right geometries with what's already there (geometric union, elevation preserved) instead of creating a new layer. If no such layer exists yet, behaves like unchecked.</string>
+          </property>
+          <property name="checked">
+           <bool>false</bool>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
 

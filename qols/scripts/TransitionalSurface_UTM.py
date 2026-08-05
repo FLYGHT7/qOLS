@@ -58,6 +58,7 @@ try:
     LH = globals().get('LH', 8400)
     Tslope = globals().get('Tslope', 14.3/100)
     s = globals().get('s', 0)  # CRITICAL: Get runway direction from UI button
+    merge_transitional = globals().get('merge_transitional', False)  # #121
 
     # Layer parameters
     runway_layer = globals().get('runway_layer', None)
@@ -81,6 +82,7 @@ except Exception as e:
     LH = 8400
     Tslope = 14.3/100
     s = 0
+    merge_transitional = False
     runway_layer = None
     threshold_layer = None
     use_selected_feature = True
@@ -286,16 +288,7 @@ list_pts.extend((pt_0,pt_01,pt_01AL,pt_01AR,pt_01TL,pt_01TR,pt_08,pt_08L,pt_08R,
 # QgsProject.instance().addMapLayers([p_layer])
 
 # Creation of the Transitional Surfaces
-# Create memory layer
-
-v_layer = QgsVectorLayer("PolygonZ?crs="+map_srid, "RWY_Transition Surface", "memory")
-IDField = QgsField( 'ID', QVariant.String)
-NameField = QgsField( 'SurfaceName', QVariant.String)
-RuleField = QgsField( 'rule_set', QVariant.String)
-v_layer.dataProvider().addAttributes([IDField])
-v_layer.dataProvider().addAttributes([NameField])
-v_layer.dataProvider().addAttributes([RuleField])
-v_layer.updateFields()
+# Create memory layer (or merge into an existing one - #121)
 
 # Store the full input parameter set as HTML-inspectable JSON (#118)
 from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
@@ -312,27 +305,97 @@ _params_json = build_parameters_json('Transitional Surface', {
     'direction': s,
     'rule_set': _active_rule_set,
 })
-add_parameters_field(v_layer)
 
-# Left Transition Surface
-SurfaceArea = [pt_08L,pt_01TL,pt_02TL,pt_02L,pt_01AL]
-pr = v_layer.dataProvider()
-seg = QgsFeature()
-seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([10,'Left Transitional Surface', _active_rule_set, _params_json])
-pr.addFeatures( [ seg ] )
+new_left_geom = QgsGeometry(QgsPolygon(QgsLineString([pt_08L,pt_01TL,pt_02TL,pt_02L,pt_01AL]), rings=[]))
+new_right_geom = QgsGeometry(QgsPolygon(QgsLineString([pt_08R,pt_01TR,pt_02TR,pt_02R,pt_01AR]), rings=[]))
+# Layer is MultiPolygonZ (#121 - a merge can produce two disjoint lobes),
+# so every feature geometry, including a fresh single-run one, must match.
+new_left_geom.convertToMultiType()
+new_right_geom.convertToMultiType()
 
-# Right Transition Surface
-SurfaceArea = [pt_08R,pt_01TR,pt_02TR,pt_02R,pt_01AR]
-pr = v_layer.dataProvider()
-seg = QgsFeature()
-seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([11,'Right Transitional Surface', _active_rule_set, _params_json])
-pr.addFeatures( [ seg ] )
+# #121: if requested, look for an already-existing Transitional layer to
+# merge into instead of creating a new one. 0 matches = first click with
+# the box checked, behaves like unchecked. >1 matches = can't tell which
+# one is meant, warn and fall back to creating a new layer rather than
+# silently merging into the wrong one.
+existing_layer = None
+if merge_transitional:
+    matches = QgsProject.instance().mapLayersByName('RWY_Transition Surface')
+    if len(matches) == 1:
+        existing_layer = matches[0]
+    elif len(matches) > 1:
+        iface.messageBar().pushMessage(
+            "TransitionalSurface Warning",
+            "Multiple 'RWY_Transition Surface' layers found; cannot tell which to merge into. "
+            "Created a new layer instead - keep only one such layer for merging to work.",
+            level=MSG_WARNING)
 
-register_parameters_action(v_layer)
+if existing_layer is not None:
+    from qols.geometry_merge import merge_polygonz_preserving_z
 
-QgsProject.instance().addMapLayers([v_layer])
+    add_parameters_field(existing_layer)  # idempotent, defensive
+    pr = existing_layer.dataProvider()
+    parameters_idx = existing_layer.fields().indexOf('parameters')
+    rule_set_idx = existing_layer.fields().indexOf('rule_set')
+    features_by_name = {f.attribute('SurfaceName'): f for f in existing_layer.getFeatures()}
+
+    geometry_changes = {}
+    attribute_changes = {}
+    for side_id, side_name, new_geom in (
+        (10, 'Left Transitional Surface', new_left_geom),
+        (11, 'Right Transitional Surface', new_right_geom),
+    ):
+        existing_feat = features_by_name.get(side_name)
+        if existing_feat is None:
+            # Shouldn't normally happen (the layer was created by this same
+            # script) - fall back to adding it as a new feature.
+            seg = QgsFeature(existing_layer.fields())
+            seg.setGeometry(new_geom)
+            seg.setAttributes([side_id, side_name, _active_rule_set, _params_json])
+            pr.addFeatures([seg])
+            continue
+        # Merge, conserving Z (#121) - last-run-wins for the parameters JSON,
+        # same semantics a brand-new layer already has.
+        merged_geom = merge_polygonz_preserving_z(existing_feat.geometry(), new_geom)
+        geometry_changes[existing_feat.id()] = merged_geom
+        attribute_changes[existing_feat.id()] = {
+            parameters_idx: _params_json,
+            rule_set_idx: _active_rule_set,
+        }
+
+    if geometry_changes:
+        pr.changeGeometryValues(geometry_changes)
+    if attribute_changes:
+        pr.changeAttributeValues(attribute_changes)
+    existing_layer.updateExtents()
+    existing_layer.triggerRepaint()
+    v_layer = existing_layer
+else:
+    v_layer = QgsVectorLayer("MultiPolygonZ?crs="+map_srid, "RWY_Transition Surface", "memory")
+    IDField = QgsField( 'ID', QVariant.String)
+    NameField = QgsField( 'SurfaceName', QVariant.String)
+    RuleField = QgsField( 'rule_set', QVariant.String)
+    v_layer.dataProvider().addAttributes([IDField])
+    v_layer.dataProvider().addAttributes([NameField])
+    v_layer.dataProvider().addAttributes([RuleField])
+    v_layer.updateFields()
+    add_parameters_field(v_layer)
+
+    # Left Transition Surface
+    pr = v_layer.dataProvider()
+    seg = QgsFeature()
+    seg.setGeometry(new_left_geom)
+    seg.setAttributes([10,'Left Transitional Surface', _active_rule_set, _params_json])
+    pr.addFeatures( [ seg ] )
+
+    # Right Transition Surface
+    seg = QgsFeature()
+    seg.setGeometry(new_right_geom)
+    seg.setAttributes([11,'Right Transitional Surface', _active_rule_set, _params_json])
+    pr.addFeatures( [ seg ] )
+
+    register_parameters_action(v_layer)
+    QgsProject.instance().addMapLayers([v_layer])
 
 # Change style of layer
 v_layer.renderer().symbol().setColor(QColor("magenta"))
