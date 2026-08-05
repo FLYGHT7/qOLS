@@ -76,15 +76,16 @@ class QOLS:
         return action
 
     def initGui(self):
-        icon_path = os.path.join(self.plugin_dir, 'icon.png')
+        icon_current_path = os.path.join(self.plugin_dir, 'icon_current.png')
+        icon_new_path = os.path.join(self.plugin_dir, 'icon_new.png')
         try:
             self.add_action(
-                icon_path,
+                icon_current_path,
                 text=self.tr(u'QOLS'),
                 callback=self.show_panel,
                 parent=self.iface.mainWindow())
             self.add_action(
-                icon_path,
+                icon_new_path,
                 text=self.tr(u'New OLS'),
                 callback=self.show_new_ols_panel,
                 status_tip=self.tr('Open New OLS Panel'),
