@@ -117,6 +117,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
     spin_L_conical: QLineEdit
     combo_rwyClassification_transitional: QComboBox
     spin_code_transitional: QComboBox
+    check_merge_transitional: QCheckBox
     # Additional widgets guaranteed by setupUi() (R-04)
     label_not_applicable_ofz: QLabel
     spin_IHSlope_ofz: QLineEdit
@@ -1906,7 +1907,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'ZE': ZE_calc,
                     'ARPH': float(self.spin_ARPH_transitional.text() or "0"),          # QLineEdit
                     'Tslope': float(self.spin_Tslope_transitional.text() or "0") / 100.0,  # % → decimal
-                    's': s_value  # Special parameter for transitional runway direction
+                    's': s_value,  # Special parameter for transitional runway direction
+                    'merge_transitional': self.check_merge_transitional.isChecked(),  # #121
                 }
             elif surface_type == SurfaceType.OFZ:
                 specific_params = {
