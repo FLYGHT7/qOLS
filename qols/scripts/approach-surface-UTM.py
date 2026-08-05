@@ -167,22 +167,10 @@ print(f"QOLS: ZIH at start (m): {zih_at_start_m}")
 for feat in selection:
     line_pts = _normalize_polyline_points(feat.geometry(), iface)
     print(f"QOLS: Geometry points count (normalized): {len(line_pts)}")
+    break
 
-    # Always use the same points regardless of direction
-    # Direction change is handled by azimuth rotation only
-    start_point = line_pts[0]
-    end_point = line_pts[-1]
-    base_azimuth_deg = start_point.azimuth(end_point)
-
-    print(f"QOLS: Using consistent points regardless of direction")
-    print(f"QOLS: start_point = first vertex of normalized line")
-    print(f"QOLS: end_point = last vertex of normalized line")
-    print(f"QOLS: Start point: {start_point.x()}, {start_point.y()}")
-    print(f"QOLS: End point: {end_point.x()}, {end_point.y()}")
-    print(f"QOLS: Base azimuth (deg): {base_azimuth_deg}")
-
-# Defer final azimuth until we know which threshold end is selected
-print(f"QOLS: Base azimuth (start→end) will be adjusted based on selected threshold end and UI direction toggle")
+# Final azimuth is resolved below once the threshold layer is loaded,
+# via the direction-driven s-index convention (matches TransitionalSurface_UTM.py).
 
 # ENHANCED THRESHOLD SELECTION - Use threshold layer from UI
 try:
@@ -217,37 +205,37 @@ except Exception as e:
     iface.messageBar().pushMessage("QOLS Error", f"Threshold layer error: {str(e)}", level=MSG_CRITICAL)
     raise
 
-# Get x,y from threshold - ORIGINAL LOGIC RESTORED
-# Always use the selected threshold feature as-is, direction change is handled by azimuth only
-if len(threshold_selection) >= 1:
-    # Use the first (or only) threshold feature
-    selected_threshold = threshold_selection[0]
-    threshold_geom = selected_threshold.geometry().asPoint()
-    print(f"QOLS: Using threshold feature as-is (original logic)")
-else:
+# Get x,y from threshold - direction picks the runway-centerline endpoint
+# directly (0 = Start to End, -1 = End to Start), mirroring the legacy
+# TransitionalSurface_UTM.py line_pts[-1-s]/line_pts[s] convention (ported
+# here from the New OLS scripts fix in #113) — no threshold-distance
+# matching or post-hoc azimuth flip needed. The threshold anchor is
+# matched to the direction-selected endpoint within threshold_selection —
+# in "Selected Only" mode with one feature it stays pinned (re-selecting
+# to match direction is the user's call, same as legacy); with multiple
+# candidates it follows direction automatically.
+if not threshold_selection:
     raise Exception("No threshold features found")
 
+
+def _closest_feature(features, pt):
+    return min(
+        features,
+        key=lambda f: hypot(f.geometry().asPoint().x() - pt.x(), f.geometry().asPoint().y() - pt.y()),
+    )
+
+
+s = direction
+near_end_pt = line_pts[s]
+far_end_pt = line_pts[-1 - s]
+azimuth = far_end_pt.azimuth(near_end_pt)
+
+selected_threshold = _closest_feature(threshold_selection, near_end_pt)
+threshold_geom = selected_threshold.geometry().asPoint()
 new_geom = QgsPoint(threshold_geom)
 new_geom.addZValue(start_elevation_m)
 
-# Determine which runway end the selected threshold corresponds to
-dist_to_start = hypot(new_geom.x() - start_point.x(), new_geom.y() - start_point.y())
-dist_to_end = hypot(new_geom.x() - end_point.x(), new_geom.y() - end_point.y())
-selected_end = 'start' if dist_to_start <= dist_to_end else 'end'
-
-# Compute outward azimuth from the selected threshold end
-outward_azimuth = base_azimuth_deg if selected_end == 'start' else (base_azimuth_deg + 180) % 360
-
-# UI toggle: client wants Start→End to be the opposite of the outward azimuth; End→Start follows outward azimuth
-if direction == 0:  # Start → End
-    azimuth = (outward_azimuth + 180) % 360
-else:  # End → Start
-    azimuth = outward_azimuth
-
 print(f"QOLS: Threshold point: {new_geom.x()}, {new_geom.y()}, {new_geom.z()}")
-print(f"QOLS: Selected threshold end: {selected_end} (dist_start={dist_to_start:.2f}, dist_end={dist_to_end:.2f})")
-print(f"QOLS: Base azimuth (start→end): {base_azimuth_deg:.6f}°")
-print(f"QOLS: Outward azimuth from selected end: {outward_azimuth:.6f}°")
 print(f"QOLS: UI direction toggle: {'End to Start' if direction == -1 else 'Start to End'}")
 print(f"QOLS: Final azimuth used for projection: {azimuth:.6f}°")
 
@@ -361,11 +349,13 @@ code_field = QgsField('Code', QVariant.Int)
 rule_field = QgsField('rule_set', QVariant.String)
 start_elev_field = QgsField('surface_start_elev', QVariant.Double)
 end_elev_field = QgsField('surface_end_elev', QVariant.Double)
-params_json_field = QgsField('params_json', QVariant.String)
-approach_layer.dataProvider().addAttributes([id_field, name_field, type_field, code_field, rule_field, start_elev_field, end_elev_field, params_json_field])
+approach_layer.dataProvider().addAttributes([id_field, name_field, type_field, code_field, rule_field, start_elev_field, end_elev_field])
 approach_layer.updateFields()
 
-_params_json = json.dumps({
+# Store the full input parameter set as HTML-inspectable JSON (#118)
+from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
+
+_params_json = build_parameters_json('Approach Surface', {
     'Z0': round(start_elevation_m, 3),
     'ZE': round(end_elevation_m, 3),
     'ARPH': round(arp_elevation_m, 3),
@@ -380,6 +370,7 @@ _params_json = json.dumps({
     'runway_code': runway_code,
     'rule_set': globals().get('active_rule_set', None),
 })
+add_parameters_field(approach_layer)
 
 provider = approach_layer.dataProvider()
 for fid, name, surface_area, sec_start_elev, sec_end_elev in features_to_create:
@@ -387,6 +378,8 @@ for fid, name, surface_area, sec_start_elev, sec_end_elev in features_to_create:
     feature.setGeometry(QgsPolygon(QgsLineString(surface_area), rings=[]))
     feature.setAttributes([fid, name, rwy_classification, runway_code, globals().get('active_rule_set', None), round(sec_start_elev, 3), round(sec_end_elev, 3), _params_json])
     provider.addFeatures([feature])
+
+register_parameters_action(approach_layer)
 
 # Load PolygonZ Layer to map canvas
 QgsProject.instance().addMapLayers([approach_layer])

@@ -297,12 +297,29 @@ v_layer.dataProvider().addAttributes([NameField])
 v_layer.dataProvider().addAttributes([RuleField])
 v_layer.updateFields()
 
+# Store the full input parameter set as HTML-inspectable JSON (#118)
+from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
+
+_active_rule_set = globals().get('active_rule_set', None)
+_params_json = build_parameters_json('Transitional Surface', {
+    'code': code,
+    'rwy_classification': rwyClassification,
+    'widthApp': widthApp,
+    'Z0': Z0,
+    'ZE': ZE,
+    'ARPH': ARPH,
+    'Tslope': Tslope,
+    'direction': s,
+    'rule_set': _active_rule_set,
+})
+add_parameters_field(v_layer)
+
 # Left Transition Surface
 SurfaceArea = [pt_08L,pt_01TL,pt_02TL,pt_02L,pt_01AL]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([10,'Left Transitional Surface', globals().get('active_rule_set', None)])
+seg.setAttributes([10,'Left Transitional Surface', _active_rule_set, _params_json])
 pr.addFeatures( [ seg ] )
 
 # Right Transition Surface
@@ -310,8 +327,10 @@ SurfaceArea = [pt_08R,pt_01TR,pt_02TR,pt_02R,pt_01AR]
 pr = v_layer.dataProvider()
 seg = QgsFeature()
 seg.setGeometry(QgsPolygon(QgsLineString(SurfaceArea), rings=[]))
-seg.setAttributes([11,'Right Transitional Surface', globals().get('active_rule_set', None)])
+seg.setAttributes([11,'Right Transitional Surface', _active_rule_set, _params_json])
 pr.addFeatures( [ seg ] )
+
+register_parameters_action(v_layer)
 
 QgsProject.instance().addMapLayers([v_layer])
 
