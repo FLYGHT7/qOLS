@@ -306,16 +306,29 @@
     </item>
     
     <item>
-     <widget class="QTabWidget" name="scriptTabWidget">
-          <property name="tabPosition">
-           <enum>QTabWidget::North</enum>
-          </property>
-      
-      <!-- APPROACH SURFACE TAB -->
+     <widget class="QWidget" name="tabSelectorContainer">
+      <layout class="QVBoxLayout" name="tabSelectorLayout">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <item>
+        <layout class="QHBoxLayout" name="tabRow1Layout"/>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="tabRow2Layout"/>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QStackedWidget" name="scriptTabStack">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
       <widget class="QWidget" name="tab_approach">
-       <attribute name="title">
-        <string>Approach Surface</string>
-       </attribute>
        <layout class="QFormLayout" name="formLayout_approach">
         <property name="fieldGrowthPolicy">
          <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
@@ -526,12 +539,7 @@
         </item>
        </layout>
       </widget>
-      
-      <!-- COMBINED INNER HORIZONTAL & CONICAL TAB -->
             <widget class="QWidget" name="tab_inner_conical">
-       <attribute name="title">
-        <string>Inner Horizontal &amp; Conical</string>
-       </attribute>
        <layout class="QFormLayout" name="formLayout_inner_conical">
         <property name="fieldGrowthPolicy">
          <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
@@ -745,13 +753,7 @@
         </item>
        </layout>
       </widget>
-
-      
-      <!-- OFZ TAB -->
       <widget class="QWidget" name="tab_ofz">
-       <attribute name="title">
-        <string>OFZ</string>
-       </attribute>
     <layout class="QFormLayout" name="formLayout_ofz">
      <property name="fieldGrowthPolicy">
       <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
@@ -919,12 +921,7 @@
    </item>
        </layout>
       </widget>
-      
-      <!-- OUTER HORIZONTAL TAB -->
       <widget class="QWidget" name="tab_outer_horizontal">
-       <attribute name="title">
-        <string>Outer Horizontal</string>
-       </attribute>
        <layout class="QFormLayout" name="formLayout_outer_horizontal">
         <property name="fieldGrowthPolicy">
          <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
@@ -1031,12 +1028,7 @@
         </item>
        </layout>
       </widget>
-      
-     <!-- TRANSITIONAL TAB (moved before Take-Off) -->
      <widget class="QWidget" name="tab_transitional">
-       <attribute name="title">
-        <string>Transitional</string>
-       </attribute>
     <layout class="QFormLayout" name="formLayout_transitional">
      <property name="fieldGrowthPolicy">
       <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
@@ -1244,12 +1236,7 @@ Must be checked on EVERY run you want included in the merge - including the firs
         </item>
        </layout>
       </widget>
-
-        <!-- TAKEOFF TAB (moved to end) -->
         <widget class="QWidget" name="tab_takeoff">
-         <attribute name="title">
-         <string>Take-Off Surface</string>
-         </attribute>
             <layout class="QFormLayout" name="formLayout_takeoff">
         <property name="fieldGrowthPolicy">
          <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
@@ -1441,8 +1428,7 @@ Must be checked on EVERY run you want included in the merge - including the firs
       </item>
          </layout>
         </widget>
-      
-         </widget>
+     </widget>
     </item>
         </layout>
        </widget>

@@ -25,12 +25,14 @@ from ..surfaces.approach import get_approach_defaults as icao_get_approach_defau
 from ..surface_types import SurfaceType
 from .. import logger  # CR-01
 from ..direction_marker import build_marker_geometry
+from .tab_row_selector import TwoRowTabSelector
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot, QRegularExpression
 from qgis.PyQt.QtGui import QColor, QRegularExpressionValidator
 from qgis.PyQt.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDialog, QDockWidget,
-    QLabel, QLineEdit, QMessageBox, QPushButton, QTextBrowser, QToolTip, QVBoxLayout,
+    QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QStackedWidget, QTabBar,
+    QTextBrowser, QToolTip, QVBoxLayout,
 )
 from ..compat import EVENT_MOUSE_MOVE, TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL, GEOM_TYPE_POLYGON
 from qgis.core import QgsMapLayerProxyModel, QgsProject, QgsWkbTypes, QgsVectorLayer
@@ -124,6 +126,16 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
     spin_maxWidthDep_takeoff: QLineEdit
     runwaySelectionStatusLabel: QLabel
     thresholdSelectionStatusLabel: QLabel
+    # Two-row tab bars (#123) - PyQt6's uic can't construct a bare QTabBar
+    # from .ui XML (it's not in its Designer-placeable widget table, unlike
+    # QTabWidget/QStackedWidget), so tabBarRow1/tabBarRow2 are built in
+    # Python in __init__ and inserted into the (XML-declared, empty)
+    # tabRow1Layout/tabRow2Layout - not setupUi() attributes either.
+    # scriptTabWidget itself is a TwoRowTabSelector instance, also built
+    # in __init__.
+    tabRow1Layout: QHBoxLayout
+    tabRow2Layout: QHBoxLayout
+    scriptTabStack: QStackedWidget
 
     def __init__(self, iface, parent=None):
         """Constructor with enhanced error handling and layer management."""
@@ -152,6 +164,42 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
 
         try:
             self.setupUi(self)
+
+            # Two-row tab selector (#123) - PyQt6's uic can't build a bare
+            # QTabBar straight from .ui XML (unlike QTabWidget/
+            # QStackedWidget, it's not in its Designer-placeable widget
+            # table - "Unknown Qt widget: QTabBar" if declared there), so
+            # both bars are constructed here and inserted into the (empty)
+            # tabRow1Layout/tabRow2Layout declared in qols_panel_base.ui.
+            # Native look, no custom styling. scriptTabStack's 6 pages stay
+            # in their original order (0=Approach ... 5=Take-Off); each row
+            # lists the stack indices of the tabs it owns, in the same
+            # order they're added below.
+            # Row 1 (top): Inner Horizontal & Conical, Outer Horizontal, Take-Off.
+            # Row 2 (bottom): Approach, Transitional, OFZ.
+            self.tabBarRow1 = QTabBar(self)
+            self.tabBarRow2 = QTabBar(self)
+            self.tabRow1Layout.addWidget(self.tabBarRow1)
+            self.tabRow2Layout.addWidget(self.tabBarRow2)
+            for text in ("Inner Horizontal & Conical", "Outer Horizontal", "Take-Off Surface"):
+                self.tabBarRow1.addTab(text)
+            for text in ("Approach Surface", "Transitional", "OFZ"):
+                self.tabBarRow2.addTab(text)
+
+            # scriptTabWidget itself is this shim, not a setupUi() attribute;
+            # it presents the same currentIndex()/tabText()/widget()/
+            # currentChanged surface a QTabWidget did, so every existing
+            # scriptTabWidget call site below keeps working unchanged.
+            self.scriptTabWidget = TwoRowTabSelector(
+                bars=[self.tabBarRow1, self.tabBarRow2],
+                stack_indices_per_bar=[[1, 3, 5], [0, 4, 2]],
+                tab_texts=[
+                    "Approach Surface", "Inner Horizontal & Conical", "OFZ",
+                    "Outer Horizontal", "Transitional", "Take-Off Surface",
+                ],
+                stack=self.scriptTabStack,
+                parent=self,
+            )
 
             # Configure numeric input validation for all QLineEdit widgets (formerly QDoubleSpinBox)
             self.setup_numeric_lineedit_validation()
