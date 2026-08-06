@@ -1213,13 +1213,32 @@ QPushButton:checked:hover {
         <item row="8" column="0" colspan="2">
          <widget class="QCheckBox" name="check_merge_transitional">
           <property name="text">
-           <string>Merge with existing Transitional Surface layer</string>
+           <string>Create/update Merged Transitional Surface layer</string>
           </property>
           <property name="toolTip">
-           <string>When checked, the next Calculate updates the existing 'RWY_Transition Surface' layer in place — combining this run's Left/Right geometries with what's already there (geometric union, elevation preserved) instead of creating a new layer. If no such layer exists yet, behaves like unchecked.</string>
+           <string>When checked, Calculate additionally maintains a separate 'Merged Transitional Surface' layer, dissolving this run's Left/Right geometries with whatever is already there by actual spatial overlap (elevation preserved). The individual 'RWY_Transition Surface' layer above is always created fresh and is never affected by this.
+
+Must be checked on EVERY run you want included in the merge - including the first one. If it's unchecked for a run, that run is only added to the individual layer and is left out of the merge entirely.</string>
           </property>
           <property name="checked">
            <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="0">
+         <widget class="QLabel" name="label_contour_interval_transitional">
+          <property name="text">
+           <string>Contour Interval (m):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="9" column="1">
+         <widget class="QLineEdit" name="spin_contour_interval_transitional">
+          <property name="text">
+           <string>10</string>
+          </property>
+          <property name="toolTip">
+           <string>Elevation interval for contour lines in metres. Set to 0 to disable.</string>
           </property>
          </widget>
         </item>

@@ -1,25 +1,30 @@
-"""qols/geometry_merge.py — Z-preserving polygon merge for Transitional
-Surface runs (#121).
+"""qols/geometry_merge.py — Z-preserving polygon dissolve for the
+"Merged Transitional Surface" layer (#121).
 
-``TransitionalSurface_UTM.py`` optionally merges this run's Left/Right
-pentagons into an already-existing "RWY_Transition Surface" layer instead
-of creating a new one. The two source shapes (normal vs. inverted
-direction) are typically two elongated wedges pointing opposite ways
-along the runway, not one overlapping blob — their 2D union is very often
-a genuine MultiPolygon (two disjoint/barely-touching lobes), so nothing
-may be discarded: every part of the union must be kept. QGIS/GEOS boolean
-geometry operations (``QgsGeometry.combine()``) are also 2D — they may
-drop or zero out the Z dimension of a ``PolygonZ``/``MultiPolygonZ``
-input. ``recover_ring_z`` is pure Python (no QGIS dependency) so it can be
-unit tested directly: given a merged part's 2D boundary and the original
-3D source rings (from every part of both inputs), it recovers a Z for
-every output vertex by exact-matching an original vertex where the merged
-boundary follows an untouched edge, else linearly interpolating along the
-nearest original edge from either source ring.
-``merge_polygonz_preserving_z`` is the thin QGIS-aware wrapper — it always
-returns a MultiPolygonZ geometry (via ``convertToMultiType()``) so the
-result's type stays consistent regardless of whether the union happened
-to be single- or multi-part.
+``TransitionalSurface_UTM.py`` optionally maintains a separate
+"Merged Transitional Surface" layer, accumulating every run's Left/Right
+pentagons into it via a full n-way geometric union — dissolving purely by
+spatial overlap, never by matching feature attributes/names (an earlier
+version paired features by their ``SurfaceName`` — "Left" with "Left",
+"Right" with "Right" — which silently glued together the wrong physical
+sides whenever a direction flip swapped which side ends up called "Left"
+vs. "Right"; see the #121 reopened discussion). QGIS/GEOS boolean geometry
+operations (``QgsGeometry.unaryUnion()``) are 2D — they may drop or zero
+out the Z dimension of a ``PolygonZ``/``MultiPolygonZ`` input, and the
+union of several wedge-shaped runs is very often a genuine MultiPolygon
+(disjoint/barely-touching lobes on each side of the runway), so nothing
+may be discarded: every part of the union must be kept. ``recover_ring_z``
+is pure Python (no QGIS dependency) so it can be unit tested directly:
+given a dissolved part's 2D boundary and the original 3D source rings
+(from every part of every input), it recovers a Z for every output vertex
+by exact-matching an original vertex where the dissolved boundary follows
+an untouched edge, else linearly interpolating along the nearest original
+edge from any source ring. ``dissolve_geometries_preserving_z`` is the
+thin QGIS-aware wrapper — it unions an arbitrary number of input
+geometries at once and returns one Z-recovered, ``.convertToMultiType()``-ed
+``QgsGeometry`` per disjoint/connected part, so each part can become its
+own feature (selecting one highlights one coherent side, not several
+unrelated pieces glued together).
 """
 from __future__ import annotations
 
@@ -31,7 +36,7 @@ Edge3 = tuple[Point3, Point3]
 
 __all__ = [
     "recover_ring_z",
-    "merge_polygonz_preserving_z",
+    "dissolve_geometries_preserving_z",
 ]
 
 
@@ -155,54 +160,60 @@ def _polygon_exterior_xy(geom) -> list[Point2]:
     return pts
 
 
-def merge_polygonz_preserving_z(
-    existing_geom,
-    new_geom,
+def dissolve_geometries_preserving_z(
+    geometries: list,
     exact_match_tol: float = 1e-6,
-):
-    """2D-union `existing_geom` and `new_geom` (PolygonZ or MultiPolygonZ,
-    no holes), recover Z per output vertex via `recover_ring_z`, and
-    return a new MultiPolygonZ QgsGeometry. The two source shapes are
-    often two disjoint/barely-touching lobes (e.g. two Transitional runs
-    pointing opposite ways along the runway) rather than one overlapping
-    blob, so EVERY part of the union is kept — nothing is discarded, even
-    when the result is genuinely multi-part. Falls back to `new_geom`
-    unchanged if the union or Z-recovery cannot proceed — a failed merge
-    must not lose the run the user just calculated."""
-    from qgis.core import QgsGeometry, QgsLineString, QgsMultiPolygon, QgsPoint, QgsPolygon
+) -> list:
+    """Union every geometry in `geometries` (each PolygonZ or
+    MultiPolygonZ, no holes) via `QgsGeometry.unaryUnion()`, recover Z per
+    output vertex via `recover_ring_z`, and return one Z-recovered,
+    `.convertToMultiType()`-ed QgsGeometry per disjoint/connected part of
+    the union — never a single combined multi-part geometry, so each part
+    can become its own feature (e.g. one per physical side of the
+    runway). Dissolving is purely by spatial overlap: this function takes
+    no names/attributes into account at all, so it can never mis-pair two
+    geometries that happen to share a label. Returns `[]` if fewer than 2
+    usable geometries are given or the union/Z-recovery cannot proceed —
+    the caller must keep its own inputs untouched on failure, since a
+    failed dissolve must not lose data."""
+    from qgis.core import QgsGeometry, QgsLineString, QgsPoint, QgsPolygon
 
     try:
-        existing_rings = _all_exterior_rings_xyz(existing_geom)
-        new_rings = _all_exterior_rings_xyz(new_geom)
-        if not existing_rings or not new_rings:
-            return new_geom
+        usable = [g for g in geometries if g is not None and not g.isEmpty()]
+        print(f"dissolve_geometries_preserving_z: {len(geometries)} input(s), {len(usable)} usable")
+        if len(usable) < 2:
+            return []
 
-        unioned = existing_geom.combine(new_geom)
+        source_rings = [ring for g in usable for ring in _all_exterior_rings_xyz(g)]
+        print(f"dissolve_geometries_preserving_z: {len(source_rings)} source ring(s), "
+              f"sizes={[len(r) for r in source_rings]}")
+        if not source_rings:
+            return []
+
+        unioned = QgsGeometry.unaryUnion(usable)
         if unioned is None or unioned.isEmpty():
-            return new_geom
+            print("dissolve_geometries_preserving_z: unaryUnion returned None/empty")
+            return []
 
-        source_rings = existing_rings + new_rings
-        rebuilt_parts = []
-        for part in _geometry_parts(unioned):
+        parts = _geometry_parts(unioned)
+        print(f"dissolve_geometries_preserving_z: union produced {len(parts)} part(s)")
+
+        results = []
+        for _pi, part in enumerate(parts):
             part_xy = _polygon_exterior_xy(part)
             if len(part_xy) < 3:
+                print(f"dissolve_geometries_preserving_z: part {_pi} has < 3 vertices ({len(part_xy)}), skipped")
                 continue
             part_xyz = recover_ring_z(part_xy, source_rings, exact_match_tol)
             points = [QgsPoint(x, y, z) for x, y, z in part_xyz]
-            rebuilt_parts.append(QgsPolygon(QgsLineString(points), rings=[]))
+            result = QgsGeometry(QgsPolygon(QgsLineString(points), rings=[]))
+            result.convertToMultiType()
+            results.append(result)
 
-        if not rebuilt_parts:
-            return new_geom
-
-        if len(rebuilt_parts) == 1:
-            result = QgsGeometry(rebuilt_parts[0])
-        else:
-            multi = QgsMultiPolygon()
-            for poly in rebuilt_parts:
-                multi.addGeometry(poly)
-            result = QgsGeometry(multi)
-
-        result.convertToMultiType()
-        return result
-    except Exception:
-        return new_geom
+        print(f"dissolve_geometries_preserving_z: returning {len(results)} result(s)")
+        return results
+    except Exception as e:
+        import traceback
+        print(f"dissolve_geometries_preserving_z: FAILED with {e!r}")
+        traceback.print_exc()
+        return []

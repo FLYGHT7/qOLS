@@ -59,6 +59,7 @@ try:
     Tslope = globals().get('Tslope', 14.3/100)
     s = globals().get('s', 0)  # CRITICAL: Get runway direction from UI button
     merge_transitional = globals().get('merge_transitional', False)  # #121
+    contour_interval_m = int(globals().get('contour_interval_m', 0))  # #122
 
     # Layer parameters
     runway_layer = globals().get('runway_layer', None)
@@ -83,6 +84,7 @@ except Exception as e:
     Tslope = 14.3/100
     s = 0
     merge_transitional = False
+    contour_interval_m = 0
     runway_layer = None
     threshold_layer = None
     use_selected_feature = True
@@ -288,7 +290,8 @@ list_pts.extend((pt_0,pt_01,pt_01AL,pt_01AR,pt_01TL,pt_01TR,pt_08,pt_08L,pt_08R,
 # QgsProject.instance().addMapLayers([p_layer])
 
 # Creation of the Transitional Surfaces
-# Create memory layer (or merge into an existing one - #121)
+# Create memory layer (always fresh - #121 individual layer is untouched
+# by merging; see the separate "Merged Transitional Surface" block below)
 
 # Store the full input parameter set as HTML-inspectable JSON (#118)
 from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
@@ -308,94 +311,110 @@ _params_json = build_parameters_json('Transitional Surface', {
 
 new_left_geom = QgsGeometry(QgsPolygon(QgsLineString([pt_08L,pt_01TL,pt_02TL,pt_02L,pt_01AL]), rings=[]))
 new_right_geom = QgsGeometry(QgsPolygon(QgsLineString([pt_08R,pt_01TR,pt_02TR,pt_02R,pt_01AR]), rings=[]))
-# Layer is MultiPolygonZ (#121 - a merge can produce two disjoint lobes),
-# so every feature geometry, including a fresh single-run one, must match.
-new_left_geom.convertToMultiType()
-new_right_geom.convertToMultiType()
 
-# #121: if requested, look for an already-existing Transitional layer to
-# merge into instead of creating a new one. 0 matches = first click with
-# the box checked, behaves like unchecked. >1 matches = can't tell which
-# one is meant, warn and fall back to creating a new layer rather than
-# silently merging into the wrong one.
-existing_layer = None
+v_layer = QgsVectorLayer("PolygonZ?crs="+map_srid, "RWY_Transition Surface", "memory")
+IDField = QgsField( 'ID', QVariant.String)
+NameField = QgsField( 'SurfaceName', QVariant.String)
+RuleField = QgsField( 'rule_set', QVariant.String)
+v_layer.dataProvider().addAttributes([IDField])
+v_layer.dataProvider().addAttributes([NameField])
+v_layer.dataProvider().addAttributes([RuleField])
+v_layer.updateFields()
+add_parameters_field(v_layer)
+
+# Left Transition Surface
+pr = v_layer.dataProvider()
+seg = QgsFeature()
+seg.setGeometry(new_left_geom)
+seg.setAttributes([10,'Left Transitional Surface', _active_rule_set, _params_json])
+pr.addFeatures( [ seg ] )
+
+# Right Transition Surface
+seg = QgsFeature()
+seg.setGeometry(new_right_geom)
+seg.setAttributes([11,'Right Transitional Surface', _active_rule_set, _params_json])
+pr.addFeatures( [ seg ] )
+
+register_parameters_action(v_layer)
+QgsProject.instance().addMapLayers([v_layer])
+
+# -----------------------------------------------------------------------
+# Merged Transitional Surface (#121) - a SEPARATE layer, maintained only
+# when requested. Dissolves purely by spatial overlap (never by matching
+# "Left"/"Right" names - a direction flip can swap which physical side
+# ends up called which, so name-based pairing glues the wrong sides
+# together). The individual layer above is never touched by this.
+# -----------------------------------------------------------------------
 if merge_transitional:
-    matches = QgsProject.instance().mapLayersByName('RWY_Transition Surface')
-    if len(matches) == 1:
-        existing_layer = matches[0]
-    elif len(matches) > 1:
+    from qols.geometry_merge import dissolve_geometries_preserving_z
+
+    merged_matches = QgsProject.instance().mapLayersByName('Merged Transitional Surface')
+    print(f"TransitionalSurface: merge_transitional=True, found {len(merged_matches)} "
+          f"existing 'Merged Transitional Surface' layer(s)")
+    merged_layer = None
+    skip_merge = False
+    if len(merged_matches) == 1:
+        merged_layer = merged_matches[0]
+    elif len(merged_matches) > 1:
+        skip_merge = True
         iface.messageBar().pushMessage(
             "TransitionalSurface Warning",
-            "Multiple 'RWY_Transition Surface' layers found; cannot tell which to merge into. "
-            "Created a new layer instead - keep only one such layer for merging to work.",
+            "Multiple 'Merged Transitional Surface' layers found; cannot tell which to "
+            "accumulate into. Keep only one such layer for merging to work.",
             level=MSG_WARNING)
 
-if existing_layer is not None:
-    from qols.geometry_merge import merge_polygonz_preserving_z
+    if not skip_merge:
+        existing_geoms = [f.geometry() for f in merged_layer.getFeatures()] if merged_layer else []
+        print(f"TransitionalSurface: {len(existing_geoms)} existing merged geometrie(s) "
+              f"carried into this dissolve")
+        # dissolve_geometries_preserving_z needs >= 2 geometries; this run's
+        # own Left+Right (which never overlap each other) always supplies
+        # that, so the first click (no existing_geoms yet) still works -
+        # it just dissolves this run's own two geometries against
+        # themselves, trivially recovering their own original Z.
+        dissolved_parts = dissolve_geometries_preserving_z(
+            existing_geoms + [new_left_geom, new_right_geom]
+        )
+    else:
+        dissolved_parts = []
 
-    add_parameters_field(existing_layer)  # idempotent, defensive
-    pr = existing_layer.dataProvider()
-    parameters_idx = existing_layer.fields().indexOf('parameters')
-    rule_set_idx = existing_layer.fields().indexOf('rule_set')
-    features_by_name = {f.attribute('SurfaceName'): f for f in existing_layer.getFeatures()}
+    if dissolved_parts:
+        if merged_layer is None:
+            merged_layer = QgsVectorLayer(
+                "MultiPolygonZ?crs=" + map_srid, "Merged Transitional Surface", "memory")
+            merged_layer.dataProvider().addAttributes([
+                QgsField('ID', QVariant.Int),
+                QgsField('SurfaceName', QVariant.String),
+                QgsField('rule_set', QVariant.String),
+            ])
+            merged_layer.updateFields()
+            add_parameters_field(merged_layer)
+            register_parameters_action(merged_layer)
+            QgsProject.instance().addMapLayers([merged_layer])
+            # #121: this is the first run contributing to the merge - remind
+            # the user the checkbox must stay checked for every OTHER run
+            # they still want folded in, not just this one.
+            iface.messageBar().pushMessage(
+                "Merged Transitional Surface",
+                "Layer created. Keep 'Create/update Merged Transitional Surface layer' "
+                "checked on every run (direction/params) you want included - it's not "
+                "enough to check it only on the last one.",
+                level=MSG_INFO, duration=8)
 
-    geometry_changes = {}
-    attribute_changes = {}
-    for side_id, side_name, new_geom in (
-        (10, 'Left Transitional Surface', new_left_geom),
-        (11, 'Right Transitional Surface', new_right_geom),
-    ):
-        existing_feat = features_by_name.get(side_name)
-        if existing_feat is None:
-            # Shouldn't normally happen (the layer was created by this same
-            # script) - fall back to adding it as a new feature.
-            seg = QgsFeature(existing_layer.fields())
-            seg.setGeometry(new_geom)
-            seg.setAttributes([side_id, side_name, _active_rule_set, _params_json])
-            pr.addFeatures([seg])
-            continue
-        # Merge, conserving Z (#121) - last-run-wins for the parameters JSON,
-        # same semantics a brand-new layer already has.
-        merged_geom = merge_polygonz_preserving_z(existing_feat.geometry(), new_geom)
-        geometry_changes[existing_feat.id()] = merged_geom
-        attribute_changes[existing_feat.id()] = {
-            parameters_idx: _params_json,
-            rule_set_idx: _active_rule_set,
-        }
+        mpr = merged_layer.dataProvider()
+        mpr.deleteFeatures([f.id() for f in merged_layer.getFeatures()])
+        merged_feats = []
+        for _i, _part in enumerate(dissolved_parts):
+            _feat = QgsFeature(merged_layer.fields())
+            _feat.setGeometry(_part)
+            _feat.setAttributes([_i + 1, 'Transitional Surfaces', _active_rule_set, _params_json])
+            merged_feats.append(_feat)
+        mpr.addFeatures(merged_feats)
+        merged_layer.updateExtents()
 
-    if geometry_changes:
-        pr.changeGeometryValues(geometry_changes)
-    if attribute_changes:
-        pr.changeAttributeValues(attribute_changes)
-    existing_layer.updateExtents()
-    existing_layer.triggerRepaint()
-    v_layer = existing_layer
-else:
-    v_layer = QgsVectorLayer("MultiPolygonZ?crs="+map_srid, "RWY_Transition Surface", "memory")
-    IDField = QgsField( 'ID', QVariant.String)
-    NameField = QgsField( 'SurfaceName', QVariant.String)
-    RuleField = QgsField( 'rule_set', QVariant.String)
-    v_layer.dataProvider().addAttributes([IDField])
-    v_layer.dataProvider().addAttributes([NameField])
-    v_layer.dataProvider().addAttributes([RuleField])
-    v_layer.updateFields()
-    add_parameters_field(v_layer)
-
-    # Left Transition Surface
-    pr = v_layer.dataProvider()
-    seg = QgsFeature()
-    seg.setGeometry(new_left_geom)
-    seg.setAttributes([10,'Left Transitional Surface', _active_rule_set, _params_json])
-    pr.addFeatures( [ seg ] )
-
-    # Right Transition Surface
-    seg = QgsFeature()
-    seg.setGeometry(new_right_geom)
-    seg.setAttributes([11,'Right Transitional Surface', _active_rule_set, _params_json])
-    pr.addFeatures( [ seg ] )
-
-    register_parameters_action(v_layer)
-    QgsProject.instance().addMapLayers([v_layer])
+        merged_layer.renderer().symbol().setColor(QColor("magenta"))
+        merged_layer.renderer().symbol().setOpacity(0.4)
+        merged_layer.triggerRepaint()
 
 # Change style of layer
 v_layer.renderer().symbol().setColor(QColor("magenta"))
@@ -425,6 +444,62 @@ canvas.zoomScale(sc)
 
 iface.messageBar().pushMessage("QPANSOPY:", "Transitional Surface Calculation Finished", level=MSG_SUCCESS)
 
+# -----------------------------------------------------------------------
+# Contour layer (#122 — stepped elevation bands for Transitional Surface)
+# Independent of merge_transitional: always computed fresh from this
+# run's own pentagon vertices, exactly like Approach/Take-off recompute
+# their own contours every run.
+# -----------------------------------------------------------------------
+if contour_interval_m > 0:
+    import importlib.util as _ilu
+    import os as _os
+    import sys as _sys
+    _utils_path = _os.path.join(_os.path.dirname(__file__), '_contour_utils.py')
+    _cu_spec = _ilu.spec_from_file_location('_contour_utils', _utils_path)
+    _cu = _ilu.module_from_spec(_cu_spec)
+    _sys.modules['_contour_utils'] = _cu
+    _cu_spec.loader.exec_module(_cu)
+
+    _z_bottom = min(Z0, ZE)
+    _elevs = _cu.contour_elevations(_z_bottom, ZIH, contour_interval_m)
+    # Exclude the plateau level itself - it's the flat 3-vertex boundary
+    # (pt_08*/pt_01T*/pt_02T*), not a straight chord between two points.
+    _elevs = [e for e in _elevs if e < ZIH - 1e-6]
+
+    _verts_left = [(p.x(), p.y(), p.z()) for p in (pt_08L, pt_01TL, pt_02TL, pt_02L, pt_01AL)]
+    _verts_right = [(p.x(), p.y(), p.z()) for p in (pt_08R, pt_01TR, pt_02TR, pt_02R, pt_01AR)]
+
+    _specs_left = _cu.contour_specs_for_polygon_slice(_verts_left, _elevs)
+    _specs_right = _cu.contour_specs_for_polygon_slice(_verts_right, _elevs)
+    _all_specs = _specs_left + _specs_right
+
+    if _all_specs:
+        _clayer = QgsVectorLayer(
+            "LineStringZ?crs=" + map_srid, "RWY_TransitionalSurface_Contours", "memory")
+        _clayer.dataProvider().addAttributes([
+            QgsField('ID', QVariant.Int),
+            QgsField('surface_elevation', QVariant.Double),
+        ])
+        _clayer.updateFields()
+
+        _cfeats = []
+        for _i, (_elev, (_x1, _y1), (_x2, _y2)) in enumerate(_all_specs):
+            _p1 = QgsPoint(_x1, _y1, _elev)
+            _p2 = QgsPoint(_x2, _y2, _elev)
+            _cfeat = QgsFeature()
+            _cfeat.setGeometry(QgsGeometry(QgsLineString([_p1, _p2])))
+            _cfeat.setAttributes([_i + 1, _elev])
+            _cfeats.append(_cfeat)
+        _clayer.dataProvider().addFeatures(_cfeats)
+
+        _cu.apply_contour_style(_clayer, __file__)
+        QgsProject.instance().addMapLayers([_clayer])
+        _clayer.triggerRepaint()
+        print(f"TransitionalSurface: Contour layer added - {len(_cfeats)} lines at "
+              f"{contour_interval_m} m interval")
+    else:
+        print(f"TransitionalSurface: No contour lines - no elevation levels in range "
+              f"for interval {contour_interval_m} m")
 
 set(globals().keys()).difference(myglobals)
 
