@@ -59,6 +59,7 @@ try:
     Tslope = globals().get('Tslope', 14.3/100)
     s = globals().get('s', 0)  # CRITICAL: Get runway direction from UI button
     merge_transitional = globals().get('merge_transitional', False)  # #121
+    contour_interval_m = int(globals().get('contour_interval_m', 0))  # #122
 
     # Layer parameters
     runway_layer = globals().get('runway_layer', None)
@@ -83,6 +84,7 @@ except Exception as e:
     Tslope = 14.3/100
     s = 0
     merge_transitional = False
+    contour_interval_m = 0
     runway_layer = None
     threshold_layer = None
     use_selected_feature = True
@@ -442,6 +444,62 @@ canvas.zoomScale(sc)
 
 iface.messageBar().pushMessage("QPANSOPY:", "Transitional Surface Calculation Finished", level=MSG_SUCCESS)
 
+# -----------------------------------------------------------------------
+# Contour layer (#122 — stepped elevation bands for Transitional Surface)
+# Independent of merge_transitional: always computed fresh from this
+# run's own pentagon vertices, exactly like Approach/Take-off recompute
+# their own contours every run.
+# -----------------------------------------------------------------------
+if contour_interval_m > 0:
+    import importlib.util as _ilu
+    import os as _os
+    import sys as _sys
+    _utils_path = _os.path.join(_os.path.dirname(__file__), '_contour_utils.py')
+    _cu_spec = _ilu.spec_from_file_location('_contour_utils', _utils_path)
+    _cu = _ilu.module_from_spec(_cu_spec)
+    _sys.modules['_contour_utils'] = _cu
+    _cu_spec.loader.exec_module(_cu)
+
+    _z_bottom = min(Z0, ZE)
+    _elevs = _cu.contour_elevations(_z_bottom, ZIH, contour_interval_m)
+    # Exclude the plateau level itself - it's the flat 3-vertex boundary
+    # (pt_08*/pt_01T*/pt_02T*), not a straight chord between two points.
+    _elevs = [e for e in _elevs if e < ZIH - 1e-6]
+
+    _verts_left = [(p.x(), p.y(), p.z()) for p in (pt_08L, pt_01TL, pt_02TL, pt_02L, pt_01AL)]
+    _verts_right = [(p.x(), p.y(), p.z()) for p in (pt_08R, pt_01TR, pt_02TR, pt_02R, pt_01AR)]
+
+    _specs_left = _cu.contour_specs_for_polygon_slice(_verts_left, _elevs)
+    _specs_right = _cu.contour_specs_for_polygon_slice(_verts_right, _elevs)
+    _all_specs = _specs_left + _specs_right
+
+    if _all_specs:
+        _clayer = QgsVectorLayer(
+            "LineStringZ?crs=" + map_srid, "RWY_TransitionalSurface_Contours", "memory")
+        _clayer.dataProvider().addAttributes([
+            QgsField('ID', QVariant.Int),
+            QgsField('surface_elevation', QVariant.Double),
+        ])
+        _clayer.updateFields()
+
+        _cfeats = []
+        for _i, (_elev, (_x1, _y1), (_x2, _y2)) in enumerate(_all_specs):
+            _p1 = QgsPoint(_x1, _y1, _elev)
+            _p2 = QgsPoint(_x2, _y2, _elev)
+            _cfeat = QgsFeature()
+            _cfeat.setGeometry(QgsGeometry(QgsLineString([_p1, _p2])))
+            _cfeat.setAttributes([_i + 1, _elev])
+            _cfeats.append(_cfeat)
+        _clayer.dataProvider().addFeatures(_cfeats)
+
+        _cu.apply_contour_style(_clayer, __file__)
+        QgsProject.instance().addMapLayers([_clayer])
+        _clayer.triggerRepaint()
+        print(f"TransitionalSurface: Contour layer added - {len(_cfeats)} lines at "
+              f"{contour_interval_m} m interval")
+    else:
+        print(f"TransitionalSurface: No contour lines - no elevation levels in range "
+              f"for interval {contour_interval_m} m")
 
 set(globals().keys()).difference(myglobals)
 

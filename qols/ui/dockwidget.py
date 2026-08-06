@@ -1909,6 +1909,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'Tslope': float(self.spin_Tslope_transitional.text() or "0") / 100.0,  # % → decimal
                     's': s_value,  # Special parameter for transitional runway direction
                     'merge_transitional': self.check_merge_transitional.isChecked(),  # #121
+                    'contour_interval_m': int(round(  # #122
+                        self.get_numeric_value('spin_contour_interval_transitional'))),
                 }
             elif surface_type == SurfaceType.OFZ:
                 specific_params = {

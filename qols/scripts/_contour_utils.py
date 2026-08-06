@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import ceil, floor
-from typing import List
+from typing import List, Tuple
 
 
 # ---------------------------------------------------------------------------
@@ -212,6 +212,76 @@ def contour_specs_for_takeoff(
             distance_from_origin=d,
             half_width=half_w,
         ))
+    return specs
+
+
+# ---------------------------------------------------------------------------
+# General polygon iso-elevation slicing (#122 — Transitional Surface)
+# ---------------------------------------------------------------------------
+
+def contour_specs_for_polygon_slice(
+    vertices: List[Tuple[float, float, float]],
+    elevations: List[float],
+) -> List[Tuple[float, Tuple[float, float], Tuple[float, float]]]:
+    """Slice a closed (x, y, z) polygon ring at each target elevation.
+
+    Unlike :func:`contour_specs_for_linear_section`/`_for_takeoff`, this
+    makes no assumption about a single axis driving both elevation and
+    width — it works directly from the ring's own per-vertex elevations,
+    which is required for Transitional Surface's 5-vertex pentagon (three
+    vertices share the max elevation, the other two sit at the two
+    threshold elevations — not a simple single-axis trapezoid). Returns
+    plain ``(elevation, (x1, y1), (x2, y2))`` tuples instead of
+    :class:`ContourSpec`, since there's no single "distance from origin"
+    or "half-width" axis to report here.
+
+    ``vertices`` is an ordered ring, NOT closed (no repeated first point);
+    edge ``(vertices[-1], vertices[0])`` is treated as the closing edge.
+
+    For each ``level`` in ``elevations``, every edge ``(za, zb)`` is kept
+    if ``min(za, zb) < level <= max(za, zb)`` — flat edges (``za == zb``)
+    never cross under this half-open convention, which is also what
+    avoids double-counting a level that lands exactly on a shared vertex
+    (the edge for which that vertex is the upper endpoint reports it, the
+    edge for which it's the lower endpoint does not).
+
+    Levels producing exactly 2 crossings become one contour segment.
+    Levels producing 0, 1, or more than 2 crossings are silently omitted
+    (0 = level outside this ring's range; 1 or >2 = a degenerate/non-simple
+    ring, which shouldn't occur for the standard pentagon under valid
+    input parameters — e.g. ``Tslope > 0`` and ``ZIH`` above both
+    threshold elevations). This mirrors the existing convention of
+    producing fewer contour lines than requested rather than guessing at
+    a possibly-wrong pairing.
+
+    Args:
+        vertices:   Ordered ring of (x, y, z) points, ring not closed.
+        elevations: Pre-computed target elevations (from
+                    :func:`contour_elevations`).
+
+    Returns:
+        List of ``(elevation, (x1, y1), (x2, y2))`` tuples, one per level
+        that yields exactly 2 crossings.
+    """
+    n = len(vertices)
+    if n < 3:
+        return []
+
+    specs: List[Tuple[float, Tuple[float, float], Tuple[float, float]]] = []
+    for level in elevations:
+        crossings: List[Tuple[float, float]] = []
+        for i in range(n):
+            x1, y1, z1 = vertices[i]
+            x2, y2, z2 = vertices[(i + 1) % n]
+            if z1 == z2:
+                continue
+            lo, hi = (z1, z2) if z1 < z2 else (z2, z1)
+            if not (lo < level <= hi):
+                continue
+            t = (level - z1) / (z2 - z1)
+            crossings.append((x1 + t * (x2 - x1), y1 + t * (y2 - y1)))
+        if len(crossings) == 2:
+            specs.append((level, crossings[0], crossings[1]))
     return specs
 
 
