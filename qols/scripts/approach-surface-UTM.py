@@ -89,13 +89,14 @@ try:
     # Layer parameters
     runway_layer = globals().get('runway_layer', None)
     threshold_layer = globals().get('threshold_layer', None)
-    use_selected_feature = globals().get('use_selected_feature', True)
+    use_runway_selected = globals().get('use_runway_selected', True)
+    use_threshold_selected = globals().get('use_threshold_selected', True)
 
     print(
         f"QOLS: Using parameters - runway_code: {runway_code}, rwy_classification: {rwy_classification}, "
         f"approach_width_m: {approach_width_m}, start_elevation_m: {start_elevation_m}, end_elevation_m: {end_elevation_m}"
     )
-    print(f"QOLS: Direction: {direction}, Use selected features: {use_selected_feature}")
+    print(f"QOLS: Direction: {direction}, Use selected runway: {use_runway_selected}, Use selected threshold: {use_threshold_selected}")
 
 except Exception as e:
     print(f"QOLS: Error getting parameters, using defaults: {e}")
@@ -112,7 +113,8 @@ except Exception as e:
     direction = 0
     runway_layer = None
     threshold_layer = None
-    use_selected_feature = True
+    use_runway_selected = True
+    use_threshold_selected = True
 
 # Calculate derived parameters
 zih_elevation_m = 45 + arp_elevation_m
@@ -127,7 +129,7 @@ try:
     if runway_layer is not None:
         print(f"QOLS: Using Runway Layer Centerline from UI: {runway_layer.name()}")
 
-        if use_selected_feature:
+        if use_runway_selected:
             # Require explicit feature selection
             selection = runway_layer.selectedFeatures()
             if not selection:
@@ -177,7 +179,7 @@ try:
     if threshold_layer is not None:
         print(f"QOLS: Using threshold layer from UI: {threshold_layer.name()}")
 
-        if use_selected_feature:
+        if use_threshold_selected:
             # Require explicit feature selection
             threshold_selection = threshold_layer.selectedFeatures()
             if not threshold_selection:
@@ -397,13 +399,11 @@ approach_layer.removeSelection()
 
 # Clean up selections only if they weren't originally selected
 # This prevents losing user selections for subsequent calculations
-if not use_selected_feature:
-    # Only clean up if we're not using selected features
-    if runway_layer:
-        runway_layer.removeSelection()
-    if threshold_layer:
-        threshold_layer.removeSelection()
-else:
+if not use_runway_selected and runway_layer:
+    runway_layer.removeSelection()
+if not use_threshold_selected and threshold_layer:
+    threshold_layer.removeSelection()
+if use_runway_selected or use_threshold_selected:
     # Keep selections for next calculation
     print("QOLS: Keeping feature selections for next calculation")
 

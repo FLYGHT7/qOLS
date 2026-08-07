@@ -77,7 +77,8 @@ try:
     opp_start_elevation_m = globals().get('opp_start_elevation_m', 0.0)
     runway_layer = globals().get('runway_layer', None)
     threshold_layer = globals().get('threshold_layer', None)
-    use_selected_feature = globals().get('use_selected_feature', True)
+    use_runway_selected = globals().get('use_runway_selected', True)
+    use_threshold_selected = globals().get('use_threshold_selected', True)
 
     slope_ratio = slope_pct / 100.0
     approach_slope = approach_slope_pct / 100.0
@@ -117,7 +118,7 @@ map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 try:
     if runway_layer is None:
         raise Exception("No Runway Layer Centerline provided.")
-    if use_selected_feature:
+    if use_runway_selected:
         selection = runway_layer.selectedFeatures()
         if not selection:
             raise Exception("No runway features selected.")
@@ -139,7 +140,7 @@ for feat in selection:
 try:
     if threshold_layer is None:
         raise Exception("No threshold layer provided.")
-    if use_selected_feature:
+    if use_threshold_selected:
         threshold_sel = threshold_layer.selectedFeatures()
         if not threshold_sel:
             raise Exception("No threshold features selected.")

@@ -77,6 +77,8 @@ try:
     # Layer parameters from UI
     runway_layer = globals().get('runway_layer')
     threshold_layer = globals().get('threshold_layer')
+    use_runway_selected = globals().get('use_runway_selected', True)  # #129
+    use_threshold_selected = globals().get('use_threshold_selected', True)  # #129
 
     print(f"TakeOffSurface: Using UI parameters - code={code}, direction={s}")
     print(f"TakeOffSurface: Z0={Z0}, ZE={ZE}, widthDep={widthDep}, maxWidthDep={maxWidthDep}")
@@ -108,6 +110,8 @@ except Exception as e:
     slopePct = 2.0
     runway_layer = None
     threshold_layer = None
+    use_runway_selected = True
+    use_threshold_selected = True
 
 # ORIGINAL calculations - Exactly as original
 ZIH = 45 + ARPH
@@ -129,14 +133,21 @@ try:
         # Use layer from UI
         print(f"TakeOffSurface: Using Runway Layer Centerline from UI: {runway_layer.name()}")
         layer = runway_layer
-        selection = layer.selectedFeatures()
-        if not selection:
-            # No selection, use all features
-            selection = list(layer.getFeatures())
+        if use_runway_selected:
+            # Require explicit feature selection (#129)
+            selection = layer.selectedFeatures()
             if not selection:
-                raise Exception("No features found in Runway Layer Centerline.")
-            print(f"TakeOffSurface: No selection, using first feature from layer")
-            selection = [selection[0]]
+                raise Exception("No runway features selected. Please select runway features.")
+            print(f"TakeOffSurface: Using {len(selection)} selected runway features")
+        else:
+            selection = layer.selectedFeatures()
+            if not selection:
+                # No selection, use all features
+                selection = list(layer.getFeatures())
+                if not selection:
+                    raise Exception("No features found in Runway Layer Centerline.")
+                print(f"TakeOffSurface: No selection, using first feature from layer")
+                selection = [selection[0]]
     else:
         # ORIGINAL METHOD - Gets the Runway Layer Centerline based on name and selected feature
         print("TakeOffSurface: No Runway Layer Centerline from UI, searching by name")
@@ -218,14 +229,21 @@ try:
     if threshold_layer:
         # Use layer from UI
         print(f"TakeOffSurface: Using threshold layer from UI: {threshold_layer.name()}")
-        threshold_selection = threshold_layer.selectedFeatures()
-        if not threshold_selection:
-            # No selection, use all features
-            threshold_selection = list(threshold_layer.getFeatures())
+        if use_threshold_selected:
+            # Require explicit feature selection (#129)
+            threshold_selection = threshold_layer.selectedFeatures()
             if not threshold_selection:
-                raise Exception("No features found in threshold layer.")
-            print(f"TakeOffSurface: No selection, using first feature from threshold layer")
-            threshold_selection = [threshold_selection[0]]
+                raise Exception("No threshold features selected. Please select threshold features.")
+            print(f"TakeOffSurface: Using {len(threshold_selection)} selected threshold features")
+        else:
+            threshold_selection = threshold_layer.selectedFeatures()
+            if not threshold_selection:
+                # No selection, use all features
+                threshold_selection = list(threshold_layer.getFeatures())
+                if not threshold_selection:
+                    raise Exception("No features found in threshold layer.")
+                print(f"TakeOffSurface: No selection, using first feature from threshold layer")
+                threshold_selection = [threshold_selection[0]]
     else:
         # ORIGINAL METHOD - Gets the THR definition from active layer
         print("TakeOffSurface: No threshold layer from UI, using active layer")
@@ -335,7 +353,13 @@ v_layer.selectAll()
 canvas = iface.mapCanvas()
 canvas.zoomToSelected(v_layer)
 v_layer.removeSelection()
-layer.removeSelection()
+
+# Clean up selections only if they weren't originally selected (#129)
+# This prevents losing user selections for subsequent calculations
+if not use_runway_selected and runway_layer:
+    runway_layer.removeSelection()
+if not use_threshold_selected and threshold_layer:
+    threshold_layer.removeSelection()
 
 # get canvas scale - EXACTLY as original
 sc = canvas.scale()
