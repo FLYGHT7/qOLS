@@ -275,7 +275,7 @@ else:
 # ---------------------------------------------------------------------------
 # Memory layer
 # ---------------------------------------------------------------------------
-layer_name = "NewOLS_OES_Transitional"
+layer_name = "NewOLS_OFS_Transitional"
 oes_layer = QgsVectorLayer("PolygonZ?crs=" + map_srid, layer_name, "memory")
 oes_layer.dataProvider().addAttributes([
     QgsField('ID', QVariant.Int),
