@@ -441,7 +441,9 @@ print(f"Conical: Radius: {L}m, Height: {height}m")
 # Success message
 iface.messageBar().pushMessage("QOLS Success", f"Conical 3D Surface (R={L}m, H={height}m) calculated successfully", level=MSG_SUCCESS)
 
+_script_success = True
+
 # Clean up globals
 for g in set(globals().keys()).difference(myglobals):
-    if g != 'myglobals':
+    if g not in ('myglobals', '_script_success'):
         del globals()[g]

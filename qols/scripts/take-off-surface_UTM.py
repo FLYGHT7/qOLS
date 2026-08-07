@@ -410,10 +410,12 @@ if contour_interval_m > 0:
     else:
         print(f"TakeOffSurface: No contour lines — no elevation levels in range for interval {contour_interval_m} m")
 
+_script_success = True
+
 # Cleanup globals - match original pattern
 newglobals = set(globals().keys())
 for var in (newglobals - myglobals):
-    if var not in ['iface']:
+    if var not in ['iface', '_script_success']:
         try:
             del globals()[var]
         except:
