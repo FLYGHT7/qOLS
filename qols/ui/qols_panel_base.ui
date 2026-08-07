@@ -752,9 +752,28 @@
           </property>
          </widget>
         </item>
-        
+
+        <!-- CONTOUR INTERVAL (#126) -->
+        <item row="10" column="0">
+         <widget class="QLabel" name="label_contour_interval_conical">
+          <property name="text">
+           <string>Contour Interval (m):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="10" column="1">
+         <widget class="QLineEdit" name="spin_contour_interval_conical">
+          <property name="text">
+           <string>10</string>
+          </property>
+          <property name="toolTip">
+           <string>Elevation interval for contour lines in metres. Set to 0 to disable.</string>
+          </property>
+         </widget>
+        </item>
+
         <!-- WORKFLOW INFORMATION -->
-        <item row="10" column="0" colspan="2">
+        <item row="11" column="0" colspan="2">
          <widget class="QLabel" name="label_info_inner_conical">
           <property name="text">
            <string>Workflow: Configure Inner Horizontal first, then Conical (uses Inner Horizontal radius for calculation)

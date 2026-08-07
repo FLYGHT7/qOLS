@@ -1877,8 +1877,9 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             elif surface_type == SurfaceType.INNER_CONICAL:
                 datum_elevation = self.get_numeric_value('spin_datum_inner_conical')
                 inner_height = self.get_numeric_value('spin_height_inner')
+                inner_radius = self.get_numeric_value('spin_L_inner')
                 inner_params = {
-                    'radius': self.get_numeric_value('spin_L_inner'),
+                    'radius': inner_radius,
                     'height': inner_height,
                     'datum_elevation': datum_elevation,
                     'code': self.get_code_value('spin_code_inner_conical'),
@@ -1890,6 +1891,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'slope': self.get_numeric_value('spin_conical_slope'),
                     'datum_elevation': datum_elevation,
                     'inner_height': inner_height,
+                    'inner_radius': inner_radius,
+                    'contour_interval_m': int(round(self.get_numeric_value('spin_contour_interval_conical'))),
                     'code': self.get_code_value('spin_code_inner_conical'),
                     'rwyClassification': self.combo_rwyClassification_inner_conical.currentText(),
                 }
