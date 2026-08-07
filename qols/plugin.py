@@ -438,8 +438,49 @@ class QOLS:
         feature) if either layer can't be found unambiguously or a
         difference fails — a failed trim must not delete the surface the
         user just calculated.
+
+        #125: the trimmed ring's two edges sit at different absolute
+        elevations above the shared datum — the inner edge (touching
+        Inner Horizontal) at ``datum + inner_height``, the outer edge at
+        ``datum + inner_height + conical_height``. ``bottom_z`` uses the
+        exact same formula Inner Horizontal itself computes its own flat
+        Z with, guaranteeing the two surfaces meet at the same elevation
+        by construction.
         """
         from .geometry_difference import difference_flat
+
+        def _first_vertex_z(geom):
+            """Diagnostic-only: exterior ring's first vertex Z, or None."""
+            try:
+                parts = geom.asGeometryCollection() if geom.isMultipart() else [geom]
+                ring = parts[0].constGet().exteriorRing()
+                return ring.pointN(0).z() if ring.numPoints() else None
+            except Exception:
+                return None
+
+        def _first_interior_vertex_z(geom):
+            """Diagnostic-only: first interior/hole ring's first vertex Z, or None
+            (None also means "no hole yet" if the trim didn't produce one)."""
+            try:
+                parts = geom.asGeometryCollection() if geom.isMultipart() else [geom]
+                abstract = parts[0].constGet()
+                if abstract.numInteriorRings() == 0:
+                    return None
+                ring = abstract.interiorRing(0)
+                return ring.pointN(0).z() if ring.numPoints() else None
+            except Exception:
+                return None
+
+        datum_elevation = conical_params.get('datum_elevation', 0.0)
+        inner_height = conical_params.get('inner_height', 0.0)
+        conical_height = conical_params.get('height', 0.0)
+        bottom_z = datum_elevation + inner_height
+        top_z = datum_elevation + inner_height + conical_height
+        logger.info(
+            f"_trim_conical_to_ring: datum_elevation={datum_elevation}, inner_height={inner_height}, "
+            f"conical_height={conical_height} -> bottom_z={bottom_z} (must match Inner Horizontal's own "
+            f"Z, so the two surfaces meet as a single line), top_z={top_z}"
+        )
 
         inner_name = (
             f"InnerHorizontal_{inner_params.get('rwyClassification', 'Precision Approach CAT I')}"
@@ -469,6 +510,10 @@ class QOLS:
         if not inner_geoms:
             logger.warning("_trim_conical_to_ring: no Inner Horizontal geometries, skipping trim")
             return
+        logger.info(
+            f"_trim_conical_to_ring: Inner Horizontal's own vertex Z (read from layer, "
+            f"should equal bottom_z={bottom_z}) = {_first_vertex_z(inner_geoms[0])}"
+        )
         inner_union = QgsGeometry.unaryUnion(inner_geoms)
         logger.info(
             f"_trim_conical_to_ring: inner_union area={inner_union.area() if inner_union else None}, "
@@ -480,9 +525,15 @@ class QOLS:
         conical_feature_count = 0
         for feat in conical_layer.getFeatures():
             conical_feature_count += 1
-            trimmed = difference_flat(feat.geometry(), inner_union)
+            trimmed = difference_flat(feat.geometry(), inner_union, exterior_z=top_z, interior_z=bottom_z)
             if trimmed is not None and not trimmed.isEmpty():
                 geometry_changes[feat.id()] = trimmed
+                logger.info(
+                    f"_trim_conical_to_ring: feature {feat.id()} trimmed — exterior vertex Z="
+                    f"{_first_vertex_z(trimmed)} (expected top_z={top_z}), interior/hole vertex Z="
+                    f"{_first_interior_vertex_z(trimmed)} (expected bottom_z={bottom_z} — this is the "
+                    f"single shared line/edge where Conical meets Inner Horizontal)"
+                )
         logger.info(
             f"_trim_conical_to_ring: {conical_feature_count} Conical feature(s) processed, "
             f"{len(geometry_changes)} geometry change(s) prepared"

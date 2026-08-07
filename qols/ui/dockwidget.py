@@ -25,6 +25,7 @@ from ..surfaces.approach import get_approach_defaults as icao_get_approach_defau
 from ..surface_types import SurfaceType
 from .. import logger  # CR-01
 from ..direction_marker import build_marker_geometry
+from ..parameters_inspector import show_project_parameters_table
 from .tab_row_selector import TwoRowTabSelector
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot, QRegularExpression
@@ -1874,9 +1875,12 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'rwyClassification': self.combo_rwyClassification_inner_conical.currentText()
                 }
             elif surface_type == SurfaceType.INNER_CONICAL:
+                datum_elevation = self.get_numeric_value('spin_datum_inner_conical')
+                inner_height = self.get_numeric_value('spin_height_inner')
                 inner_params = {
                     'radius': self.get_numeric_value('spin_L_inner'),
-                    'height': self.get_numeric_value('spin_height_inner'),
+                    'height': inner_height,
+                    'datum_elevation': datum_elevation,
                     'code': self.get_code_value('spin_code_inner_conical'),
                     'rwyClassification': self.combo_rwyClassification_inner_conical.currentText(),
                 }
@@ -1884,6 +1888,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'radius': self.get_numeric_value('spin_L_conical'),
                     'height': self.get_numeric_value('spin_height_conical'),
                     'slope': self.get_numeric_value('spin_conical_slope'),
+                    'datum_elevation': datum_elevation,
+                    'inner_height': inner_height,
                     'code': self.get_code_value('spin_code_inner_conical'),
                     'rwyClassification': self.combo_rwyClassification_inner_conical.currentText(),
                 }

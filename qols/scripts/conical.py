@@ -52,6 +52,8 @@ try:
     # Conical surface parameters from UI
     L = globals().get('radius', 6000)  # Distance L / Radius from UI
     height = globals().get('height', 60.0)  # Height for 3D polygon (new parameter)
+    datum_elevation = globals().get('datum_elevation', 0.0)  # Reference elevation (#125)
+    inner_height = globals().get('inner_height', 0.0)  # Inner Horizontal's own height (#125)
     runway_code = globals().get('code', 4)
     rwy_classification = globals().get('rwyClassification', 'Precision Approach CAT I')
 
@@ -71,6 +73,8 @@ except Exception as e:
     # Fallback to defaults if parameters not provided
     L = 6000
     height = 60.0
+    datum_elevation = 0.0
+    inner_height = 0.0
     s = 0
     runway_layer = None
     threshold_layer = None
@@ -80,6 +84,12 @@ except Exception as e:
 
 print(f"Conical: Final values - radius: {L}m, height: {height}m, direction: {s}")
 print(f"Conical: Direction interpretation - s={s} means {'End to Start' if s == -1 else 'Start to End'}")
+
+# Absolute elevation of Conical's outer (top) edge above the shared datum
+# (#125) — the inner edge (after #124's trim) instead sits at
+# datum + inner_height, applied later by plugin.py::_trim_conical_to_ring.
+z_top = datum_elevation + inner_height + height
+print(f"Conical: Datum elevation: {datum_elevation}m, Inner Horizontal height: {inner_height}m, top Z: {z_top}m")
 
 map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 
@@ -218,6 +228,8 @@ v_layer_provider.addAttributes([
     QgsField("surface_type", QVariant.String),
     QgsField("radius_m", QVariant.Double),
     QgsField("height_m", QVariant.Double),
+    QgsField("datum_elevation_m", QVariant.Double),
+    QgsField("inner_height_m", QVariant.Double),
     QgsField("rule_set", QVariant.String),
     QgsField("runway_start_x", QVariant.Double),
     QgsField("runway_start_y", QVariant.Double),
@@ -236,6 +248,8 @@ _active_rule_set = globals().get('active_rule_set', None)
 _params_json = build_parameters_json('Conical Surface', {
     'radius_m': L,
     'height_m': height,
+    'datum_elevation_m': datum_elevation,
+    'inner_height_m': inner_height,
     'rule_set': _active_rule_set,
     'azimuth': angle0,
     'rwy_classification': rwy_classification,
@@ -277,7 +291,7 @@ if segmented1:
 
         # Add arc points with height
         for point in polyline1:
-            polygon_points.append(QgsPoint(point.x(), point.y(), height))
+            polygon_points.append(QgsPoint(point.x(), point.y(), z_top))
     elif segmented1.wkbType() == QgsWkbTypes.MultiLineString:
         multiline1 = segmented1.asMultiPolyline()
         print(f"Conical: Arc 1 interpolated to {len(multiline1)} parts (MultiLineString)")
@@ -285,25 +299,25 @@ if segmented1:
         # Add points from all parts
         for part in multiline1:
             for point in part:
-                polygon_points.append(QgsPoint(point.x(), point.y(), height))
+                polygon_points.append(QgsPoint(point.x(), point.y(), z_top))
     else:
         print(f"Conical: Warning - Unexpected geometry type: {segmented1.wkbType()}")
         # Fallback to original points
         polygon_points.extend([
-            QgsPoint(pro_coords[0], pro_coords[1], height),
-            QgsPoint(xc[0], xc[1], height),
-            QgsPoint(x2[0], x2[1], height)
+            QgsPoint(pro_coords[0], pro_coords[1], z_top),
+            QgsPoint(xc[0], xc[1], z_top),
+            QgsPoint(x2[0], x2[1], z_top)
         ])
 else:
     print("Conical: Warning - Could not interpolate first arc, using original points")
     polygon_points.extend([
-        QgsPoint(pro_coords[0], pro_coords[1], height),
-        QgsPoint(xc[0], xc[1], height),
-        QgsPoint(x2[0], x2[1], height)
+        QgsPoint(pro_coords[0], pro_coords[1], z_top),
+        QgsPoint(xc[0], xc[1], z_top),
+        QgsPoint(x2[0], x2[1], z_top)
     ])
 
 # Add straight line from x2 to x6 (connect arc endpoints, not diagonals)
-polygon_points.append(QgsPoint(x6[0], x6[1], height))
+polygon_points.append(QgsPoint(x6[0], x6[1], z_top))
 
 # Second arc: Create CircularString and extract points
 # This is exactly how the original code creates the second arc: [x6, x5, x4] (REVERSED)
@@ -326,7 +340,7 @@ if segmented2:
         for i, point in enumerate(polyline2):
             if i == 0:  # Skip first point as it's the same as x6 we just added
                 continue
-            polygon_points.append(QgsPoint(point.x(), point.y(), height))
+            polygon_points.append(QgsPoint(point.x(), point.y(), z_top))
     elif segmented2.wkbType() == QgsWkbTypes.MultiLineString:
         multiline2 = segmented2.asMultiPolyline()
         print(f"Conical: Arc 2 interpolated to {len(multiline2)} parts (MultiLineString)")
@@ -336,23 +350,23 @@ if segmented2:
             for point_idx, point in enumerate(part):
                 if part_idx == 0 and point_idx == 0:  # Skip first point of first part (x6)
                     continue
-                polygon_points.append(QgsPoint(point.x(), point.y(), height))
+                polygon_points.append(QgsPoint(point.x(), point.y(), z_top))
     else:
         print(f"Conical: Warning - Unexpected geometry type: {segmented2.wkbType()}")
         # Fallback to original points (reversed order: x5, x4)
         polygon_points.extend([
-            QgsPoint(x5[0], x5[1], height),
-            QgsPoint(x4[0], x4[1], height)
+            QgsPoint(x5[0], x5[1], z_top),
+            QgsPoint(x4[0], x4[1], z_top)
         ])
 else:
     print("Conical: Warning - Could not interpolate second arc, using original points")
     polygon_points.extend([
-        QgsPoint(x5[0], x5[1], height),
-        QgsPoint(x4[0], x4[1], height)
+        QgsPoint(x5[0], x5[1], z_top),
+        QgsPoint(x4[0], x4[1], z_top)
     ])
 
 # Add straight line back to start (closing the polygon)
-polygon_points.append(QgsPoint(pro_coords[0], pro_coords[1], height))
+polygon_points.append(QgsPoint(pro_coords[0], pro_coords[1], z_top))
 
 print(f"Conical: Created surface with proper circular arcs using QGIS interpolation")
 print(f"Conical: Total points in polygon: {len(polygon_points)}")
@@ -378,6 +392,8 @@ feature.setAttributes([
     "Conical",
     L,
     height,
+    datum_elevation,
+    inner_height,
     _active_rule_set,
     start_point.x(),
     start_point.y(),

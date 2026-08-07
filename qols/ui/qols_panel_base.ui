@@ -621,8 +621,27 @@
          </widget>
         </item>
         
+        <!-- SHARED DATUM ELEVATION (#125) -->
+        <item row="2" column="0">
+         <widget class="QLabel" name="label_datum_inner_conical">
+          <property name="text">
+           <string>Datum Elevation (m):</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <widget class="QLineEdit" name="spin_datum_inner_conical">
+          <property name="text">
+           <string>0.00</string>
+          </property>
+          <property name="toolTip">
+           <string>Reference elevation the surface heights are measured above (e.g. aerodrome reference elevation). Inner Horizontal Z = Datum + Inner Horizontal Height. Conical Z ranges from Datum + Inner Horizontal Height (inner edge) to Datum + Inner Horizontal Height + Conical Height (outer edge).</string>
+          </property>
+         </widget>
+        </item>
+        
         <!-- INNER HORIZONTAL SURFACE SECTION HEADER -->
-        <item row="2" column="0" colspan="2">
+        <item row="3" column="0" colspan="2">
          <widget class="QLabel" name="label_section_inner_horizontal">
           <property name="text">
            <string>Inner Horizontal Surface</string>
@@ -634,14 +653,14 @@
         </item>
         
         <!-- INNER HORIZONTAL SURFACE CONTROLS -->
-        <item row="3" column="0">
+        <item row="4" column="0">
          <widget class="QLabel" name="label_height_inner">
           <property name="text">
            <string>Height (m):</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
+        <item row="4" column="1">
          <widget class="QLineEdit" name="spin_height_inner">
           <property name="text">
            <string>45.00</string>
@@ -651,14 +670,14 @@
           </property>
          </widget>
         </item>
-        <item row="4" column="0">
+        <item row="5" column="0">
          <widget class="QLabel" name="label_L_inner">
           <property name="text">
            <string>Radius (m):</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
+        <item row="5" column="1">
          <widget class="QLineEdit" name="spin_L_inner">
           <property name="text">
            <string>4000.00</string>
@@ -667,7 +686,7 @@
         </item>
         
         <!-- CONICAL SURFACE SECTION HEADER -->
-        <item row="5" column="0" colspan="2">
+        <item row="6" column="0" colspan="2">
          <widget class="QLabel" name="label_section_conical">
           <property name="text">
            <string>Conical Surface</string>
@@ -679,14 +698,14 @@
         </item>
         
         <!-- CONICAL SURFACE CONTROLS -->
-        <item row="6" column="0">
+        <item row="7" column="0">
          <widget class="QLabel" name="label_height_conical">
           <property name="text">
            <string>Height (m):</string>
           </property>
          </widget>
         </item>
-        <item row="6" column="1">
+        <item row="7" column="1">
          <widget class="QLineEdit" name="spin_height_conical">
           <property name="text">
            <string>60.00</string>
@@ -696,14 +715,14 @@
           </property>
          </widget>
         </item>
-                <item row="7" column="0">
+                <item row="8" column="0">
                  <widget class="QLabel" name="label_conical_slope">
                     <property name="text">
                      <string>Slope (%):</string>
                     </property>
                  </widget>
                 </item>
-        <item row="7" column="1">
+        <item row="8" column="1">
          <widget class="QLineEdit" name="spin_conical_slope">
           <property name="text">
            <string>5.00</string>
@@ -713,14 +732,14 @@
           </property>
          </widget>
         </item>
-        <item row="8" column="0">
+        <item row="9" column="0">
          <widget class="QLabel" name="label_L_conical">
           <property name="text">
            <string>Radius (m):</string>
           </property>
          </widget>
         </item>
-        <item row="8" column="1">
+        <item row="9" column="1">
          <widget class="QLineEdit" name="spin_L_conical">
           <property name="text">
            <string>6000.00</string>
@@ -735,7 +754,7 @@
         </item>
         
         <!-- WORKFLOW INFORMATION -->
-        <item row="9" column="0" colspan="2">
+        <item row="10" column="0" colspan="2">
          <widget class="QLabel" name="label_info_inner_conical">
           <property name="text">
            <string>Workflow: Configure Inner Horizontal first, then Conical (uses Inner Horizontal radius for calculation)
@@ -832,70 +851,70 @@
           </item>
          </widget>
         </item>
-        <item row="2" column="0">
+        <item row="3" column="0">
          <widget class="QLabel" name="label_width_ofz">
           <property name="text">
            <string>Width (m):</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="1">
+        <item row="3" column="1">
          <widget class="QLineEdit" name="spin_width_ofz">
           <property name="text">
            <string>120.0</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="0">
+        <item row="4" column="0">
          <widget class="QLabel" name="label_Z0_ofz">
           <property name="text">
           <string>Start Elevation (m):</string>
           </property>
          </widget>
         </item>
-        <item row="3" column="1">
+        <item row="4" column="1">
          <widget class="QLineEdit" name="spin_Z0_ofz">
           <property name="text">
            <string>2548.0</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="0">
+        <item row="5" column="0">
          <widget class="QLabel" name="label_ZE_ofz">
           <property name="text">
           <string>End Elevation (m):</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
+        <item row="5" column="1">
          <widget class="QLineEdit" name="spin_ZE_ofz">
           <property name="text">
            <string>2546.5</string>
           </property>
          </widget>
         </item>
-        <item row="5" column="0">
+        <item row="6" column="0">
          <widget class="QLabel" name="label_ARPH_ofz">
           <property name="text">
            <string>ARPH (m):</string>
           </property>
          </widget>
         </item>
-        <item row="5" column="1">
+        <item row="6" column="1">
          <widget class="QLineEdit" name="spin_ARPH_ofz">
           <property name="text">
            <string>2548.0</string>
           </property>
          </widget>
         </item>
-        <item row="6" column="0">
+        <item row="7" column="0">
          <widget class="QLabel" name="label_IHSlope_ofz">
           <property name="text">
            <string>Inner Transitional Slope (%):</string>
           </property>
          </widget>
         </item>
-        <item row="6" column="1">
+        <item row="7" column="1">
          <widget class="QLineEdit" name="spin_IHSlope_ofz">
           <property name="text">
            <string>33.3</string>
@@ -903,7 +922,7 @@
          </widget>
         </item>
    <!-- Not Applicable notice (hidden by default) -->
-   <item row="7" column="0" colspan="2">
+   <item row="8" column="0" colspan="2">
     <widget class="QLabel" name="label_not_applicable_ofz">
      <property name="text">
       <string>Not Applicable</string>
