@@ -1906,6 +1906,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'code': self.get_code_value('spin_code_outer'),
                     'radius': self.get_numeric_value('spin_radius_outer'),
                     'height': self.get_numeric_value('spin_height_outer'),
+                    'arp_elevation': self.get_numeric_value('spin_arp_elevation_outer'),
                 }
             elif surface_type == SurfaceType.TAKEOFF:
                 code_value = self.get_code_value('spin_code_takeoff')

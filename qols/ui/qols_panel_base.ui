@@ -1047,7 +1047,24 @@
           </property>
          </widget>
         </item>
-                <item row="3" column="0" colspan="2">
+                <item row="3" column="0">
+                 <widget class="QLabel" name="label_arp_elevation_outer">
+                  <property name="text">
+                   <string>ARP Elevation (m):</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="1">
+                 <widget class="QLineEdit" name="spin_arp_elevation_outer">
+                  <property name="text">
+                   <string>0.00</string>
+                  </property>
+                  <property name="toolTip">
+                   <string>Aerodrome Reference Point elevation. Outer Horizontal Z = ARP Elevation + Height.</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="4" column="0" colspan="2">
                  <widget class="QLabel" name="label_info_outer">
                     <property name="text">
                      <string>Outer Horizontal Surface: 15,000 m circle centered on ARP
