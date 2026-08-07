@@ -52,6 +52,11 @@ try:
     # Conical surface parameters from UI
     L = globals().get('radius', 6000)  # Distance L / Radius from UI
     height = globals().get('height', 60.0)  # Height for 3D polygon (new parameter)
+    datum_elevation = globals().get('datum_elevation', 0.0)  # Reference elevation (#125)
+    inner_height = globals().get('inner_height', 0.0)  # Inner Horizontal's own height (#125)
+    slope_pct = globals().get('slope', 5.0)  # Conical slope, percent (#126)
+    inner_radius = globals().get('inner_radius', 0.0)  # Inner Horizontal's own radius (#126)
+    contour_interval_m = int(globals().get('contour_interval_m', 0))  # #126
     runway_code = globals().get('code', 4)
     rwy_classification = globals().get('rwyClassification', 'Precision Approach CAT I')
 
@@ -71,6 +76,11 @@ except Exception as e:
     # Fallback to defaults if parameters not provided
     L = 6000
     height = 60.0
+    datum_elevation = 0.0
+    inner_height = 0.0
+    slope_pct = 5.0
+    inner_radius = 0.0
+    contour_interval_m = 0
     s = 0
     runway_layer = None
     threshold_layer = None
@@ -80,6 +90,15 @@ except Exception as e:
 
 print(f"Conical: Final values - radius: {L}m, height: {height}m, direction: {s}")
 print(f"Conical: Direction interpretation - s={s} means {'End to Start' if s == -1 else 'Start to End'}")
+
+# Absolute elevation of Conical's outer (top) edge above the shared datum
+# (#125) — the inner edge (after #124's trim) instead sits at bottom_z,
+# applied later by plugin.py::_trim_conical_to_ring. Also used directly
+# here for the contour block (#126), since contours run on this script's
+# own un-trimmed geometry.
+bottom_z = datum_elevation + inner_height
+z_top = datum_elevation + inner_height + height
+print(f"Conical: Datum elevation: {datum_elevation}m, Inner Horizontal height: {inner_height}m, top Z: {z_top}m")
 
 map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 
@@ -147,22 +166,6 @@ trto = QgsCoordinateTransform(source_crs, dest_crs,QgsProject.instance())
 # transformfrom
 trfm = QgsCoordinateTransform(dest_crs,source_crs ,QgsProject.instance())
 
-# routine 1 circling azimuth - EXACTLY as original
-dist = L  # Distance in NM
-print(f"Conical: dist={dist}")
-bearing = angle0 - 90
-angle = 90 - bearing
-print(f"Conical: bearing={bearing}, angle={angle}")
-bearing = math.radians(bearing)
-angle = math.radians(angle)
-dist_x, dist_y = \
-    (dist * math.cos(angle), dist * math.sin(angle))
-xfinal, yfinal = (start_point.x() + dist_x, start_point.y() + dist_y)
-
-pro_coords = trto.transform(trfm.transform(xfinal,yfinal))
-
-start_coords = trfm.transform(start_point.x(),start_point.y())
-
 # Original coord function - EXACTLY as original
 
 
@@ -179,10 +182,6 @@ def coord(angle0,dist1,off):
     pro_coords = trto.transform(trfm.transform(xfinal,yfinal))
     return pro_coords
 
-
-x2 = coord(angle0,L,90)
-xc = coord(angle0,L,0)
-print(f"Conical: x2={x2}")
 
 # Original coord2 function - EXACTLY as original
 
@@ -201,10 +200,65 @@ def coord2(angle0,dist1,off):
     return pro_coords2
 
 
-x4 = coord2(back_angle0,L,90)
-x5 = coord2(back_angle0,L,0)
-x6 = coord2(back_angle0,L,-90)
-print(f"Conical: x4={x4}, x5={x5}, x6={x6}")
+def _build_ring_points(radius):
+    """Build the closed (x, y) racetrack boundary at the given radius —
+    same circular-arc construction as the base Conical polygon, reused
+    at intermediate radii for contour rings (#126)."""
+    pro_coords = coord(angle0, radius, -90)
+    x2 = coord(angle0, radius, 90)
+    xc = coord(angle0, radius, 0)
+    x4 = coord2(back_angle0, radius, 90)
+    x5 = coord2(back_angle0, radius, 0)
+    x6 = coord2(back_angle0, radius, -90)
+
+    points = []
+
+    # First arc: pro_coords → xc → x2
+    cString1 = QgsCircularString()
+    cString1.setPoints([QgsPoint(pro_coords[0], pro_coords[1]),
+                        QgsPoint(xc[0], xc[1]),
+                        QgsPoint(x2[0], x2[1])])
+    geom1 = QgsGeometry(cString1)
+    segmented1 = geom1.convertToType(QgsWkbTypes.LineGeometry, True)
+    if segmented1 and segmented1.wkbType() == QgsWkbTypes.LineString:
+        for point in segmented1.asPolyline():
+            points.append((point.x(), point.y()))
+    elif segmented1 and segmented1.wkbType() == QgsWkbTypes.MultiLineString:
+        for part in segmented1.asMultiPolyline():
+            for point in part:
+                points.append((point.x(), point.y()))
+    else:
+        points.extend([(pro_coords[0], pro_coords[1]), (xc[0], xc[1]), (x2[0], x2[1])])
+
+    # Line: x2 → x6 (connect arc endpoints)
+    points.append((x6[0], x6[1]))
+
+    # Second arc: x6 → x5 → x4 (REVERSED)
+    cString2 = QgsCircularString()
+    cString2.setPoints([QgsPoint(x6[0], x6[1]),
+                        QgsPoint(x5[0], x5[1]),
+                        QgsPoint(x4[0], x4[1])])
+    geom2 = QgsGeometry(cString2)
+    segmented2 = geom2.convertToType(QgsWkbTypes.LineGeometry, True)
+    if segmented2 and segmented2.wkbType() == QgsWkbTypes.LineString:
+        for i, point in enumerate(segmented2.asPolyline()):
+            if i == 0:  # Same as x6, already added
+                continue
+            points.append((point.x(), point.y()))
+    elif segmented2 and segmented2.wkbType() == QgsWkbTypes.MultiLineString:
+        for part_idx, part in enumerate(segmented2.asMultiPolyline()):
+            for point_idx, point in enumerate(part):
+                if part_idx == 0 and point_idx == 0:
+                    continue
+                points.append((point.x(), point.y()))
+    else:
+        points.extend([(x5[0], x5[1]), (x4[0], x4[1])])
+
+    # Line: x4 → pro_coords (close polygon)
+    points.append((pro_coords[0], pro_coords[1]))
+
+    return points
+
 
 print(f"Conical: Using original coordinate calculation methods - trigonometry + transformations")
 
@@ -218,6 +272,8 @@ v_layer_provider.addAttributes([
     QgsField("surface_type", QVariant.String),
     QgsField("radius_m", QVariant.Double),
     QgsField("height_m", QVariant.Double),
+    QgsField("datum_elevation_m", QVariant.Double),
+    QgsField("inner_height_m", QVariant.Double),
     QgsField("rule_set", QVariant.String),
     QgsField("runway_start_x", QVariant.Double),
     QgsField("runway_start_y", QVariant.Double),
@@ -236,6 +292,8 @@ _active_rule_set = globals().get('active_rule_set', None)
 _params_json = build_parameters_json('Conical Surface', {
     'radius_m': L,
     'height_m': height,
+    'datum_elevation_m': datum_elevation,
+    'inner_height_m': inner_height,
     'rule_set': _active_rule_set,
     'azimuth': angle0,
     'rwy_classification': rwy_classification,
@@ -245,12 +303,6 @@ add_parameters_field(v_layer)
 
 print(f"Conical: Creating unified 3D surface with radius {L}m at height {height}m")
 
-polygon_points = []
-
-# SOLUTION: Use QGIS CircularString interpolation to get exact arc points
-# This matches exactly how the original working code creates the circular arcs
-# IMPORTANT: Changed point sequence to avoid crossing lines
-
 print(f"Conical: Using QGIS CircularString interpolation to generate polygon points")
 print(f"Conical: CORRECTED sequence to avoid line crossings:")
 print(f"Conical: 1. Arc 1: pro_coords → xc → x2")
@@ -258,101 +310,7 @@ print(f"Conical: 2. Line: x2 → x6 (connect arc endpoints)")
 print(f"Conical: 3. Arc 2: x6 → x5 → x4 (REVERSED)")
 print(f"Conical: 4. Line: x4 → pro_coords (close polygon)")
 
-# First arc: Create CircularString and extract points
-# This is exactly how the original code creates the first arc: [pro_coords, xc, x2]
-cString1 = QgsCircularString()
-cString1.setPoints([QgsPoint(pro_coords[0], pro_coords[1]),
-                    QgsPoint(xc[0], xc[1]),
-                    QgsPoint(x2[0], x2[1])])
-
-# Convert to regular geometry and extract points with high resolution
-geom1 = QgsGeometry(cString1)
-# Convert to segmented curve with many points for smooth polygon
-segmented1 = geom1.convertToType(QgsWkbTypes.LineGeometry, True)
-if segmented1:
-    # Handle both LineString and MultiLineString cases
-    if segmented1.wkbType() == QgsWkbTypes.LineString:
-        polyline1 = segmented1.asPolyline()
-        print(f"Conical: Arc 1 interpolated to {len(polyline1)} points (LineString)")
-
-        # Add arc points with height
-        for point in polyline1:
-            polygon_points.append(QgsPoint(point.x(), point.y(), height))
-    elif segmented1.wkbType() == QgsWkbTypes.MultiLineString:
-        multiline1 = segmented1.asMultiPolyline()
-        print(f"Conical: Arc 1 interpolated to {len(multiline1)} parts (MultiLineString)")
-
-        # Add points from all parts
-        for part in multiline1:
-            for point in part:
-                polygon_points.append(QgsPoint(point.x(), point.y(), height))
-    else:
-        print(f"Conical: Warning - Unexpected geometry type: {segmented1.wkbType()}")
-        # Fallback to original points
-        polygon_points.extend([
-            QgsPoint(pro_coords[0], pro_coords[1], height),
-            QgsPoint(xc[0], xc[1], height),
-            QgsPoint(x2[0], x2[1], height)
-        ])
-else:
-    print("Conical: Warning - Could not interpolate first arc, using original points")
-    polygon_points.extend([
-        QgsPoint(pro_coords[0], pro_coords[1], height),
-        QgsPoint(xc[0], xc[1], height),
-        QgsPoint(x2[0], x2[1], height)
-    ])
-
-# Add straight line from x2 to x6 (connect arc endpoints, not diagonals)
-polygon_points.append(QgsPoint(x6[0], x6[1], height))
-
-# Second arc: Create CircularString and extract points
-# This is exactly how the original code creates the second arc: [x6, x5, x4] (REVERSED)
-cString2 = QgsCircularString()
-cString2.setPoints([QgsPoint(x6[0], x6[1]),
-                    QgsPoint(x5[0], x5[1]),
-                    QgsPoint(x4[0], x4[1])])
-
-# Convert to regular geometry and extract points with high resolution
-geom2 = QgsGeometry(cString2)
-# Convert to segmented curve with many points for smooth polygon
-segmented2 = geom2.convertToType(QgsWkbTypes.LineGeometry, True)
-if segmented2:
-    # Handle both LineString and MultiLineString cases
-    if segmented2.wkbType() == QgsWkbTypes.LineString:
-        polyline2 = segmented2.asPolyline()
-        print(f"Conical: Arc 2 interpolated to {len(polyline2)} points (LineString)")
-
-        # Add arc points with height (skip first point to avoid duplication with x6)
-        for i, point in enumerate(polyline2):
-            if i == 0:  # Skip first point as it's the same as x6 we just added
-                continue
-            polygon_points.append(QgsPoint(point.x(), point.y(), height))
-    elif segmented2.wkbType() == QgsWkbTypes.MultiLineString:
-        multiline2 = segmented2.asMultiPolyline()
-        print(f"Conical: Arc 2 interpolated to {len(multiline2)} parts (MultiLineString)")
-
-        # Add points from all parts (skip first point of first part to avoid duplication with x6)
-        for part_idx, part in enumerate(multiline2):
-            for point_idx, point in enumerate(part):
-                if part_idx == 0 and point_idx == 0:  # Skip first point of first part (x6)
-                    continue
-                polygon_points.append(QgsPoint(point.x(), point.y(), height))
-    else:
-        print(f"Conical: Warning - Unexpected geometry type: {segmented2.wkbType()}")
-        # Fallback to original points (reversed order: x5, x4)
-        polygon_points.extend([
-            QgsPoint(x5[0], x5[1], height),
-            QgsPoint(x4[0], x4[1], height)
-        ])
-else:
-    print("Conical: Warning - Could not interpolate second arc, using original points")
-    polygon_points.extend([
-        QgsPoint(x5[0], x5[1], height),
-        QgsPoint(x4[0], x4[1], height)
-    ])
-
-# Add straight line back to start (closing the polygon)
-polygon_points.append(QgsPoint(pro_coords[0], pro_coords[1], height))
+polygon_points = [QgsPoint(x, y, z_top) for x, y in _build_ring_points(L)]
 
 print(f"Conical: Created surface with proper circular arcs using QGIS interpolation")
 print(f"Conical: Total points in polygon: {len(polygon_points)}")
@@ -378,6 +336,8 @@ feature.setAttributes([
     "Conical",
     L,
     height,
+    datum_elevation,
+    inner_height,
     _active_rule_set,
     start_point.x(),
     start_point.y(),
@@ -441,7 +401,63 @@ print(f"Conical: Radius: {L}m, Height: {height}m")
 # Success message
 iface.messageBar().pushMessage("QOLS Success", f"Conical 3D Surface (R={L}m, H={height}m) calculated successfully", level=MSG_SUCCESS)
 
-_script_success = True
+# -----------------------------------------------------------------------
+# Contour layer (#126 — stepped elevation rings for Conical Surface)
+#
+# Unlike Approach/Take-off/Transitional, Conical's elevation varies
+# purely with radial distance from the runway spine, not along its
+# length — a real iso-elevation contour is the racetrack boundary curve
+# traced at the radius where the cone reaches that elevation: a full
+# closed ring, not a chord across the surface.
+# -----------------------------------------------------------------------
+if contour_interval_m > 0 and slope_pct > 0:
+    import importlib.util as _ilu
+    import os as _os
+    import sys as _sys
+    _utils_path = _os.path.join(_os.path.dirname(__file__), '_contour_utils.py')
+    _cu_spec = _ilu.spec_from_file_location('_contour_utils', _utils_path)
+    _cu = _ilu.module_from_spec(_cu_spec)
+    _sys.modules['_contour_utils'] = _cu
+    _cu_spec.loader.exec_module(_cu)
+
+    _slope_decimal = slope_pct / 100.0
+    _elevs = _cu.contour_elevations(bottom_z, z_top, contour_interval_m)
+    # Exclude the outer edge itself - it's the surface's own already-drawn
+    # boundary (same exclusion Transitional applies to its plateau ZIH).
+    _elevs = [e for e in _elevs if e < z_top - 1e-6]
+
+    _cfeats = []
+    for _i, _elev in enumerate(_elevs):
+        _radius = _cu.conical_contour_radius(_elev, bottom_z, inner_radius, _slope_decimal)
+        _ring_xy = _build_ring_points(_radius)
+        _ring_pts = [QgsPoint(x, y, _elev) for x, y in _ring_xy]
+        _ring_pts.append(_ring_pts[0])  # close the ring
+        _cfeat = QgsFeature()
+        _cfeat.setGeometry(QgsGeometry(QgsLineString(_ring_pts)))
+        _cfeat.setAttributes([_i + 1, _elev])
+        _cfeats.append(_cfeat)
+
+    if _cfeats:
+        _clayer = QgsVectorLayer(
+            "LineStringZ?crs=" + map_srid, "RWY_ConicalSurface_Contours", "memory")
+        _clayer.dataProvider().addAttributes([
+            QgsField('ID', QVariant.Int),
+            QgsField('surface_elevation', QVariant.Double),
+        ])
+        _clayer.updateFields()
+        _clayer.dataProvider().addFeatures(_cfeats)
+
+        # Conical's rings sit much closer together than Approach's/
+        # Transitional's chords, so the default 10pt label is hard to
+        # read (#126 feedback) — bump it up for this layer only.
+        _cu.apply_contour_style(_clayer, __file__, label_font_size=16)
+        QgsProject.instance().addMapLayers([_clayer])
+        _clayer.triggerRepaint()
+        print(f"Conical: Contour layer added - {len(_cfeats)} rings at "
+              f"{contour_interval_m} m interval")
+    else:
+        print(f"Conical: No contour lines - no elevation levels in range "
+              f"for interval {contour_interval_m} m")
 
 # Clean up globals
 for g in set(globals().keys()).difference(myglobals):
