@@ -647,7 +647,6 @@ class QOLS:
                 'MSG_CRITICAL': MSG_CRITICAL,
                 'MSG_SUCCESS': MSG_SUCCESS,
                 # Convenience aliases
-                'use_selected_feature': params.get('use_threshold_selected', False),
                 'active_rule_set': rule_mgr.get_active_rule_set_name(),
             }
             exec_namespace.update(params)

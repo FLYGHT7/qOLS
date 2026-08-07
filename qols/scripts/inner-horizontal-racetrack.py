@@ -58,10 +58,10 @@ try:
     # Layer parameters
     runway_layer = globals().get('runway_layer', None)
     threshold_layer = globals().get('threshold_layer', None)
-    use_selected_feature = globals().get('use_selected_feature', True)
+    use_runway_selected = globals().get('use_runway_selected', True)
 
     print(f"InnerHorizontal: Using parameters - radius: {L}m, height: {height}m, code: {runway_code}, class: {rwy_classification}")
-    print(f"InnerHorizontal: Direction parameter s: {s}, Use selected: {use_selected_feature}")
+    print(f"InnerHorizontal: Direction parameter s: {s}, Use selected: {use_runway_selected}")
 
 except Exception as e:
     print(f"InnerHorizontal: Error getting parameters, using defaults: {e}")
@@ -72,7 +72,7 @@ except Exception as e:
     s = 0
     runway_layer = None
     threshold_layer = None
-    use_selected_feature = True
+    use_runway_selected = True
     runway_code = 4
     rwy_classification = 'Precision Approach CAT I'
 
@@ -98,7 +98,7 @@ try:
     if runway_layer is not None:
         print(f"InnerHorizontal: Using Runway Layer Centerline from UI: {runway_layer.name()}")
 
-        if use_selected_feature:
+        if use_runway_selected:
             selection = runway_layer.selectedFeatures()
             if not selection:
                 raise Exception("No runway features selected. Please select runway features.")
@@ -423,7 +423,7 @@ if features_created > 0:
     canvas.zoomScale(sc)
 
 # Clean up selections
-if not use_selected_feature:
+if not use_runway_selected:
     if runway_layer:
         runway_layer.removeSelection()
 else:

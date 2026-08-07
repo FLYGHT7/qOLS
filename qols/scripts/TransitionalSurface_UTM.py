@@ -64,10 +64,11 @@ try:
     # Layer parameters
     runway_layer = globals().get('runway_layer', None)
     threshold_layer = globals().get('threshold_layer', None)
-    use_selected_feature = globals().get('use_selected_feature', True)
+    use_runway_selected = globals().get('use_runway_selected', True)
+    use_threshold_selected = globals().get('use_threshold_selected', True)
 
     print(f"TransitionalSurface: Using parameters - code: {code}, widthApp: {widthApp}, Z0: {Z0}, ZE: {ZE}")
-    print(f"TransitionalSurface: CRITICAL - Runway direction parameter s: {s}, Use selected: {use_selected_feature}")
+    print(f"TransitionalSurface: CRITICAL - Runway direction parameter s: {s}, Use selected runway: {use_runway_selected}, Use selected threshold: {use_threshold_selected}")
 
 except Exception as e:
     print(f"TransitionalSurface: Error getting parameters, using defaults: {e}")
@@ -87,7 +88,8 @@ except Exception as e:
     contour_interval_m = 0
     runway_layer = None
     threshold_layer = None
-    use_selected_feature = True
+    use_runway_selected = True
+    use_threshold_selected = True
 
 # Calculate derived parameters
 ZIH = 45 + ARPH
@@ -108,7 +110,7 @@ try:
     if runway_layer is not None:
         print(f"TransitionalSurface: Using Runway Layer Centerline from UI: {runway_layer.name()}")
 
-        if use_selected_feature:
+        if use_runway_selected:
             # Require explicit feature selection
             selection = runway_layer.selectedFeatures()
             if not selection:
@@ -162,7 +164,7 @@ try:
     if threshold_layer is not None:
         print(f"TransitionalSurface: Using threshold layer from UI: {threshold_layer.name()}")
 
-        if use_selected_feature:
+        if use_threshold_selected:
             # Require explicit feature selection
             threshold_selection = threshold_layer.selectedFeatures()
             if not threshold_selection:
@@ -426,10 +428,11 @@ v_layer.selectAll()
 canvas = iface.mapCanvas()
 canvas.zoomToSelected(v_layer)
 v_layer.removeSelection()
-# Clean up selections
-if 'runway_layer' in locals() and runway_layer:
+# Clean up selections only if they weren't originally selected
+# This prevents losing user selections for subsequent calculations
+if not use_runway_selected and 'runway_layer' in locals() and runway_layer:
     runway_layer.removeSelection()
-if 'threshold_layer' in locals() and threshold_layer:
+if not use_threshold_selected and 'threshold_layer' in locals() and threshold_layer:
     threshold_layer.removeSelection()
 # get canvas scale
 sc = canvas.scale()

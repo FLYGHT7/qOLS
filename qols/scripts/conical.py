@@ -66,10 +66,10 @@ try:
     # Layer parameters
     runway_layer = globals().get('runway_layer', None)
     threshold_layer = globals().get('threshold_layer', None)
-    use_selected_feature = globals().get('use_selected_feature', True)
+    use_runway_selected = globals().get('use_runway_selected', True)
 
     print(f"Conical: Using parameters - radius: {L}m, height: {height}m, code: {runway_code}, class: {rwy_classification}")
-    print(f"Conical: Direction parameter s: {s}, Use selected: {use_selected_feature}")
+    print(f"Conical: Direction parameter s: {s}, Use selected: {use_runway_selected}")
 
 except Exception as e:
     print(f"Conical: Error getting parameters, using defaults: {e}")
@@ -84,7 +84,7 @@ except Exception as e:
     s = 0
     runway_layer = None
     threshold_layer = None
-    use_selected_feature = True
+    use_runway_selected = True
     runway_code = 4
     rwy_classification = 'Precision Approach CAT I'
 
@@ -109,7 +109,7 @@ try:
     if runway_layer is not None:
         print(f"Conical: Using Runway Layer Centerline from UI: {runway_layer.name()}")
 
-        if use_selected_feature:
+        if use_runway_selected:
             # Require explicit feature selection
             selection = runway_layer.selectedFeatures()
             if not selection:
@@ -380,7 +380,7 @@ canvas.zoomToSelected(v_layer)
 v_layer.removeSelection()
 
 # Clean up selections only if they weren't originally selected
-if not use_selected_feature:
+if not use_runway_selected:
     # Only clean up if we're not using selected features
     if runway_layer:
         runway_layer.removeSelection()
