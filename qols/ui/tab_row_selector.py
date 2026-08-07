@@ -22,6 +22,19 @@ signals and, whenever one bar reports a real selection, deselects the
 other bar via ``setCurrentIndex(-1)`` (a normal, supported QTabBar state
 meaning "no current tab") — guarded by a ``_syncing`` flag so that
 programmatic deselection doesn't itself get mistaken for a user action.
+
+Bug fix: ``currentChanged`` only fires when a bar's *own* index actually
+changes. If a bar's other-row deselection doesn't stick (observed live —
+some Qt styles keep the tab looking selected even after
+``setCurrentIndex(-1)``), clicking that same tab again is a no-op from
+that bar's own point of view, so nothing re-activates it — the panel
+keeps showing whatever the other row last selected, and the user has to
+click a different tab in that row first before clicking back. The shim
+therefore also listens to ``tabBarClicked``, which Qt emits on *every*
+physical click regardless of whether the bar's index changes, and routes
+it through the same handler — activation is decided from the shim's own
+``_current_index``, not the bar's, so a click always does the right
+thing even when the bar's internal state didn't actually change.
 """
 from __future__ import annotations
 
@@ -73,6 +86,7 @@ class TwoRowTabSelector(QObject):
         self._syncing = False
         for bar_index, bar in enumerate(self._bars):
             bar.currentChanged.connect(lambda tab_index, bi=bar_index: self._on_bar_changed(bi, tab_index))
+            bar.tabBarClicked.connect(lambda tab_index, bi=bar_index: self._on_bar_changed(bi, tab_index))
         self._activate(0, emit=False)
 
     def _find_bar_and_tab(self, stack_index: int):

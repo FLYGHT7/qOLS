@@ -387,7 +387,11 @@ class QOLS:
         self.execute_script(script_path, params)
 
     def execute_combined_inner_conical_surface(self, params):
-        """Execute Inner Horizontal then Conical using per-surface parameters."""
+        """Execute Inner Horizontal then Conical using per-surface parameters,
+        then trim Conical's footprint down to the ring beyond Inner
+        Horizontal (#124) — both are concentric racetracks (same runway
+        spine/azimuth, Conical's radius >= Inner Horizontal's by
+        construction), so Conical would otherwise fully cover it."""
         try:
             specific_params = params.get('specific_params', {})
 
@@ -408,9 +412,138 @@ class QOLS:
             conical_script_path = os.path.join(self.plugin_dir, 'scripts', 'conical.py')
             self.execute_script(conical_script_path, conical_full_params)
 
+            self._trim_conical_to_ring(inner_params, conical_params)
+
         except Exception as e:
             logger.error(f"Error in combined Inner Horizontal & Conical execution: {e}\n{traceback.format_exc()}")
             raise
+
+    def _trim_conical_to_ring(self, inner_params, conical_params):
+        """#124: subtract Inner Horizontal's footprint from Conical's so the
+        two surfaces don't visually overlap — Conical should only cover
+        the ring beyond Inner Horizontal's edge, per ICAO Annex 14.
+
+        Both scripts delete every global they introduced (including their
+        own ``v_layer``) as their very last action — a pre-existing
+        exec()-namespace cleanup pattern shared by every script in
+        qols/scripts/ — so ``execute_script()``'s returned namespace never
+        actually contains ``v_layer`` by the time control returns here.
+        The layers are instead found by the same deterministic name each
+        script itself builds (``f"InnerHorizontal_{classification}_Code{code}"``
+        / ``f"Conical_{classification}_Code{code}"``), mirroring the
+        name-based lookup convention #121 already established for the
+        "Merged Transitional Surface" layer.
+
+        Defensive: leaves Conical's original geometry untouched (per
+        feature) if either layer can't be found unambiguously or a
+        difference fails — a failed trim must not delete the surface the
+        user just calculated.
+
+        #125: the trimmed ring's two edges sit at different absolute
+        elevations above the shared datum — the inner edge (touching
+        Inner Horizontal) at ``datum + inner_height``, the outer edge at
+        ``datum + inner_height + conical_height``. ``bottom_z`` uses the
+        exact same formula Inner Horizontal itself computes its own flat
+        Z with, guaranteeing the two surfaces meet at the same elevation
+        by construction.
+        """
+        from .geometry_difference import difference_flat
+
+        def _first_vertex_z(geom):
+            """Diagnostic-only: exterior ring's first vertex Z, or None."""
+            try:
+                parts = geom.asGeometryCollection() if geom.isMultipart() else [geom]
+                ring = parts[0].constGet().exteriorRing()
+                return ring.pointN(0).z() if ring.numPoints() else None
+            except Exception:
+                return None
+
+        def _first_interior_vertex_z(geom):
+            """Diagnostic-only: first interior/hole ring's first vertex Z, or None
+            (None also means "no hole yet" if the trim didn't produce one)."""
+            try:
+                parts = geom.asGeometryCollection() if geom.isMultipart() else [geom]
+                abstract = parts[0].constGet()
+                if abstract.numInteriorRings() == 0:
+                    return None
+                ring = abstract.interiorRing(0)
+                return ring.pointN(0).z() if ring.numPoints() else None
+            except Exception:
+                return None
+
+        datum_elevation = conical_params.get('datum_elevation', 0.0)
+        inner_height = conical_params.get('inner_height', 0.0)
+        conical_height = conical_params.get('height', 0.0)
+        bottom_z = datum_elevation + inner_height
+        top_z = datum_elevation + inner_height + conical_height
+        logger.info(
+            f"_trim_conical_to_ring: datum_elevation={datum_elevation}, inner_height={inner_height}, "
+            f"conical_height={conical_height} -> bottom_z={bottom_z} (must match Inner Horizontal's own "
+            f"Z, so the two surfaces meet as a single line), top_z={top_z}"
+        )
+
+        inner_name = (
+            f"InnerHorizontal_{inner_params.get('rwyClassification', 'Precision Approach CAT I')}"
+            f"_Code{inner_params.get('code', 4)}"
+        )
+        conical_name = (
+            f"Conical_{conical_params.get('rwyClassification', 'Precision Approach CAT I')}"
+            f"_Code{conical_params.get('code', 4)}"
+        )
+        inner_matches = QgsProject.instance().mapLayersByName(inner_name)
+        conical_matches = QgsProject.instance().mapLayersByName(conical_name)
+        logger.info(
+            f"_trim_conical_to_ring: '{inner_name}' -> {len(inner_matches)} match(es), "
+            f"'{conical_name}' -> {len(conical_matches)} match(es)"
+        )
+        if len(inner_matches) != 1 or len(conical_matches) != 1:
+            logger.warning(
+                "Could not trim Conical to a ring — expected exactly one Inner Horizontal and one "
+                "Conical layer by name; delete older same-named layers and recalculate if this persists."
+            )
+            return
+        inner_layer = inner_matches[0]
+        conical_layer = conical_matches[0]
+
+        inner_geoms = [f.geometry() for f in inner_layer.getFeatures() if not f.geometry().isEmpty()]
+        logger.info(f"_trim_conical_to_ring: {len(inner_geoms)} Inner Horizontal geometrie(s) found")
+        if not inner_geoms:
+            logger.warning("_trim_conical_to_ring: no Inner Horizontal geometries, skipping trim")
+            return
+        logger.info(
+            f"_trim_conical_to_ring: Inner Horizontal's own vertex Z (read from layer, "
+            f"should equal bottom_z={bottom_z}) = {_first_vertex_z(inner_geoms[0])}"
+        )
+        inner_union = QgsGeometry.unaryUnion(inner_geoms)
+        logger.info(
+            f"_trim_conical_to_ring: inner_union area={inner_union.area() if inner_union else None}, "
+            f"isEmpty={inner_union.isEmpty() if inner_union else None}"
+        )
+
+        pr = conical_layer.dataProvider()
+        geometry_changes = {}
+        conical_feature_count = 0
+        for feat in conical_layer.getFeatures():
+            conical_feature_count += 1
+            trimmed = difference_flat(feat.geometry(), inner_union, exterior_z=top_z, interior_z=bottom_z)
+            if trimmed is not None and not trimmed.isEmpty():
+                geometry_changes[feat.id()] = trimmed
+                logger.info(
+                    f"_trim_conical_to_ring: feature {feat.id()} trimmed — exterior vertex Z="
+                    f"{_first_vertex_z(trimmed)} (expected top_z={top_z}), interior/hole vertex Z="
+                    f"{_first_interior_vertex_z(trimmed)} (expected bottom_z={bottom_z} — this is the "
+                    f"single shared line/edge where Conical meets Inner Horizontal)"
+                )
+        logger.info(
+            f"_trim_conical_to_ring: {conical_feature_count} Conical feature(s) processed, "
+            f"{len(geometry_changes)} geometry change(s) prepared"
+        )
+
+        if geometry_changes:
+            changed_ok = pr.changeGeometryValues(geometry_changes)
+            logger.info(f"_trim_conical_to_ring: changeGeometryValues returned {changed_ok}")
+            conical_layer.updateExtents()
+            conical_layer.triggerRepaint()
 
     # ------------------------------------------------------------------
     # BUG-04 — Centralised layer validation

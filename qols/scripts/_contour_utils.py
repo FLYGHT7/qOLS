@@ -286,10 +286,48 @@ def contour_specs_for_polygon_slice(
 
 
 # ---------------------------------------------------------------------------
+# Conical Surface (#126) — radial contour helper
+# ---------------------------------------------------------------------------
+
+def conical_contour_radius(
+    elevation: float,
+    bottom_z: float,
+    r_inner: float,
+    slope: float,
+) -> float:
+    """Radius at which the Conical surface reaches ``elevation``.
+
+    Unlike Approach/Take-off/Transitional, Conical's elevation varies
+    purely with radial distance from the runway spine, not along the
+    runway's length — its rise is linear in radius:
+    ``elevation(r) = bottom_z + slope * (r - r_inner)``. Solving for
+    ``r`` gives this formula.
+
+    Precondition: ``slope > 0`` — the caller's responsibility to check
+    (same convention as :func:`contour_specs_for_linear_section`'s own
+    ``slope <= 0`` guard); a non-positive slope makes "radius at this
+    elevation" undefined, so callers should skip contour generation
+    entirely rather than call this.
+
+    Args:
+        elevation: Target contour elevation, metres.
+        bottom_z:  Elevation at the inner edge (``r_inner``), metres —
+                   equals Datum + Inner Horizontal Height.
+        r_inner:   Radius of the inner edge (Inner Horizontal's own
+                   radius), metres.
+        slope:     Vertical rise per horizontal metre (decimal, > 0).
+
+    Returns:
+        The radius, in metres, at which the cone reaches ``elevation``.
+    """
+    return r_inner + (elevation - bottom_z) / slope
+
+
+# ---------------------------------------------------------------------------
 # Layer styling
 # ---------------------------------------------------------------------------
 
-def apply_contour_style(layer, script_file: str) -> bool:
+def apply_contour_style(layer, script_file: str, label_font_size: float = None) -> bool:
     """Apply the distributed QML style to a contour layer.
 
     Looks for ``<plugin_root>/styles/contour_styling.qml`` relative to the
@@ -305,9 +343,14 @@ def apply_contour_style(layer, script_file: str) -> bool:
       * Plain label from the ``surface_elevation`` field
 
     Args:
-        layer:       A ``QgsVectorLayer`` (LineStringZ) for the contour layer.
-        script_file: ``__file__`` of the calling script.  Used to locate the
-                     ``styles/`` folder one directory above ``scripts/``.
+        layer:            A ``QgsVectorLayer`` (LineStringZ) for the contour layer.
+        script_file:      ``__file__`` of the calling script.  Used to locate the
+                          ``styles/`` folder one directory above ``scripts/``.
+        label_font_size:  If given, overrides the label text size (points) on
+                          top of whichever style (QML or fallback) got applied —
+                          e.g. Conical's many closely-spaced contour rings
+                          (#126) need a larger label than Approach/
+                          Transitional's more sparsely spaced ones.
 
     Returns:
         ``True`` if the QML file was applied, ``False`` if the fallback was used.
@@ -321,27 +364,41 @@ def apply_contour_style(layer, script_file: str) -> bool:
         'contour_styling.qml',
     )
 
+    applied_qml = False
     if os.path.isfile(styles_path):
         try:
             _msg, success = layer.loadNamedStyle(styles_path)
             if success:
-                layer.triggerRepaint()
-                return True
+                applied_qml = True
         except Exception:
             pass  # fall through to hardcoded fallback
 
-    # Fallback: hardcoded style (previous behaviour, always safe)
-    from qgis.core import (  # noqa: PLC0415 — intentional late import (no QGIS at test time)
-        QgsLineSymbol,
-        QgsSingleSymbolRenderer,
-        QgsPalLayerSettings,
-        QgsVectorLayerSimpleLabeling,
-    )
-    _sym = QgsLineSymbol.createSimple({'color': 'red', 'width': '0.5'})
-    layer.setRenderer(QgsSingleSymbolRenderer(_sym))
-    _pal = QgsPalLayerSettings()
-    _pal.fieldName = 'surface_elevation'
-    _pal.enabled = True
-    layer.setLabeling(QgsVectorLayerSimpleLabeling(_pal))
-    layer.setLabelsEnabled(True)
-    return False
+    if not applied_qml:
+        # Fallback: hardcoded style (previous behaviour, always safe)
+        from qgis.core import (  # noqa: PLC0415 — intentional late import (no QGIS at test time)
+            QgsLineSymbol,
+            QgsSingleSymbolRenderer,
+            QgsPalLayerSettings,
+            QgsVectorLayerSimpleLabeling,
+        )
+        _sym = QgsLineSymbol.createSimple({'color': 'red', 'width': '0.5'})
+        layer.setRenderer(QgsSingleSymbolRenderer(_sym))
+        _pal = QgsPalLayerSettings()
+        _pal.fieldName = 'surface_elevation'
+        _pal.enabled = True
+        layer.setLabeling(QgsVectorLayerSimpleLabeling(_pal))
+        layer.setLabelsEnabled(True)
+
+    if label_font_size is not None:
+        from qgis.core import QgsVectorLayerSimpleLabeling  # noqa: PLC0415
+        labeling = layer.labeling()
+        if labeling is not None:
+            settings = labeling.settings()
+            text_format = settings.format()
+            text_format.setSize(label_font_size)
+            settings.setFormat(text_format)
+            layer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
+            layer.setLabelsEnabled(True)
+
+    layer.triggerRepaint()
+    return applied_qml

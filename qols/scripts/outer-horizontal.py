@@ -22,8 +22,14 @@ print(f"OuterHorizontal: Working in projected CRS: {map_srid}")
 code = globals().get('code', 3)
 radius = globals().get('radius', 15000.0)
 height = globals().get('height', 45.0)
+arp_elevation = globals().get('arp_elevation', 0.0)  # #127
+
+# Absolute elevation above the ARP (Aerodrome Reference Point) — height
+# is a height above the ARP, not an elevation itself.
+z_absolute = arp_elevation + height
 
 print(f"OuterHorizontal: Code={code}, Radius={radius}m, Height={height}m")
+print(f"OuterHorizontal: ARP elevation={arp_elevation}m, absolute Z={z_absolute}m")
 
 # Validate code number (DOC 9137 Part 6 - only for code 3 or 4)
 if code not in [3, 4]:
@@ -51,7 +57,7 @@ else:
     print(f"OuterHorizontal: Using all {len(selection)} ARP features from layer")
 
 # Create memory layer for outer horizontal surface
-v_layer = QgsVectorLayer(f"Polygon?crs={map_srid}", "Outer Horizontal Surface", "memory")
+v_layer = QgsVectorLayer(f"PolygonZ?crs={map_srid}", "Outer Horizontal Surface", "memory")
 v_layer_provider = v_layer.dataProvider()
 
 # Add attributes
@@ -60,6 +66,7 @@ v_layer_provider.addAttributes([
     QgsField("code", QVariant.Int),
     QgsField("radius_m", QVariant.Double),
     QgsField("height_m", QVariant.Double),
+    QgsField("arp_elevation_m", QVariant.Double),
     QgsField("rule_set", QVariant.String),
     QgsField("arp_x", QVariant.Double),
     QgsField("arp_y", QVariant.Double)
@@ -74,6 +81,7 @@ _params_json = build_parameters_json('Outer Horizontal Surface', {
     'code': code,
     'radius_m': radius,
     'height_m': height,
+    'arp_elevation_m': arp_elevation,
     'rule_set': _active_rule_set,
 })
 add_parameters_field(v_layer)
@@ -100,6 +108,14 @@ for feat in selection:
     # Convert to QgsGeometry
     circle_geometry = QgsGeometry(polygon_geometry)
 
+    # Apply the absolute Z (#127) — QgsCircle.toPolygon() only produces
+    # 2D points, so rebuild as PolygonZ via WKT, same pattern used in
+    # inner-horizontal-racetrack.py/conical.py.
+    ring_xy = circle_geometry.asPolygon()[0]
+    wkt_points = [f"{p.x()} {p.y()} {z_absolute}" for p in ring_xy]
+    wkt_polygon = f"POLYGONZ(({', '.join(wkt_points)}))"
+    circle_geometry = QgsGeometry.fromWkt(wkt_polygon)
+
     # Create feature with proper geometry reference
     feature = QgsFeature()
     feature.setGeometry(circle_geometry)
@@ -108,6 +124,7 @@ for feat in selection:
         code,
         radius,
         height,
+        arp_elevation,
         _active_rule_set,
         arp_x,
         arp_y,
