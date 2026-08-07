@@ -397,8 +397,10 @@ iface.messageBar().pushMessage("QPANSOPY:", "OFZ Calculation Finished", level=MS
 print("OFZ: Script completed successfully")
 
 
+_script_success = True
+
 set(globals().keys()).difference(myglobals)
 
 for g in set(globals().keys()).difference(myglobals):
-    if g != 'myglobals':
+    if g not in ('myglobals', '_script_success'):
         del globals()[g]

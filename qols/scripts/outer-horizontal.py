@@ -171,3 +171,5 @@ if features_created > 0:
     canvas.zoomScale(sc)
 
 print(f"OuterHorizontal: Completed - {features_created} outer horizontal surface(s) created per DOC 9137 Part 6")
+
+_script_success = True

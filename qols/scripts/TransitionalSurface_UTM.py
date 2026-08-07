@@ -501,8 +501,10 @@ if contour_interval_m > 0:
         print(f"TransitionalSurface: No contour lines - no elevation levels in range "
               f"for interval {contour_interval_m} m")
 
+_script_success = True
+
 set(globals().keys()).difference(myglobals)
 
 for g in set(globals().keys()).difference(myglobals):
-    if g != 'myglobals':
+    if g not in ('myglobals', '_script_success'):
         del globals()[g]

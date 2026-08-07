@@ -496,8 +496,10 @@ if contour_interval_m > 0:
     else:
         print(f"QOLS: No approach contour lines — no elevation levels in range for interval {contour_interval_m} m")
 
+_script_success = True
+
 # Clean up globals
 set(globals().keys()).difference(myglobals)
 for g in set(globals().keys()).difference(myglobals):
-    if g != 'myglobals':
+    if g not in ('myglobals', '_script_success'):
         del globals()[g]

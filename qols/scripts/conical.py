@@ -461,5 +461,5 @@ if contour_interval_m > 0 and slope_pct > 0:
 
 # Clean up globals
 for g in set(globals().keys()).difference(myglobals):
-    if g != 'myglobals':
+    if g not in ('myglobals', '_script_success'):
         del globals()[g]
