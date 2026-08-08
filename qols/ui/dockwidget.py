@@ -1461,27 +1461,31 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         self._update_direction_marker()
 
     def _update_direction_marker(self):
-        """Refresh the live direction-preview triangle (#117) for the
-        currently active tab. Approach/Transitional only — hidden otherwise.
-        Never raises: this runs on every layer/direction/zoom change."""
+        """Refresh the live direction-preview triangle (#117, #130) for
+        the currently active tab. Approach/Transitional/Take-Off/OFZ
+        only — hidden for direction-agnostic surfaces (Inner Horizontal
+        & Conical, Outer Horizontal). Never raises: this runs on every
+        layer/direction/zoom change."""
         try:
             current_tab = self.scriptTabWidget.widget(self.scriptTabWidget.currentIndex())
             tab_name = current_tab.objectName().lower() if current_tab else ''
-            if 'approach' in tab_name:
-                direction = 0 if self.direction_start_to_end else -1
-            elif 'transitional' in tab_name:
+            if 'transitional' in tab_name:
                 direction = 0 if self.transitional_direction_normal else -1
+            elif 'approach' in tab_name or 'takeoff' in tab_name or 'ofz' in tab_name:
+                direction = 0 if self.direction_start_to_end else -1
             else:
                 self._clear_direction_marker()
                 return
 
             runway_layer = self.runwayLayerCombo.currentLayer()
             threshold_layer = self.thresholdLayerCombo.currentLayer()
-            use_selected_feature = self.useSelectedThresholdCheckBox.isChecked()
+            use_runway_selected = self.useSelectedRunwayCheckBox.isChecked()
+            use_threshold_selected = self.useSelectedThresholdCheckBox.isChecked()
             map_units_per_pixel = self.iface.mapCanvas().mapUnitsPerPixel()
 
             geometry = build_marker_geometry(
-                runway_layer, threshold_layer, direction, use_selected_feature,
+                runway_layer, threshold_layer, direction,
+                use_runway_selected, use_threshold_selected,
                 _DIRECTION_MARKER_LENGTH_PX, _DIRECTION_MARKER_HALF_WIDTH_PX,
                 map_units_per_pixel,
             )
