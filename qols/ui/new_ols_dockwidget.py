@@ -704,11 +704,13 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             direction = 0 if self.direction_start_to_end else -1
             runway_layer = self.runwayLayerCombo.currentLayer()
             threshold_layer = self.thresholdLayerCombo.currentLayer()
-            use_selected_feature = self.useSelectedThresholdCheckBox.isChecked()
+            use_runway_selected = self.useSelectedRunwayCheckBox.isChecked()
+            use_threshold_selected = self.useSelectedThresholdCheckBox.isChecked()
             map_units_per_pixel = self.iface.mapCanvas().mapUnitsPerPixel()
 
             geometry = build_marker_geometry(
-                runway_layer, threshold_layer, direction, use_selected_feature,
+                runway_layer, threshold_layer, direction,
+                use_runway_selected, use_threshold_selected,
                 _DIRECTION_MARKER_LENGTH_PX, _DIRECTION_MARKER_HALF_WIDTH_PX,
                 map_units_per_pixel,
             )
