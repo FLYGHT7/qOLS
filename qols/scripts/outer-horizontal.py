@@ -1,12 +1,11 @@
 '''
-Outer Horizontal Surface 
+Outer Horizontal Surface
 DOC 9137 Part 6 Implementation - 15,000m circle centered on ARP
 For Aerodrome Code 3 or 4 only
 Procedure to be used in Projected Coordinate System Only
 
-Note: Plugin integration uses 'threshold_layer' parameter name for compatibility
-with existing UI, but this script uses ARP (Aerodrome Reference Point) terminology
-for clarity and DOC 9137 compliance.
+Reads the ARP (Aerodrome Reference Point) from the shared top-level
+ARP Layer / ARP Elevation panel inputs (#131).
 '''
 # flake8: noqa  # exec()-dispatched script; star imports intentional (see TD-03)
 
@@ -35,17 +34,15 @@ print(f"OuterHorizontal: ARP elevation={arp_elevation}m, absolute Z={z_absolute}
 if code not in [3, 4]:
     print(f"OuterHorizontal: WARNING - Code {code} not standard for outer horizontal (DOC 9137 requires code 3 or 4)")
 
-# Get ARP (Aerodrome Reference Point) from threshold layer
-# Note: Plugin parameter is still named 'threshold_layer' for compatibility,
-# but we use descriptive variable name for better code documentation
-aerodrome_reference_point_layer = globals().get('threshold_layer')
-use_threshold_selected = globals().get('use_threshold_selected', False)
+# Get ARP (Aerodrome Reference Point) from the shared ARP Layer combo (#131)
+aerodrome_reference_point_layer = globals().get('arp_layer')
+use_arp_selected = globals().get('use_arp_selected', False)
 
 if not aerodrome_reference_point_layer:
-    raise Exception("No ARP (Aerodrome Reference Point) layer provided. Please select a threshold layer from the UI.")
+    raise Exception("No ARP (Aerodrome Reference Point) layer provided. Please select an ARP layer from the UI.")
 
 # Get ARP coordinates - use selection or all features based on UI setting
-if use_threshold_selected:
+if use_arp_selected:
     selection = aerodrome_reference_point_layer.selectedFeatures()
     if not selection:
         raise Exception("No ARP (Aerodrome Reference Point) features selected. Please select ARP feature.")
