@@ -198,7 +198,11 @@ class QOLS:
             if st == SurfaceType.NEW_OLS_OFS_APPROACH:
                 self.execute_new_ols_ofs_approach(params)
             elif st == SurfaceType.NEW_OLS_OES_TRANSITIONAL:
-                self.execute_new_ols_oes_transitional(params)
+                # #134: Transitional is an OFS-only concept (it flanks the
+                # OFS Approach surface and already runs from that tab's
+                # Calculate via execute_new_ols_ofs_approach). The OES tab
+                # only computes Horizontal Surface — no Transitional here.
+                self.execute_new_ols_oes_horizontal(params)
             else:
                 raise ValueError(f"Unhandled New OLS surface type: {st!r}")
 
@@ -387,6 +391,19 @@ class QOLS:
     def execute_new_ols_oes_transitional(self, params):
         script_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-oes-transitional-UTM.py')
         self.execute_script(script_path, params)
+
+    def execute_new_ols_oes_horizontal(self, params):
+        """Horizontal Surface (#134) — a distinct surface from Transitional,
+        just sharing the OES tab's inputs (ADG, aerodrome elevation)."""
+        oes = params.get('specific_params', {})
+        horiz_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-oes-horizontal-UTM.py')
+        horiz_params = params.copy()
+        horiz_params['specific_params'] = {
+            'adg': oes.get('adg', 'IIC'),
+            'aerodrome_elevation_m': oes.get('highest_thr_elev_m', 0.0),
+            'direction': oes.get('direction', 0),
+        }
+        self.execute_script(horiz_path, horiz_params)
 
     def execute_combined_inner_conical_surface(self, params):
         """Execute Inner Horizontal then Conical using per-surface parameters,

@@ -467,7 +467,27 @@
          </widget>
         </item>
 
-        <item row="4" column="0" colspan="2">
+        <item row="4" column="0">
+         <widget class="QLabel" name="label_adg_horizontal_oes">
+          <property name="text"><string>ADG (Horizontal Surface):</string></property>
+         </widget>
+        </item>
+        <item row="4" column="1">
+         <widget class="QComboBox" name="combo_adg_horizontal_oes">
+          <property name="minimumHeight"><number>22</number></property>
+          <property name="currentIndex"><number>3</number></property>
+          <property name="toolTip"><string>Aeroplane Design Group for the Horizontal Surface (Table 4-10). Independent of the OFS tab's ADG Group — I/IIA, IIB, and IIC-V are distinct dimension tiers here.</string></property>
+          <item><property name="text"><string>I</string></property></item>
+          <item><property name="text"><string>IIA</string></property></item>
+          <item><property name="text"><string>IIB</string></property></item>
+          <item><property name="text"><string>IIC</string></property></item>
+          <item><property name="text"><string>III</string></property></item>
+          <item><property name="text"><string>IV</string></property></item>
+          <item><property name="text"><string>V</string></property></item>
+         </widget>
+        </item>
+
+        <item row="5" column="0" colspan="2">
          <widget class="QLabel" name="label_oes_note">
           <property name="text">
            <string>Upper edge at 60 m above the highest threshold elevation. Lateral extent = 60 / (slope/100) from approach edge.</string>

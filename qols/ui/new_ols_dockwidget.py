@@ -73,6 +73,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
     spin_Z0_oes: QLineEdit
     spin_ZE_oes: QLineEdit
     spin_slope_oes: QLineEdit
+    combo_adg_horizontal_oes: QComboBox
     spin_ARP_elevation: QLineEdit
     runwaySelectionStatusLabel: QLabel
     thresholdSelectionStatusLabel: QLabel
@@ -711,6 +712,10 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                     'divergence_ratio': self.get_numeric_value('spin_divergence_ofs') / 100.0,
                     'distance_from_threshold_m': self.get_numeric_value('spin_distThr_ofs'),
                     'direction': s_value,
+                    # Horizontal Surface (#134) — ADG-driven ring set;
+                    # reuses highest_thr_elev_m (above) as its aerodrome
+                    # elevation datum instead of a separate field.
+                    'adg': self.combo_adg_horizontal_oes.currentText(),
                 }
 
             return {
