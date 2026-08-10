@@ -371,7 +371,9 @@ class QOLS:
             'width_m': ofs.get('inner_edge_m', 175.0),
             'start_elevation_m': ofs.get('start_elevation_m', 0.0),
             'end_elevation_m': ofs.get('end_elevation_m', 0.0),
-            'highest_thr_elev_m': ofs.get('arp_elevation_m', 0.0),
+            # #131: arp_elevation_m is now a top-level shared param, not
+            # part of the OFS tab's own specific_params.
+            'highest_thr_elev_m': params.get('arp_elevation_m', 0.0),
             'slope_pct': 20.0,
             'cap_height_m': 60.0,
             'approach_slope_pct': ofs.get('slope_pct', 3.33),
