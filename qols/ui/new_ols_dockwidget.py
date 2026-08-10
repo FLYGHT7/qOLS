@@ -47,14 +47,15 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
         'spin_slope_ofs':            3.33,
         'spin_Z0_ofs':            2548.0,
         'spin_ZE_ofs':            2546.5,
-        'spin_ARPH_ofs':          2548.0,
         'spin_contour_interval_ofs': 10.0,
         # OES Transitional
         'spin_widthApp_oes':        155.0,
         'spin_Z0_oes':            2548.0,
         'spin_ZE_oes':            2546.5,
-        'spin_ARPH_oes':          2548.0,
         'spin_slope_oes':            20.0,
+        # ARP (Aerodrome Reference Point) — shared by both tabs, moved to
+        # a single top-level field (#131).
+        'spin_ARP_elevation':     2548.0,
     }
 
     combo_rwyType_ofs: QComboBox
@@ -67,26 +68,29 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
     spin_slope_ofs: QLineEdit
     spin_Z0_ofs: QLineEdit
     spin_ZE_ofs: QLineEdit
-    spin_ARPH_ofs: QLineEdit
     spin_contour_interval_ofs: QLineEdit
     spin_widthApp_oes: QLineEdit
     spin_Z0_oes: QLineEdit
     spin_ZE_oes: QLineEdit
-    spin_ARPH_oes: QLineEdit
     spin_slope_oes: QLineEdit
     combo_adg_horizontal_oes: QComboBox
+    spin_ARP_elevation: QLineEdit
     runwaySelectionStatusLabel: QLabel
     thresholdSelectionStatusLabel: QLabel
+    arpSelectionStatusLabel: QLabel
 
     def __init__(self, iface, parent=None):
         super(NewOlsDockWidget, self).__init__(parent)
         self.iface = iface
         self.connected_runway_layer = None
         self.connected_threshold_layer = None
+        self.connected_arp_layer = None  # #131
         self._runway_selection_slot = None
         self._threshold_selection_slot = None
+        self._arp_selection_slot = None  # #131
         self._last_runway_count = 0
         self._last_threshold_count = 0
+        self._last_arp_count = 0  # #131
         self._connections: list = []
 
         # Live direction-preview marker (OFS/OES tabs, #117)
@@ -104,6 +108,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
 
             self.useSelectedRunwayCheckBox.setChecked(False)
             self.useSelectedThresholdCheckBox.setChecked(False)
+            self.useSelectedArpCheckBox.setChecked(False)  # #131
 
             try:
                 self._connect(self.combo_rwyType_ofs.currentIndexChanged,
@@ -124,12 +129,16 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
 
             self._connect(self.useSelectedRunwayCheckBox.toggled, self.update_selection_info)
             self._connect(self.useSelectedThresholdCheckBox.toggled, self.update_selection_info)
+            self._connect(self.useSelectedArpCheckBox.toggled, self.update_selection_info)  # #131
             self._connect(self.runwayLayerCombo.layerChanged, self.update_selection_info)
             self._connect(self.thresholdLayerCombo.layerChanged, self.update_selection_info)
+            self._connect(self.arpLayerCombo.layerChanged, self.update_selection_info)  # #131
             self._connect(self.runwayLayerCombo.layerChanged, self.connect_layer_selection_signals)
             self._connect(self.thresholdLayerCombo.layerChanged, self.connect_layer_selection_signals)
+            self._connect(self.arpLayerCombo.layerChanged, self.connect_layer_selection_signals)  # #131
             self._connect(self.runwayLayerCombo.layerChanged, self.validate_layer_change)
             self._connect(self.thresholdLayerCombo.layerChanged, self.validate_layer_change)
+            self._connect(self.arpLayerCombo.layerChanged, self.validate_layer_change)  # #131
 
             self._connect(self.calculateButton.clicked, self.on_calculate_clicked)
             self._connect(self.cancelButton.clicked, self.on_close_clicked)
@@ -158,8 +167,9 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
         lineedit_names = [
             'spin_rwyWidth_ofs', 'spin_distThr_ofs', 'spin_innerEdge_ofs',
             'spin_divergence_ofs', 'spin_length_ofs', 'spin_slope_ofs',
-            'spin_Z0_ofs', 'spin_ZE_ofs', 'spin_ARPH_ofs', 'spin_contour_interval_ofs',
-            'spin_widthApp_oes', 'spin_Z0_oes', 'spin_ZE_oes', 'spin_ARPH_oes', 'spin_slope_oes',
+            'spin_Z0_ofs', 'spin_ZE_ofs', 'spin_contour_interval_ofs',
+            'spin_widthApp_oes', 'spin_Z0_oes', 'spin_ZE_oes', 'spin_slope_oes',
+            'spin_ARP_elevation',  # #131 — shared ARP elevation field
         ]
         decimal_pattern = r'^-?\d*(?:\.\d*)?$'
         validator = QRegularExpressionValidator(QRegularExpression(decimal_pattern))
@@ -203,6 +213,12 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             self.thresholdLayerCombo.setExceptedLayerList([])
             self.thresholdLayerCombo.setShowCrs(False)
             self.thresholdLayerCombo.setAllowEmptyLayer(False)
+            # ARP layer is optional (#131) — most surfaces only need the
+            # shared elevation number, not the layer geometry.
+            self.arpLayerCombo.setFilters(QgsMapLayerProxyModel.VectorLayer)
+            self.arpLayerCombo.setExceptedLayerList([])
+            self.arpLayerCombo.setShowCrs(False)
+            self.arpLayerCombo.setAllowEmptyLayer(True)
             self.apply_geometry_filters()
             self._connect(QgsProject.instance().layersAdded, self.apply_geometry_filters)
             self._connect(QgsProject.instance().layersRemoved, self.apply_geometry_filters)
@@ -217,8 +233,10 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             ]
             runway_excluded = [lyr for lyr in vector_layers if lyr.geometryType() != QgsWkbTypes.LineGeometry]
             threshold_excluded = [lyr for lyr in vector_layers if lyr.geometryType() != QgsWkbTypes.PointGeometry]
+            arp_excluded = [lyr for lyr in vector_layers if lyr.geometryType() != QgsWkbTypes.PointGeometry]  # #131
             self.runwayLayerCombo.setExceptedLayerList(runway_excluded)
             self.thresholdLayerCombo.setExceptedLayerList(threshold_excluded)
+            self.arpLayerCombo.setExceptedLayerList(arp_excluded)
         except Exception as e:
             logger.warning(f"Unhandled error: {e}")
 
@@ -226,6 +244,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
         try:
             self.runwayLayerCombo.setStyleSheet("")
             self.thresholdLayerCombo.setStyleSheet("")
+            self.arpLayerCombo.setStyleSheet("")  # #131
         except Exception as e:
             logger.warning(f"Unhandled error: {e}")
 
@@ -235,13 +254,17 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             self._connect(QgsProject.instance().layersRemoved, self.update_dropdown_item_tooltips)
             self._connect(self.runwayLayerCombo.layerChanged, self.update_dropdown_item_tooltips)
             self._connect(self.thresholdLayerCombo.layerChanged, self.update_dropdown_item_tooltips)
+            self._connect(self.arpLayerCombo.layerChanged, self.update_dropdown_item_tooltips)  # #131
             try:
                 runway_view = self.runwayLayerCombo.view()
                 threshold_view = self.thresholdLayerCombo.view()
+                arp_view = self.arpLayerCombo.view()  # #131
                 runway_view.setMouseTracking(True)
                 threshold_view.setMouseTracking(True)
+                arp_view.setMouseTracking(True)  # #131
                 runway_view.installEventFilter(self)
                 threshold_view.installEventFilter(self)
+                arp_view.installEventFilter(self)  # #131
             except Exception as e:
                 logger.warning(f"Unhandled error: {e}")
             self.update_dropdown_item_tooltips()
@@ -252,11 +275,14 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
         try:
             current_runway_count = self.runwayLayerCombo.count()
             current_threshold_count = self.thresholdLayerCombo.count()
+            current_arp_count = self.arpLayerCombo.count()  # #131
             if (current_runway_count == self._last_runway_count
-                    and current_threshold_count == self._last_threshold_count):
+                    and current_threshold_count == self._last_threshold_count
+                    and current_arp_count == self._last_arp_count):
                 return
             self._last_runway_count = current_runway_count
             self._last_threshold_count = current_threshold_count
+            self._last_arp_count = current_arp_count  # #131
             try:
                 runway_model = self.runwayLayerCombo.model()
                 for i in range(self.runwayLayerCombo.count()):
@@ -282,9 +308,22 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                             self.thresholdLayerCombo.setItemData(i, tooltip, TOOLTIP_ROLE)
                         except (AttributeError, TypeError):
                             pass
+                arp_model = self.arpLayerCombo.model()  # #131
+                for i in range(self.arpLayerCombo.count()):
+                    layer = self.arpLayerCombo.layer(i)
+                    if layer:
+                        tooltip = (f"Layer: {layer.name()}\n"
+                                   f"Type: {self.get_geometry_type_name(layer)}\n"
+                                   f"Features: {layer.featureCount()}")
+                        arp_model.setData(arp_model.index(i, 0), tooltip, TOOLTIP_ROLE)
+                        try:
+                            self.arpLayerCombo.setItemData(i, tooltip, TOOLTIP_ROLE)
+                        except (AttributeError, TypeError):
+                            pass
                 try:
                     self.runwayLayerCombo.view().update()
                     self.thresholdLayerCombo.view().update()
+                    self.arpLayerCombo.view().update()
                 except AttributeError:
                     pass
             except Exception as e:
@@ -323,11 +362,15 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
     def eventFilter(self, obj, event):
         try:
             if event.type() == EVENT_MOUSE_MOVE:
-                if obj in (self.runwayLayerCombo.view(), self.thresholdLayerCombo.view()):
+                _combo_views = {
+                    self.runwayLayerCombo.view(): self.runwayLayerCombo,
+                    self.thresholdLayerCombo.view(): self.thresholdLayerCombo,
+                    self.arpLayerCombo.view(): self.arpLayerCombo,  # #131
+                }
+                if obj in _combo_views:
                     index = obj.indexAt(event.pos())
                     if index.isValid():
-                        is_runway = obj == self.runwayLayerCombo.view()
-                        combo = self.runwayLayerCombo if is_runway else self.thresholdLayerCombo
+                        combo = _combo_views[obj]
                         layer = combo.layer(index.row())
                         if layer:
                             tooltip = (f"Layer: {layer.name()}\n"
@@ -622,9 +665,15 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
         try:
             runway_layer = self.runwayLayerCombo.currentLayer()
             threshold_layer = self.thresholdLayerCombo.currentLayer()
+            arp_layer = self.arpLayerCombo.currentLayer()  # #131
             use_runway_selected = self.useSelectedRunwayCheckBox.isChecked()
             use_threshold_selected = self.useSelectedThresholdCheckBox.isChecked()
+            use_arp_selected = self.useSelectedArpCheckBox.isChecked()  # #131
             direction = 0 if self.direction_start_to_end else -1
+
+            # ARP elevation is now a single shared field for both tabs (#131)
+            # instead of the separate spin_ARPH_ofs/spin_ARPH_oes fields.
+            arp_elevation_m = self.get_numeric_value('spin_ARP_elevation')
 
             ofs_oes_index = self.newOlsTabWidget.currentIndex()
             if ofs_oes_index == 0:
@@ -644,7 +693,6 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                     'slope_pct': self.get_numeric_value('spin_slope_ofs'),
                     'start_elevation_m': z0_calc,
                     'end_elevation_m': ze_calc,
-                    'arp_elevation_m': self.get_numeric_value('spin_ARPH_ofs'),
                     'direction': s_value,
                     'contour_interval_m': int(round(self.get_numeric_value('spin_contour_interval_ofs'))),
                 }
@@ -654,7 +702,10 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                 specific_params = {
                     'width_m': self.get_numeric_value('spin_widthApp_oes'),
                     'start_elevation_m': self.get_numeric_value('spin_Z0_oes'),
-                    'highest_thr_elev_m': self.get_numeric_value('spin_ARPH_oes'),
+                    # highest_thr_elev_m: this script's own name for the Z
+                    # ceiling, now sourced from the shared ARP elevation (#131)
+                    # instead of its own spin_ARPH_oes field.
+                    'highest_thr_elev_m': arp_elevation_m,
                     'slope_pct': self.get_numeric_value('spin_slope_oes'),
                     'cap_height_m': 60.0,
                     'approach_slope_pct': self.get_numeric_value('spin_slope_ofs'),
@@ -671,9 +722,12 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                 'surface_type': surface_type,
                 'runway_layer': runway_layer,
                 'threshold_layer': threshold_layer,
+                'arp_layer': arp_layer,  # #131
                 'use_runway_selected': use_runway_selected,
                 'use_threshold_selected': use_threshold_selected,
+                'use_arp_selected': use_arp_selected,  # #131
                 'direction': direction,
+                'arp_elevation_m': arp_elevation_m,  # #131
                 'specific_params': specific_params,
             }
 
@@ -738,8 +792,10 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
         try:
             runway_layer = self.runwayLayerCombo.currentLayer()
             threshold_layer = self.thresholdLayerCombo.currentLayer()
+            arp_layer = self.arpLayerCombo.currentLayer()  # #131
             use_runway_selected = self.useSelectedRunwayCheckBox.isChecked()
             use_threshold_selected = self.useSelectedThresholdCheckBox.isChecked()
+            use_arp_selected = self.useSelectedArpCheckBox.isChecked()  # #131
 
             if runway_layer:
                 runway_selected = len(runway_layer.selectedFeatures())
@@ -761,6 +817,17 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             else:
                 threshold_status = "No layer"
 
+            # ARP is optional (#131) — "No layer" is a neutral state, not an error
+            if arp_layer:
+                arp_selected = len(arp_layer.selectedFeatures())
+                arp_total = arp_layer.featureCount()
+                if use_arp_selected:
+                    arp_status = f"Selected ({arp_selected})" if arp_selected > 0 else "No selection"
+                else:
+                    arp_status = f"All ({arp_total})"
+            else:
+                arp_status = "No layer"
+
             _is_dark = QApplication.palette().window().color().lightness() < 128
             _c_warn = "#FFA726" if _is_dark else "#E65100"
             _c_ok = "#66BB6A" if _is_dark else "#2E7D32"
@@ -781,11 +848,20 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             else:
                 threshold_icon, threshold_style = "✘", f"QLabel {{ color: {_c_err}; {_base_style} }}"
 
+            if "All" in arp_status:
+                arp_icon, arp_style = "⚠", f"QLabel {{ color: {_c_warn}; {_base_style} }}"
+            elif "Selected" in arp_status:
+                arp_icon, arp_style = "✔", f"QLabel {{ color: {_c_ok}; {_base_style} }}"
+            else:
+                arp_icon, arp_style = "•", f"QLabel {{ {_base_style} }}"
+
             try:
                 self.runwaySelectionStatusLabel.setText(f"{runway_icon} {runway_status}")
                 self.runwaySelectionStatusLabel.setStyleSheet(runway_style)
                 self.thresholdSelectionStatusLabel.setText(f"{threshold_icon} {threshold_status}")
                 self.thresholdSelectionStatusLabel.setStyleSheet(threshold_style)
+                self.arpSelectionStatusLabel.setText(f"{arp_icon} {arp_status}")
+                self.arpSelectionStatusLabel.setStyleSheet(arp_style)
             except Exception as e:
                 logger.warning(f"Unhandled error: {e}")
 
@@ -796,6 +872,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             try:
                 self.runwaySelectionStatusLabel.setText("❌ Error")
                 self.thresholdSelectionStatusLabel.setText("❌ Error")
+                self.arpSelectionStatusLabel.setText("❌ Error")
             except (AttributeError, RuntimeError):
                 pass
 
@@ -803,6 +880,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
         try:
             runway_layer = self.runwayLayerCombo.currentLayer()
             threshold_layer = self.thresholdLayerCombo.currentLayer()
+            arp_layer = self.arpLayerCombo.currentLayer()  # #131
             if runway_layer and runway_layer.geometryType() != QgsWkbTypes.LineGeometry:
                 self.show_error_message(
                     f"Invalid Runway Layer Centerline!\n"
@@ -819,6 +897,15 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                 )
                 self.thresholdLayerCombo.setLayer(None)
                 return
+            # ARP is optional (#131) — only validated when actually set
+            if arp_layer and arp_layer.geometryType() != QgsWkbTypes.PointGeometry:
+                self.show_error_message(
+                    f"Invalid ARP Layer!\n"
+                    f"'{arp_layer.name()}' contains {self.get_layer_geometry_info(arp_layer)} geometry.\n"
+                    f"ARP Layer must contain POINT geometry."
+                )
+                self.arpLayerCombo.setLayer(None)
+                return
             self.update_selection_info()
         except Exception as e:
             logger.warning(f"Unhandled error: {e}")
@@ -829,6 +916,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
         try:
             runway_layer = self.runwayLayerCombo.currentLayer()
             threshold_layer = self.thresholdLayerCombo.currentLayer()
+            arp_layer = self.arpLayerCombo.currentLayer()  # #131
             if runway_layer and isinstance(runway_layer, QgsVectorLayer):
                 self._runway_selection_slot = lambda *_: self.update_selection_info()
                 runway_layer.selectionChanged.connect(self._runway_selection_slot)
@@ -841,6 +929,12 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                 self.connected_threshold_layer = threshold_layer
             else:
                 self._threshold_selection_slot = None
+            if arp_layer and isinstance(arp_layer, QgsVectorLayer):  # #131
+                self._arp_selection_slot = lambda *_: self.update_selection_info()
+                arp_layer.selectionChanged.connect(self._arp_selection_slot)
+                self.connected_arp_layer = arp_layer
+            else:
+                self._arp_selection_slot = None
         except Exception as e:
             logger.warning(f"Unhandled error: {e}")
 
@@ -860,6 +954,13 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                     pass
                 self.connected_threshold_layer = None
                 self._threshold_selection_slot = None
+            if self.connected_arp_layer and self._arp_selection_slot:  # #131
+                try:
+                    self.connected_arp_layer.selectionChanged.disconnect(self._arp_selection_slot)
+                except RuntimeError:
+                    pass
+                self.connected_arp_layer = None
+                self._arp_selection_slot = None
         except Exception as e:
             logger.warning(f"Unhandled error: {e}")
 

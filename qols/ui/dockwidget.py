@@ -74,7 +74,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         'spin_widthApp':              280.0,
         'spin_Z0':                   2548.0,
         'spin_ZE':                   2546.5,
-        'spin_ARPH':                 2548.0,
         'spin_L1':                   3000.0,
         'spin_L2':                   3600.0,
         'spin_LH':                   8400.0,
@@ -87,7 +86,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         'spin_width_ofz':             120.0,
         'spin_Z0_ofz':               2548.0,
         'spin_ZE_ofz':               2546.5,
-        'spin_ARPH_ofz':             2548.0,
         'spin_IHSlope_ofz':            33.3,
         # Outer Horizontal
         'spin_radius_outer':        15000.0,
@@ -101,8 +99,10 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         'spin_widthApp_transitional': 280.0,
         'spin_Z0_transitional':      2548.0,
         'spin_ZE_transitional':      2546.5,
-        'spin_ARPH_transitional':    2548.0,
         'spin_Tslope_transitional':    14.3,
+        # ARP (Aerodrome Reference Point) — shared by every tab that needs
+        # a Z datum, moved to a single top-level field (#131).
+        'spin_ARP_elevation':        2548.0,
     }
 
     # Widgets declared in qols_panel_base.ui, guaranteed available after setupUi() (R-04)
@@ -146,12 +146,15 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         # Track connected layers for selection signals (Issue #59)
         self.connected_runway_layer = None
         self.connected_threshold_layer = None
+        self.connected_arp_layer = None  # #131
         # Lambda slots stored for proper selectionChanged disconnection (Issue #105)
         self._runway_selection_slot = None
         self._threshold_selection_slot = None
+        self._arp_selection_slot = None  # #131
         # State tracking for dropdown tooltip optimization (BUG-05)
         self._last_runway_count = 0
         self._last_threshold_count = 0
+        self._last_arp_count = 0  # #131
         # Tracked signal connections for clean teardown in closeEvent (R-05)
         self._connections: list = []
         # Cached approach defaults — always exists so get_parameters() never needs getattr fallback
@@ -224,6 +227,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
 
             self.useSelectedRunwayCheckBox.setChecked(False)
             self.useSelectedThresholdCheckBox.setChecked(False)
+            self.useSelectedArpCheckBox.setChecked(False)  # #131
 
             self.initialize_all_numeric_defaults()
             self.update_takeoff_final_width_controls()
@@ -277,16 +281,20 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Connect signals for real-time feedback (tracked for clean closeEvent teardown)
             self._connect(self.useSelectedRunwayCheckBox.toggled, self.update_selection_info)
             self._connect(self.useSelectedThresholdCheckBox.toggled, self.update_selection_info)
+            self._connect(self.useSelectedArpCheckBox.toggled, self.update_selection_info)  # #131
             self._connect(self.runwayLayerCombo.layerChanged, self.update_selection_info)
             self._connect(self.thresholdLayerCombo.layerChanged, self.update_selection_info)
+            self._connect(self.arpLayerCombo.layerChanged, self.update_selection_info)  # #131
 
             # Connect to layer changes for selection signal management (Issue #59)
             self._connect(self.runwayLayerCombo.layerChanged, self.connect_layer_selection_signals)
             self._connect(self.thresholdLayerCombo.layerChanged, self.connect_layer_selection_signals)
+            self._connect(self.arpLayerCombo.layerChanged, self.connect_layer_selection_signals)  # #131
 
             # SAFETY: Connect to layer combo changes for immediate validation
             self._connect(self.runwayLayerCombo.layerChanged, self.validate_layer_change)
             self._connect(self.thresholdLayerCombo.layerChanged, self.validate_layer_change)
+            self._connect(self.arpLayerCombo.layerChanged, self.validate_layer_change)  # #131
 
             # Connect signals
             self._connect(self.calculateButton.clicked, self.on_calculate_clicked)
@@ -356,16 +364,17 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         """Configure numeric input validation for all QLineEdit widgets (formerly QDoubleSpinBox)."""
         try:
             lineedit_names = [
-                'spin_widthApp', 'spin_Z0', 'spin_ZE', 'spin_ARPH',
+                'spin_widthApp', 'spin_Z0', 'spin_ZE',
                 'spin_L1', 'spin_L2', 'spin_LH',
                 'spin_L_conical', 'spin_height_conical',
                 'spin_L_inner', 'spin_height_inner',
-                'spin_width_ofz', 'spin_Z0_ofz', 'spin_ZE_ofz', 'spin_ARPH_ofz', 'spin_IHSlope_ofz',
+                'spin_width_ofz', 'spin_Z0_ofz', 'spin_ZE_ofz', 'spin_IHSlope_ofz',
                 'spin_radius_outer', 'spin_height_outer',
                 'spin_widthDep_takeoff', 'spin_maxWidthDep_takeoff',
                 'spin_CWYLength_takeoff', 'spin_Z0_takeoff',
                 'spin_widthApp_transitional', 'spin_Z0_transitional', 'spin_ZE_transitional',
-                'spin_ARPH_transitional', 'spin_Tslope_transitional',
+                'spin_Tslope_transitional',
+                'spin_ARP_elevation',  # #131 — shared ARP elevation field
             ]
 
             # Allow unlimited decimals; optional sign and decimal part
@@ -550,7 +559,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'label_width_ofz', 'spin_width_ofz',
                 'label_Z0_ofz', 'spin_Z0_ofz',
                 'label_ZE_ofz', 'spin_ZE_ofz',
-                'label_ARPH_ofz', 'spin_ARPH_ofz',
                 'label_IHSlope_ofz', 'spin_IHSlope_ofz'
             ]
 
@@ -576,6 +584,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
 
             runway_layer = self.runwayLayerCombo.currentLayer()
             threshold_layer = self.thresholdLayerCombo.currentLayer()
+            arp_layer = self.arpLayerCombo.currentLayer()  # #131
 
             # Connect to Runway Layer Centerline selection changes.
             # Lambda wrapper discards the 3 args emitted by selectionChanged so the
@@ -594,6 +603,14 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 self.connected_threshold_layer = threshold_layer
             else:
                 self._threshold_selection_slot = None
+
+            # Connect to ARP layer selection changes (#131)
+            if arp_layer and isinstance(arp_layer, QgsVectorLayer):
+                self._arp_selection_slot = lambda *_: self.update_selection_info()
+                arp_layer.selectionChanged.connect(self._arp_selection_slot)
+                self.connected_arp_layer = arp_layer
+            else:
+                self._arp_selection_slot = None
 
         except Exception as e:
             logger.warning(f"Unhandled error: {e}")
@@ -620,6 +637,16 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     pass  # Signal might not be connected
                 self.connected_threshold_layer = None
                 self._threshold_selection_slot = None
+
+            if self.connected_arp_layer and self._arp_selection_slot:  # #131
+                try:
+                    self.connected_arp_layer.selectionChanged.disconnect(
+                        self._arp_selection_slot
+                    )
+                except RuntimeError:
+                    pass  # Signal might not be connected
+                self.connected_arp_layer = None
+                self._arp_selection_slot = None
 
         except Exception as e:
             logger.warning(f"Unhandled error: {e}")
@@ -969,6 +996,15 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self.thresholdLayerCombo.setShowCrs(False)
             self.thresholdLayerCombo.setAllowEmptyLayer(False)
 
+            # Configure ARP layer combo - only show POINT geometry layers (#131).
+            # Unlike Runway/Threshold, empty is a valid state: only surfaces
+            # that actually consume the ARP layer (e.g. Outer Horizontal)
+            # require one to be selected.
+            self.arpLayerCombo.setFilters(QgsMapLayerProxyModel.VectorLayer)
+            self.arpLayerCombo.setExceptedLayerList([])
+            self.arpLayerCombo.setShowCrs(False)
+            self.arpLayerCombo.setAllowEmptyLayer(True)
+
             # Apply geometry filtering
             self.apply_geometry_filters()
 
@@ -991,6 +1027,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Filter Runway Layer Centerline layers - only show LINE geometry
             runway_excluded = []
             threshold_excluded = []
+            arp_excluded = []
 
             for layer in vector_layers:
                 if layer.geometryType() != QgsWkbTypes.LineGeometry:
@@ -998,10 +1035,12 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
 
                 if layer.geometryType() != QgsWkbTypes.PointGeometry:
                     threshold_excluded.append(layer)
+                    arp_excluded.append(layer)  # #131 — ARP layer is also POINT-only
 
             # Apply exclusion lists
             self.runwayLayerCombo.setExceptedLayerList(runway_excluded)
             self.thresholdLayerCombo.setExceptedLayerList(threshold_excluded)
+            self.arpLayerCombo.setExceptedLayerList(arp_excluded)
 
         except Exception as e:
             logger.warning(f"Unhandled error: {e}")
@@ -1015,19 +1054,23 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             self._connect(QgsProject.instance().layersRemoved, self.update_dropdown_item_tooltips)
             self._connect(self.runwayLayerCombo.layerChanged, self.update_dropdown_item_tooltips)
             self._connect(self.thresholdLayerCombo.layerChanged, self.update_dropdown_item_tooltips)
+            self._connect(self.arpLayerCombo.layerChanged, self.update_dropdown_item_tooltips)  # #131
 
             # Connect to mouse events on the dropdown views for real-time tooltip updates
             try:
                 runway_view = self.runwayLayerCombo.view()
                 threshold_view = self.thresholdLayerCombo.view()
+                arp_view = self.arpLayerCombo.view()  # #131
 
                 # Set mouse tracking to capture hover events
                 runway_view.setMouseTracking(True)
                 threshold_view.setMouseTracking(True)
+                arp_view.setMouseTracking(True)  # #131
 
                 # Install event filters for hover detection
                 runway_view.installEventFilter(self)
                 threshold_view.installEventFilter(self)
+                arp_view.installEventFilter(self)  # #131
 
             except Exception as e:
                 logger.warning(f"Unhandled error: {e}")
@@ -1044,14 +1087,17 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Reduce logging frequency - only log when layers change
             current_runway_count = self.runwayLayerCombo.count()
             current_threshold_count = self.thresholdLayerCombo.count()
+            current_arp_count = self.arpLayerCombo.count()  # #131
 
             # Only proceed if layer counts have changed
             if (current_runway_count == self._last_runway_count
-                    and current_threshold_count == self._last_threshold_count):
+                    and current_threshold_count == self._last_threshold_count
+                    and current_arp_count == self._last_arp_count):
                 return  # No changes, skip update
 
             self._last_runway_count = current_runway_count
             self._last_threshold_count = current_threshold_count
+            self._last_arp_count = current_arp_count  # #131
 
             # Force update tooltips using multiple methods for maximum compatibility
             try:
@@ -1093,10 +1139,28 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                         except (AttributeError, TypeError):
                             pass
 
+                # Update ARP combo tooltips - focus on tooltip data only (#131)
+                arp_model = self.arpLayerCombo.model()
+                for i in range(self.arpLayerCombo.count()):
+                    layer = self.arpLayerCombo.layer(i)
+                    if layer:
+                        geom_type = self.get_geometry_type_name(layer)
+                        feature_count = layer.featureCount()
+                        tooltip = f"Layer: {layer.name()}\nType: {geom_type}\nFeatures: {feature_count}"
+
+                        index = arp_model.index(i, 0)
+                        arp_model.setData(index, tooltip, TOOLTIP_ROLE)
+
+                        try:
+                            self.arpLayerCombo.setItemData(i, tooltip, TOOLTIP_ROLE)
+                        except (AttributeError, TypeError):
+                            pass
+
                 # Force view refresh to ensure tooltips are applied
                 try:
                     self.runwayLayerCombo.view().update()
                     self.thresholdLayerCombo.view().update()
+                    self.arpLayerCombo.view().update()
                 except AttributeError:
                     pass
 
@@ -1127,13 +1191,17 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Check if this is a mouse move event in one of our dropdown views
             if event.type() == EVENT_MOUSE_MOVE:
                 # Get the view that received the event
-                if obj == self.runwayLayerCombo.view() or obj == self.thresholdLayerCombo.view():
+                _combo_views = {
+                    self.runwayLayerCombo.view(): self.runwayLayerCombo,
+                    self.thresholdLayerCombo.view(): self.thresholdLayerCombo,
+                    self.arpLayerCombo.view(): self.arpLayerCombo,  # #131
+                }
+                if obj in _combo_views:
                     # Get the item under the mouse
                     index = obj.indexAt(event.pos())
                     if index.isValid():
                         # Get the layer for this index
-                        is_runway = obj == self.runwayLayerCombo.view()
-                        combo = self.runwayLayerCombo if is_runway else self.thresholdLayerCombo
+                        combo = _combo_views[obj]
                         layer = combo.layer(index.row())
                         if layer:
                             geom_type = self.get_geometry_type_name(layer)
@@ -1168,6 +1236,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Clear any inline stylesheets so the active QGIS theme (dark/light) owns rendering.
             self.runwayLayerCombo.setStyleSheet("")
             self.thresholdLayerCombo.setStyleSheet("")
+            self.arpLayerCombo.setStyleSheet("")  # #131
         except Exception as e:
             logger.warning(f"Unhandled error: {e}")
 
@@ -1177,9 +1246,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         try:
             runway_layer = self.runwayLayerCombo.currentLayer()
             threshold_layer = self.thresholdLayerCombo.currentLayer()
+            arp_layer = self.arpLayerCombo.currentLayer()  # #131
 
             use_runway_selected = self.useSelectedRunwayCheckBox.isChecked()
             use_threshold_selected = self.useSelectedThresholdCheckBox.isChecked()
+            use_arp_selected = self.useSelectedArpCheckBox.isChecked()  # #131
 
             # Update runway info
             if runway_layer:
@@ -1211,6 +1282,21 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             else:
                 threshold_status = "No layer"
 
+            # Update ARP info (#131) — optional, so "No layer" isn't an error
+            if arp_layer:
+                arp_selected = len(arp_layer.selectedFeatures())
+                arp_total = arp_layer.featureCount()
+
+                if use_arp_selected:
+                    if arp_selected > 0:
+                        arp_status = f"Selected ({arp_selected})"
+                    else:
+                        arp_status = "No selection"
+                else:
+                    arp_status = f"All ({arp_total})"
+            else:
+                arp_status = "No layer"
+
             # Detect active theme (dark vs light) to pick readable label colors.
             _is_dark = QApplication.palette().window().color().lightness() < 128
             _c_warn = "#FFA726" if _is_dark else "#E65100"  # orange
@@ -1238,12 +1324,25 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 threshold_icon = "✘"
                 threshold_style = f"QLabel {{ color: {_c_err}; {_base_style} }}"
 
+            # ARP is optional (#131) — "No layer" is a neutral state, not an error
+            if "All" in arp_status:
+                arp_icon = "⚠"
+                arp_style = f"QLabel {{ color: {_c_warn}; {_base_style} }}"
+            elif "Selected" in arp_status:
+                arp_icon = "✔"
+                arp_style = f"QLabel {{ color: {_c_ok}; {_base_style} }}"
+            else:
+                arp_icon = "•"
+                arp_style = f"QLabel {{ {_base_style} }}"
+
             # Update per-layer labels
             try:
                 self.runwaySelectionStatusLabel.setText(f"{runway_icon} {runway_status}")
                 self.runwaySelectionStatusLabel.setStyleSheet(runway_style)
                 self.thresholdSelectionStatusLabel.setText(f"{threshold_icon} {threshold_status}")
                 self.thresholdSelectionStatusLabel.setStyleSheet(threshold_style)
+                self.arpSelectionStatusLabel.setText(f"{arp_icon} {arp_status}")
+                self.arpSelectionStatusLabel.setStyleSheet(arp_style)
             except Exception as e:
                 logger.warning(f"Unhandled error: {e}")
 
@@ -1257,6 +1356,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             try:
                 self.runwaySelectionStatusLabel.setText("❌ Error")
                 self.thresholdSelectionStatusLabel.setText("❌ Error")
+                self.arpSelectionStatusLabel.setText("❌ Error")
             except (AttributeError, RuntimeError):
                 pass
 
@@ -1354,7 +1454,21 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     self.thresholdLayerCombo.setLayer(None)
                     return
 
-            # If both layers are valid, update status
+            # Validate ARP layer (#131) — optional, so only checked when set
+            arp_layer = self.arpLayerCombo.currentLayer()
+            if arp_layer:
+                if arp_layer.geometryType() != QgsWkbTypes.PointGeometry:
+                    geom_type = self.get_layer_geometry_info(arp_layer)
+                    self.show_error_message(
+                        f"Invalid ARP Layer!\n"
+                        f"'{arp_layer.name()}' contains {geom_type} geometry.\n"
+                        f"ARP Layer must contain POINT geometry (the ARP point)."
+                    )
+                    # Reset to no selection
+                    self.arpLayerCombo.setLayer(None)
+                    return
+
+            # If all layers are valid, update status
             self.update_selection_info()
 
         except Exception as e:
@@ -1795,9 +1909,16 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         try:
             runway_layer = self.runwayLayerCombo.currentLayer()
             threshold_layer = self.thresholdLayerCombo.currentLayer()
+            arp_layer = self.arpLayerCombo.currentLayer()  # #131
 
             use_runway_selected = self.useSelectedRunwayCheckBox.isChecked()
             use_threshold_selected = self.useSelectedThresholdCheckBox.isChecked()
+            use_arp_selected = self.useSelectedArpCheckBox.isChecked()  # #131
+
+            # ARP (Aerodrome Reference Point) elevation — a single shared
+            # value reused by every tab that needs a Z datum, instead of
+            # the 4 duplicate per-tab fields removed in #131.
+            arp_elevation_m = self.get_numeric_value('spin_ARP_elevation')
 
             # Get direction
             direction = 0 if self.direction_start_to_end else -1
@@ -1828,12 +1949,15 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 code_value = self.get_code_value('spin_code')
                 rwy_text = self.combo_rwyClassification.currentText()
                 width_value = self.get_numeric_value('spin_widthApp')
-                arph_value = self.get_numeric_value('spin_ARPH')
                 l1_value = self.get_numeric_value('spin_L1')
                 l2_value = self.get_numeric_value('spin_L2')
                 lh_value = self.get_numeric_value('spin_LH')
 
-                # Provide both legacy and pythonic keys for compatibility
+                # Provide both legacy and pythonic keys for compatibility.
+                # ARPH/arp_elevation_m no longer collected per-tab (#131) —
+                # the shared value is injected into the top-level params
+                # dict below, reaching this script the same way
+                # runway_layer/threshold_layer already do.
                 specific_params = {
                     # Legacy keys (kept)
                     'code': code_value,
@@ -1841,7 +1965,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'widthApp': width_value,
                     'Z0': Z0_calc,
                     'ZE': ZE_calc,
-                    'ARPH': arph_value,
                     'L1': l1_value,
                     'L2': l2_value,
                     'LH': lh_value,
@@ -1852,7 +1975,6 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'approach_width_m': width_value,
                     'start_elevation_m': Z0_calc,
                     'end_elevation_m': ZE_calc,
-                    'arp_elevation_m': arph_value,
                     'first_section_length_m': l1_value,
                     'second_section_length_m': l2_value,
                     'horizontal_section_length_m': lh_value,
@@ -1906,11 +2028,13 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                     'combined_execution': True,
                 }
             elif surface_type == SurfaceType.OUTER_HORIZONTAL:
+                # arp_elevation no longer collected per-tab (#131) — the
+                # shared value reaches outer-horizontal.py via the
+                # top-level params dict below.
                 specific_params = {
                     'code': self.get_code_value('spin_code_outer'),
                     'radius': self.get_numeric_value('spin_radius_outer'),
                     'height': self.get_numeric_value('spin_height_outer'),
-                    'arp_elevation': self.get_numeric_value('spin_arp_elevation_outer'),
                 }
             elif surface_type == SurfaceType.TAKEOFF:
                 code_value = self.get_code_value('spin_code_takeoff')
@@ -1961,13 +2085,15 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 else:  # Inverted direction
                     Z0_calc, ZE_calc = ze_ui, z0_ui
 
+                # ARPH no longer collected per-tab (#131) — the shared
+                # value reaches TransitionalSurface_UTM.py's ZIH ceiling
+                # via the top-level params dict below.
                 specific_params = {
                     'code': self.get_code_value('spin_code_transitional'),  # QComboBox
                     'rwyClassification': self.combo_rwyClassification_transitional.currentText(),
                     'widthApp': float(self.spin_widthApp_transitional.text() or "0"),  # QLineEdit
                     'Z0': Z0_calc,
                     'ZE': ZE_calc,
-                    'ARPH': float(self.spin_ARPH_transitional.text() or "0"),          # QLineEdit
                     'Tslope': float(self.spin_Tslope_transitional.text() or "0") / 100.0,  # % → decimal
                     's': s_value,  # Special parameter for transitional runway direction
                     'merge_transitional': self.check_merge_transitional.isChecked(),  # #121
@@ -1975,13 +2101,15 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                         self.get_numeric_value('spin_contour_interval_transitional'))),
                 }
             elif surface_type == SurfaceType.OFZ:
+                # ARPH no longer collected per-tab (#131) — the shared
+                # value reaches OFZ_UTM.py's ZIH ceiling via the
+                # top-level params dict below.
                 specific_params = {
                     'code': self.get_code_value('spin_code_ofz'),  # QComboBox
                     'rwyClassification': self.combo_rwyClassification_ofz.currentText(),
                     'width': float(self.spin_width_ofz.text() or "0"),
                     'Z0': float(self.spin_Z0_ofz.text() or "0"),
                     'ZE': float(self.spin_ZE_ofz.text() or "0"),
-                    'ARPH': float(self.spin_ARPH_ofz.text() or "0"),
                     'IHSlope': float(self.spin_IHSlope_ofz.text() or "0") / 100.0  # Convert percentage to decimal
                 }
                 # Inject IA/BL params if available from rules
@@ -2008,9 +2136,21 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 'surface_type': surface_type,
                 'runway_layer': runway_layer,
                 'threshold_layer': threshold_layer,
+                'arp_layer': arp_layer,  # #131
                 'use_runway_selected': use_runway_selected,
                 'use_threshold_selected': use_threshold_selected,
+                'use_arp_selected': use_arp_selected,  # #131
                 'direction': direction,
+                # ARP (Aerodrome Reference Point) elevation, shared by every
+                # script (#131). Injected under every legacy alias each
+                # script already reads via globals().get(...), so no
+                # script math needs to change: OFZ/Transitional/Take-Off/
+                # Approach read 'ARPH' (Approach also checks
+                # 'arp_elevation_m' first); outer-horizontal.py reads
+                # 'arp_elevation'.
+                'arp_elevation_m': arp_elevation_m,
+                'ARPH': arp_elevation_m,
+                'arp_elevation': arp_elevation_m,
                 'specific_params': specific_params
             }
 
