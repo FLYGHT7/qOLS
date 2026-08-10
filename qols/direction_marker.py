@@ -1,5 +1,6 @@
 """qols/direction_marker.py — live direction-preview triangle for the
-Approach/Transitional (and OFS/OES) dockwidget tabs (#117).
+Approach/Transitional/Take-Off/OFZ (and OFS/OES) dockwidget tabs
+(#117, #130).
 
 Mirrors qpansopy's OMNI SID DER marker: a small triangle, tip pointing the
 way the surface will extend, sized in screen pixels so it stays visible at
@@ -118,7 +119,8 @@ def build_marker_geometry(
     runway_layer,
     threshold_layer,
     direction: int,
-    use_selected_feature: bool,
+    use_runway_selected: bool,
+    use_threshold_selected: bool,
     length_px: float,
     half_width_px: float,
     map_units_per_pixel: float,
@@ -134,8 +136,8 @@ def build_marker_geometry(
 
     from qgis.core import QgsGeometry, QgsLineString, QgsPoint, QgsPolygon
 
-    runway_sel = _resolve_features(runway_layer, use_selected_feature)
-    threshold_sel = _resolve_features(threshold_layer, use_selected_feature)
+    runway_sel = _resolve_features(runway_layer, use_runway_selected)
+    threshold_sel = _resolve_features(threshold_layer, use_threshold_selected)
     if not runway_sel or not threshold_sel:
         return None
 
