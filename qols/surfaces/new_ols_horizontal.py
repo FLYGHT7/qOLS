@@ -14,7 +14,7 @@ aerodrome elevation. Table 4-10 collapses to exactly 3 distinct
 radius/height tiers (IIC, III, IV and V all share the same values), so a
 single feature covers all of them rather than repeating identical rings.
 """
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 
 # ---------------------------------------------------------------------------
 # ADG group constants
@@ -50,6 +50,33 @@ _ADG_TIER_INDEX: Dict[str, int] = {
 }
 
 
+def get_ring_hole_pairs(
+    rings: List[Dict[str, float]],
+) -> List[Tuple[Dict[str, float], Optional[Dict[str, float]]]]:
+    """Pair each ring with the immediately-smaller ring whose footprint
+    must be subtracted from it to form an annulus.
+
+    Table 4-10's tiers are always nested (each successive tier's
+    ``radius_m`` is >= the previous one's), so the immediately-smaller
+    ring's full disc already covers every ring below it — subtracting
+    just that one ring, not the union of all smaller ones, is enough.
+    The smallest ring (index 0) has no hole source and stays a full
+    disc, matching the reported behaviour ("similar to the conical but
+    flat" — only the innermost tier is solid; #124 already established
+    this same nested-annulus shape for Conical vs. Inner Horizontal).
+
+    Args:
+        rings: Rings ordered smallest to largest, as returned by
+            :func:`get_horizontal_surface_rings`.
+
+    Returns:
+        A list of ``(ring, hole_source)`` tuples, one per input ring,
+        in the same order; ``hole_source`` is ``None`` for the first
+        ring and the previous ring otherwise.
+    """
+    return [(ring, rings[i - 1] if i > 0 else None) for i, ring in enumerate(rings)]
+
+
 def get_horizontal_surface_rings(adg: str) -> List[Dict[str, float]]:
     """Return the cumulative list of rings for the given ADG group.
 
@@ -72,4 +99,5 @@ __all__ = [
     "ADG_I", "ADG_IIA", "ADG_IIB", "ADG_IIC", "ADG_III", "ADG_IV", "ADG_V",
     "ADG_GROUPS",
     "get_horizontal_surface_rings",
+    "get_ring_hole_pairs",
 ]
