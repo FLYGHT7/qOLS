@@ -70,6 +70,74 @@
        <property name="spacing"><number>6</number></property>
        <property name="margin"><number>2</number></property>
 
+       <!-- ARP (Aerodrome Reference Point) LAYER + ELEVATION (#131) -->
+       <item>
+        <widget class="QFrame" name="arpFrame">
+         <property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
+         <layout class="QVBoxLayout" name="arpCompactLayout">
+          <property name="spacing"><number>4</number></property>
+          <property name="margin"><number>4</number></property>
+          <item>
+           <widget class="QLabel" name="arpTitleLabel">
+            <property name="text"><string>ARP Layer</string></property>
+            <property name="styleSheet"><string>QLabel { font-weight: bold; }</string></property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="arpControlLayout">
+            <property name="spacing"><number>8</number></property>
+            <item>
+             <widget class="QgsMapLayerComboBox" name="arpLayerCombo">
+              <property name="minimumHeight"><number>24</number></property>
+              <property name="maximumHeight"><number>28</number></property>
+              <property name="toolTip"><string>Select the layer containing the Aerodrome Reference Point (ARP). Optional unless the active surface requires it.</string></property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch><verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="useSelectedArpCheckBox">
+              <property name="text"><string>Selected Only</string></property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch><verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="arpSelectionStatusLabel">
+            <property name="text"><string>No layer</string></property>
+            <property name="styleSheet"><string>QLabel { font-weight: bold; font-size: 11px; }</string></property>
+            <property name="minimumHeight"><number>16</number></property>
+            <property name="maximumHeight"><number>16</number></property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="arpElevationLayout">
+            <property name="spacing"><number>8</number></property>
+            <item>
+             <widget class="QLabel" name="label_ARP_elevation">
+              <property name="text"><string>ARP Elevation (m):</string></property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="spin_ARP_elevation">
+              <property name="text"><string>2548.00</string></property>
+              <property name="toolTip"><string>Aerodrome Reference Point elevation, shared by the OFS and OES tabs.</string></property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+
        <item>
         <widget class="QFrame" name="runwayFrame">
          <property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
@@ -165,74 +233,6 @@
             <property name="minimumHeight"><number>16</number></property>
             <property name="maximumHeight"><number>16</number></property>
            </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-
-       <!-- ARP (Aerodrome Reference Point) LAYER + ELEVATION (#131) -->
-       <item>
-        <widget class="QFrame" name="arpFrame">
-         <property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
-         <layout class="QVBoxLayout" name="arpCompactLayout">
-          <property name="spacing"><number>4</number></property>
-          <property name="margin"><number>4</number></property>
-          <item>
-           <widget class="QLabel" name="arpTitleLabel">
-            <property name="text"><string>ARP Layer</string></property>
-            <property name="styleSheet"><string>QLabel { font-weight: bold; }</string></property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="arpControlLayout">
-            <property name="spacing"><number>8</number></property>
-            <item>
-             <widget class="QgsMapLayerComboBox" name="arpLayerCombo">
-              <property name="minimumHeight"><number>24</number></property>
-              <property name="maximumHeight"><number>28</number></property>
-              <property name="toolTip"><string>Select the layer containing the Aerodrome Reference Point (ARP). Optional unless the active surface requires it.</string></property>
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>0</horstretch><verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="useSelectedArpCheckBox">
-              <property name="text"><string>Selected Only</string></property>
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch><verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QLabel" name="arpSelectionStatusLabel">
-            <property name="text"><string>No layer</string></property>
-            <property name="styleSheet"><string>QLabel { font-weight: bold; font-size: 11px; }</string></property>
-            <property name="minimumHeight"><number>16</number></property>
-            <property name="maximumHeight"><number>16</number></property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="arpElevationLayout">
-            <property name="spacing"><number>8</number></property>
-            <item>
-             <widget class="QLabel" name="label_ARP_elevation">
-              <property name="text"><string>ARP Elevation (m):</string></property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLineEdit" name="spin_ARP_elevation">
-              <property name="text"><string>2548.00</string></property>
-              <property name="toolTip"><string>Aerodrome Reference Point elevation, shared by the OFS and OES tabs.</string></property>
-             </widget>
-            </item>
-           </layout>
           </item>
          </layout>
         </widget>
