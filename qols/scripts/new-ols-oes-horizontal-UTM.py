@@ -7,8 +7,15 @@ concentric racetrack rings — each at its own height above the aerodrome
 elevation — are drawn into a single output layer.
 
 Geometry construction mirrors qols/scripts/inner-horizontal-racetrack.py
-exactly (same coord()/coord2() trig closures, same 2-arc/2-line closed
-racetrack), just repeated once per ring instead of once total.
+(same coord()/coord2() trig closures, same 2-arc/2-line closed racetrack),
+repeated once per ring. Per the ICAO figure (and per #134's own
+follow-up report), only the smallest tier is a full disc — every larger
+tier's polygon is the ring beyond the next-smaller tier's edge, not a
+second full disc stacked on top of it. This reuses the same
+difference_flat() 2D-difference-plus-flat-Z pattern #124 established for
+Conical vs. Inner Horizontal, via get_ring_hole_pairs() pairing each
+tier with the immediately-smaller tier whose disc must be subtracted
+from it.
 
 Procedure to be used in Projected Coordinate System Only.
 """
@@ -21,7 +28,8 @@ from qgis.gui import *
 import math
 from math import sqrt
 from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
-from qols.surfaces.new_ols_horizontal import get_horizontal_surface_rings
+from qols.surfaces.new_ols_horizontal import get_horizontal_surface_rings, get_ring_hole_pairs
+from qols.geometry_difference import difference_flat, flatten_ring_z
 
 _script_success = False
 
@@ -50,10 +58,13 @@ def _normalize_polyline_points(geometry):
     raise Exception("Line geometry cannot be converted to a polyline.")
 
 
-def _racetrack_ring(start_point, end_point, angle0, back_angle0, radius, z_absolute, trto, trfm):
-    """Builds one closed racetrack ring (list of WKT 'x y z' strings) at
-    the given radius/Z, using the same coord()/coord2() trig + circular-arc
-    interpolation as inner-horizontal-racetrack.py."""
+def _racetrack_ring_xy(start_point, end_point, angle0, back_angle0, radius, trto, trfm):
+    """Builds one closed racetrack ring boundary (list of (x, y) tuples,
+    first == last) at the given radius, in flat 2D — using the same
+    coord()/coord2() trig + circular-arc interpolation as
+    inner-horizontal-racetrack.py. No Z is applied here: callers either
+    apply a single flat Z directly (smallest tier) or feed this into
+    difference_flat() for boolean ops, which applies Z afterwards."""
 
     def coord(angle0, dist1, off):
         bearing = angle0 + off
@@ -78,7 +89,7 @@ def _racetrack_ring(start_point, end_point, angle0, back_angle0, radius, z_absol
     x5 = coord2(back_angle0, radius, 0)       # Ending center point
     x6 = coord2(back_angle0, radius, -90)     # Ending point left
 
-    polygon_points = []
+    ring_xy = []
 
     def _append_arc(p1, p2, p3, skip_first):
         cstring = QgsCircularString()
@@ -96,14 +107,20 @@ def _racetrack_ring(start_point, end_point, angle0, back_angle0, radius, z_absol
         for i, pt in enumerate(pts):
             if skip_first and i == 0:
                 continue
-            polygon_points.append(QgsPoint(pt.x(), pt.y(), z_absolute))
+            ring_xy.append((pt.x(), pt.y()))
 
     _append_arc(pro_coords, xc, x2, skip_first=False)
-    polygon_points.append(QgsPoint(x6[0], x6[1], z_absolute))
+    ring_xy.append((x6[0], x6[1]))
     _append_arc(x6, x5, x4, skip_first=True)
-    polygon_points.append(QgsPoint(pro_coords[0], pro_coords[1], z_absolute))
+    ring_xy.append((pro_coords[0], pro_coords[1]))
 
-    return [f"{pt.x()} {pt.y()} {pt.z()}" for pt in polygon_points]
+    return ring_xy
+
+
+def _ring_polygon_2d(ring_xy):
+    """Flat 2D QgsGeometry polygon (no Z) from a closed point ring, for
+    use as input to QgsGeometry.difference()."""
+    return QgsGeometry(QgsPolygon(QgsLineString([QgsPoint(x, y) for x, y in ring_xy])))
 
 
 # ---------------------------------------------------------------------------
@@ -181,17 +198,34 @@ for feat in selection:
         angle0 = (angle0 + 180) % 360
     back_angle0 = (angle0 + 180) % 360
 
-    # Draw largest ring first (bottom of the layer's render order) down to
-    # smallest last (on top) — every smaller/nearer ring's own fill+outline
-    # then stays visible on top of the larger ones instead of being covered
-    # by them, matching Figure 4-4's clearly bounded concentric zones.
-    for ring in reversed(rings):
+    # Smallest tier stays a full disc; every larger tier is trimmed down
+    # to the ring beyond the next-smaller tier's edge (#134 follow-up —
+    # the racetracks must not include the inner tier's area, mirroring
+    # #124's Conical-vs-Inner-Horizontal fix). True non-overlapping
+    # annuli don't need a specific draw order.
+    prev_disc_geom = None
+    prev_z = None
+    for ring, hole_source in get_ring_hole_pairs(rings):
         radius_m = ring['radius_m']
         height_m = ring['height_m']
         z_absolute = aerodrome_elevation_m + height_m
 
-        wkt_points = _racetrack_ring(start_point, end_point, angle0, back_angle0, radius_m, z_absolute, trto, trfm)
-        polygon_geometry = QgsGeometry.fromWkt(f"POLYGONZ(({', '.join(wkt_points)}))")
+        disc_geom = _ring_polygon_2d(
+            _racetrack_ring_xy(start_point, end_point, angle0, back_angle0, radius_m, trto, trfm)
+        )
+
+        if hole_source is None:
+            exterior = disc_geom.constGet().exteriorRing()
+            ext_xy = [(exterior.pointN(i).x(), exterior.pointN(i).y()) for i in range(exterior.numPoints())]
+            ext_pts = [QgsPoint(x, y, z) for x, y, z in flatten_ring_z(ext_xy, z_absolute)]
+            polygon_geometry = QgsGeometry(QgsPolygon(QgsLineString(ext_pts)))
+        else:
+            polygon_geometry = difference_flat(
+                disc_geom, prev_disc_geom, exterior_z=z_absolute, interior_z=prev_z
+            )
+
+        prev_disc_geom = disc_geom
+        prev_z = z_absolute
 
         feature = QgsFeature()
         feature.setGeometry(polygon_geometry)
