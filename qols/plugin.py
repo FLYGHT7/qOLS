@@ -201,8 +201,11 @@ class QOLS:
                 # #134: Transitional is an OFS-only concept (it flanks the
                 # OFS Approach surface and already runs from that tab's
                 # Calculate via execute_new_ols_ofs_approach). The OES tab
-                # only computes Horizontal Surface — no Transitional here.
+                # computes Horizontal Surface (#134) and the Surface for
+                # Precision Approaches (#135) — two distinct surfaces,
+                # each with its own dispatch method.
                 self.execute_new_ols_oes_horizontal(params)
+                self.execute_new_ols_oes_precision_approach(params)
             else:
                 raise ValueError(f"Unhandled New OLS surface type: {st!r}")
 
@@ -404,6 +407,14 @@ class QOLS:
             'direction': oes.get('direction', 0),
         }
         self.execute_script(horiz_path, horiz_params)
+
+    def execute_new_ols_oes_precision_approach(self, params):
+        """Surface for Precision Approaches (#135) — a distinct surface
+        from Transitional and Horizontal; reuses the OES tab's existing
+        start_elevation_m/runway_layer/threshold_layer/direction as-is,
+        no param remapping needed (Table 4-12 needs no ADG)."""
+        script_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-oes-precision-approach-UTM.py')
+        self.execute_script(script_path, params)
 
     def execute_combined_inner_conical_surface(self, params):
         """Execute Inner Horizontal then Conical using per-surface parameters,
