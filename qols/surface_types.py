@@ -37,6 +37,7 @@ class SurfaceType(str, Enum):
     # SurfaceType per surface instead of the single shared token above.
     NEW_OLS_OES_HORIZONTAL = "New OLS - OES Horizontal"
     NEW_OLS_OES_DEPARTURE = "New OLS - OES Departure"
+    NEW_OLS_OES_PRECISION_APPROACH = "New OLS - OES Precision Approach"
 
     @classmethod
     def from_tab_text(cls, text: str) -> "SurfaceType":

@@ -77,6 +77,20 @@ def get_ring_hole_pairs(
     return [(ring, rings[i - 1] if i > 0 else None) for i, ring in enumerate(rings)]
 
 
+def get_adg_tier_count(adg: str) -> int:
+    """Return how many of the 3 cumulative tiers apply to ``adg``.
+
+    Args:
+        adg: Aeroplane Design Group (``"I"``, ``"IIA"``, ``"IIB"``,
+             ``"IIC"``, ``"III"``, ``"IV"``, or ``"V"``).
+
+    Returns:
+        ``1`` for I/IIA, ``2`` for IIB, ``3`` for IIC-V. An
+        unrecognized ``adg`` falls back to ``3``.
+    """
+    return _ADG_TIER_INDEX.get(adg, 2) + 1
+
+
 def get_horizontal_surface_rings(adg: str) -> List[Dict[str, float]]:
     """Return the cumulative list of rings for the given ADG group.
 
@@ -100,4 +114,5 @@ __all__ = [
     "ADG_GROUPS",
     "get_horizontal_surface_rings",
     "get_ring_hole_pairs",
+    "get_adg_tier_count",
 ]

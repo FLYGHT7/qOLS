@@ -47,8 +47,40 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
         'spin_Z0_ofs':            2548.0,
         'spin_ZE_ofs':            2546.5,
         'spin_contour_interval_ofs': 10.0,
-        # OES Instrument Departure Surface (#136/#159) — DER elevation.
-        'spin_Z0_oes':            2548.0,
+        # OES Horizontal Surface (#134/#159) — Table 4-10 ring tiers,
+        # shared across all ADG selections (ADG only picks how many are drawn).
+        'spin_tier1Radius_oes_horizontal':  3350.0,
+        'spin_tier1Height_oes_horizontal':    45.0,
+        'spin_tier2Radius_oes_horizontal':  5350.0,
+        'spin_tier2Height_oes_horizontal':    60.0,
+        'spin_tier3Radius_oes_horizontal': 10750.0,
+        'spin_tier3Height_oes_horizontal':    90.0,
+        # OES Instrument Departure Surface (#136/#159) — Table 4-13.
+        'spin_Z0_oes':                      2548.0,
+        'spin_initHeight_oes_departure':       5.0,
+        'spin_innerEdge_oes_departure':      300.0,
+        'spin_slope_oes_departure':            2.5,
+        'spin_s1Len_oes_departure':         3500.0,
+        'spin_s1Div_oes_departure':           26.8,
+        'spin_s2Len_oes_departure':         8300.0,
+        'spin_s2Div_oes_departure':           57.8,
+        # OES Surface for Precision Approaches (#135/#159) — Table 4-12.
+        'spin_Z0_oes_precision':            2548.0,
+        'spin_apprDistThr_oes_precision':     60.0,
+        'spin_apprInnerEdge_oes_precision':  300.0,
+        'spin_apprS1Len_oes_precision':     3000.0,
+        'spin_apprS1Div_oes_precision':       15.0,
+        'spin_apprS1Slope_oes_precision':      2.0,
+        'spin_apprS2Len_oes_precision':     9600.0,
+        'spin_apprS2Div_oes_precision':       15.0,
+        'spin_apprS2Slope_oes_precision':      2.5,
+        'spin_missedDistThr_oes_precision':  900.0,
+        'spin_missedS1Len_oes_precision':   1800.0,
+        'spin_missedS1Slope_oes_precision':    2.5,
+        'spin_missedS2Len_oes_precision':  10200.0,
+        'spin_missedS2Div_oes_precision':     25.0,
+        'spin_missedS2Slope_oes_precision':    2.5,
+        'spin_transSlope_oes_precision':      14.3,
         # ARP (Aerodrome Reference Point) — shared by both tabs, moved to
         # a single top-level field (#131).
         'spin_ARP_elevation':     2548.0,
@@ -66,10 +98,40 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
     spin_ZE_ofs: QLineEdit
     spin_contour_interval_ofs: QLineEdit
     oesSubTabWidget: QTabWidget
-    spin_Z0_oes: QLineEdit
     combo_adg_horizontal_oes: QComboBox
+    spin_tier1Radius_oes_horizontal: QLineEdit
+    spin_tier1Height_oes_horizontal: QLineEdit
+    spin_tier2Radius_oes_horizontal: QLineEdit
+    spin_tier2Height_oes_horizontal: QLineEdit
+    spin_tier3Radius_oes_horizontal: QLineEdit
+    spin_tier3Height_oes_horizontal: QLineEdit
+    spin_Z0_oes: QLineEdit
+    spin_initHeight_oes_departure: QLineEdit
+    spin_innerEdge_oes_departure: QLineEdit
+    spin_slope_oes_departure: QLineEdit
+    spin_s1Len_oes_departure: QLineEdit
+    spin_s1Div_oes_departure: QLineEdit
+    spin_s2Len_oes_departure: QLineEdit
+    spin_s2Div_oes_departure: QLineEdit
+    spin_Z0_oes_precision: QLineEdit
+    spin_apprDistThr_oes_precision: QLineEdit
+    spin_apprInnerEdge_oes_precision: QLineEdit
+    spin_apprS1Len_oes_precision: QLineEdit
+    spin_apprS1Div_oes_precision: QLineEdit
+    spin_apprS1Slope_oes_precision: QLineEdit
+    spin_apprS2Len_oes_precision: QLineEdit
+    spin_apprS2Div_oes_precision: QLineEdit
+    spin_apprS2Slope_oes_precision: QLineEdit
+    spin_missedDistThr_oes_precision: QLineEdit
+    spin_missedS1Len_oes_precision: QLineEdit
+    spin_missedS1Slope_oes_precision: QLineEdit
+    spin_missedS2Len_oes_precision: QLineEdit
+    spin_missedS2Div_oes_precision: QLineEdit
+    spin_missedS2Slope_oes_precision: QLineEdit
+    spin_transSlope_oes_precision: QLineEdit
     calculateButton_oes_horizontal: QPushButton
     calculateButton_oes_departure: QPushButton
+    calculateButton_oes_precision_approach: QPushButton
     spin_ARP_elevation: QLineEdit
     runwaySelectionStatusLabel: QLabel
     thresholdSelectionStatusLabel: QLabel
@@ -142,6 +204,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             # oesSubTabWidget page to build the right specific_params.
             self._connect(self.calculateButton_oes_horizontal.clicked, self.on_calculate_clicked)
             self._connect(self.calculateButton_oes_departure.clicked, self.on_calculate_clicked)
+            self._connect(self.calculateButton_oes_precision_approach.clicked, self.on_calculate_clicked)
             self._connect(self.cancelButton.clicked, self.on_close_clicked)
             self._connect(self.directionButton.clicked, self.toggle_direction)
 
@@ -175,7 +238,23 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             'spin_rwyWidth_ofs', 'spin_distThr_ofs', 'spin_innerEdge_ofs',
             'spin_divergence_ofs', 'spin_length_ofs', 'spin_slope_ofs',
             'spin_Z0_ofs', 'spin_ZE_ofs', 'spin_contour_interval_ofs',
+            'spin_tier1Radius_oes_horizontal', 'spin_tier1Height_oes_horizontal',
+            'spin_tier2Radius_oes_horizontal', 'spin_tier2Height_oes_horizontal',
+            'spin_tier3Radius_oes_horizontal', 'spin_tier3Height_oes_horizontal',
             'spin_Z0_oes',
+            'spin_initHeight_oes_departure', 'spin_innerEdge_oes_departure',
+            'spin_slope_oes_departure', 'spin_s1Len_oes_departure',
+            'spin_s1Div_oes_departure', 'spin_s2Len_oes_departure',
+            'spin_s2Div_oes_departure',
+            'spin_Z0_oes_precision',
+            'spin_apprDistThr_oes_precision', 'spin_apprInnerEdge_oes_precision',
+            'spin_apprS1Len_oes_precision', 'spin_apprS1Div_oes_precision',
+            'spin_apprS1Slope_oes_precision', 'spin_apprS2Len_oes_precision',
+            'spin_apprS2Div_oes_precision', 'spin_apprS2Slope_oes_precision',
+            'spin_missedDistThr_oes_precision', 'spin_missedS1Len_oes_precision',
+            'spin_missedS1Slope_oes_precision', 'spin_missedS2Len_oes_precision',
+            'spin_missedS2Div_oes_precision', 'spin_missedS2Slope_oes_precision',
+            'spin_transSlope_oes_precision',
             'spin_ARP_elevation',  # #131 — shared ARP elevation field
         ]
         decimal_pattern = r'^-?\d*(?:\.\d*)?$'
@@ -709,12 +788,47 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                         'adg': self.combo_adg_horizontal_oes.currentText(),
                         'aerodrome_elevation_m': arp_elevation_m,
                         'direction': s_value,
+                        'tier1_radius_m': self.get_numeric_value('spin_tier1Radius_oes_horizontal'),
+                        'tier1_height_m': self.get_numeric_value('spin_tier1Height_oes_horizontal'),
+                        'tier2_radius_m': self.get_numeric_value('spin_tier2Radius_oes_horizontal'),
+                        'tier2_height_m': self.get_numeric_value('spin_tier2Height_oes_horizontal'),
+                        'tier3_radius_m': self.get_numeric_value('spin_tier3Radius_oes_horizontal'),
+                        'tier3_height_m': self.get_numeric_value('spin_tier3Height_oes_horizontal'),
                     }
-                else:
+                elif oes_sub_index == 1:
                     surface_type = SurfaceType.NEW_OLS_OES_DEPARTURE
                     specific_params = {
                         'start_elevation_m': self.get_numeric_value('spin_Z0_oes'),
                         'direction': s_value,
+                        'initial_height_above_der_m': self.get_numeric_value('spin_initHeight_oes_departure'),
+                        'inner_edge_m': self.get_numeric_value('spin_innerEdge_oes_departure'),
+                        'slope_pct': self.get_numeric_value('spin_slope_oes_departure'),
+                        's1_length_m': self.get_numeric_value('spin_s1Len_oes_departure'),
+                        's1_divergence_pct': self.get_numeric_value('spin_s1Div_oes_departure'),
+                        's2_length_m': self.get_numeric_value('spin_s2Len_oes_departure'),
+                        's2_divergence_pct': self.get_numeric_value('spin_s2Div_oes_departure'),
+                    }
+                else:
+                    surface_type = SurfaceType.NEW_OLS_OES_PRECISION_APPROACH
+                    specific_params = {
+                        'start_elevation_m': self.get_numeric_value('spin_Z0_oes_precision'),
+                        'direction': s_value,
+                        'appr_distance_from_threshold_m': self.get_numeric_value('spin_apprDistThr_oes_precision'),
+                        'appr_inner_edge_m': self.get_numeric_value('spin_apprInnerEdge_oes_precision'),
+                        'appr_s1_length_m': self.get_numeric_value('spin_apprS1Len_oes_precision'),
+                        'appr_s1_divergence_pct': self.get_numeric_value('spin_apprS1Div_oes_precision'),
+                        'appr_s1_slope_pct': self.get_numeric_value('spin_apprS1Slope_oes_precision'),
+                        'appr_s2_length_m': self.get_numeric_value('spin_apprS2Len_oes_precision'),
+                        'appr_s2_divergence_pct': self.get_numeric_value('spin_apprS2Div_oes_precision'),
+                        'appr_s2_slope_pct': self.get_numeric_value('spin_apprS2Slope_oes_precision'),
+                        'missed_distance_after_threshold_m':
+                            self.get_numeric_value('spin_missedDistThr_oes_precision'),
+                        'missed_s1_length_m': self.get_numeric_value('spin_missedS1Len_oes_precision'),
+                        'missed_s1_slope_pct': self.get_numeric_value('spin_missedS1Slope_oes_precision'),
+                        'missed_s2_length_m': self.get_numeric_value('spin_missedS2Len_oes_precision'),
+                        'missed_s2_divergence_pct': self.get_numeric_value('spin_missedS2Div_oes_precision'),
+                        'missed_s2_slope_pct': self.get_numeric_value('spin_missedS2Slope_oes_precision'),
+                        'trans_slope_pct': self.get_numeric_value('spin_transSlope_oes_precision'),
                     }
 
             return {

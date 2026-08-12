@@ -455,17 +455,83 @@
              </widget>
             </item>
 
-            <item row="1" column="0" colspan="2">
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_tier1Radius_oes_horizontal">
+              <property name="text"><string>Tier 1 Radius, I/IIA (m):</string></property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="spin_tier1Radius_oes_horizontal">
+              <property name="text"><string>3350.00</string></property>
+             </widget>
+            </item>
+
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_tier1Height_oes_horizontal">
+              <property name="text"><string>Tier 1 Height, I/IIA (m):</string></property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="spin_tier1Height_oes_horizontal">
+              <property name="text"><string>45.00</string></property>
+             </widget>
+            </item>
+
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_tier2Radius_oes_horizontal">
+              <property name="text"><string>Tier 2 Radius, IIB (m):</string></property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QLineEdit" name="spin_tier2Radius_oes_horizontal">
+              <property name="text"><string>5350.00</string></property>
+             </widget>
+            </item>
+
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_tier2Height_oes_horizontal">
+              <property name="text"><string>Tier 2 Height, IIB (m):</string></property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QLineEdit" name="spin_tier2Height_oes_horizontal">
+              <property name="text"><string>60.00</string></property>
+             </widget>
+            </item>
+
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_tier3Radius_oes_horizontal">
+              <property name="text"><string>Tier 3 Radius, IIC-V (m):</string></property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QLineEdit" name="spin_tier3Radius_oes_horizontal">
+              <property name="text"><string>10750.00</string></property>
+             </widget>
+            </item>
+
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_tier3Height_oes_horizontal">
+              <property name="text"><string>Tier 3 Height, IIC-V (m):</string></property>
+             </widget>
+            </item>
+            <item row="6" column="1">
+             <widget class="QLineEdit" name="spin_tier3Height_oes_horizontal">
+              <property name="text"><string>90.00</string></property>
+             </widget>
+            </item>
+
+            <item row="7" column="0" colspan="2">
              <widget class="QLabel" name="label_oes_horizontal_note">
               <property name="text">
-               <string>Uses the shared ARP Elevation and Direction fields above. Table 4-10 ring set, keyed by ADG.</string>
+               <string>Uses the shared ARP Elevation and Direction fields above. ADG selects how many tiers (rings) are drawn, from the bottom up; tier values themselves are editable.</string>
               </property>
               <property name="wordWrap"><bool>true</bool></property>
               <property name="styleSheet"><string>QLabel { font-size: 11px; padding: 4px; }</string></property>
              </widget>
             </item>
 
-            <item row="2" column="0" colspan="2">
+            <item row="8" column="0" colspan="2">
              <widget class="QPushButton" name="calculateButton_oes_horizontal">
               <property name="text"><string>Calculate Horizontal Surface</string></property>
               <property name="minimumHeight"><number>30</number></property>
@@ -496,19 +562,324 @@
              </widget>
             </item>
 
-            <item row="1" column="0" colspan="2">
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_initHeight_oes_departure">
+              <property name="text"><string>Initial Height Above DER (m):</string></property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="spin_initHeight_oes_departure">
+              <property name="text"><string>5.00</string></property>
+             </widget>
+            </item>
+
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_innerEdge_oes_departure">
+              <property name="text"><string>Inner Edge (m):</string></property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="spin_innerEdge_oes_departure">
+              <property name="text"><string>300.00</string></property>
+             </widget>
+            </item>
+
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_slope_oes_departure">
+              <property name="text"><string>Slope (%):</string></property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QLineEdit" name="spin_slope_oes_departure">
+              <property name="text"><string>2.50</string></property>
+             </widget>
+            </item>
+
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_s1Len_oes_departure">
+              <property name="text"><string>Section 1 Length (m):</string></property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QLineEdit" name="spin_s1Len_oes_departure">
+              <property name="text"><string>3500.00</string></property>
+             </widget>
+            </item>
+
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_s1Div_oes_departure">
+              <property name="text"><string>Section 1 Divergence (%):</string></property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QLineEdit" name="spin_s1Div_oes_departure">
+              <property name="text"><string>26.80</string></property>
+             </widget>
+            </item>
+
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_s2Len_oes_departure">
+              <property name="text"><string>Section 2 Length (m):</string></property>
+             </widget>
+            </item>
+            <item row="6" column="1">
+             <widget class="QLineEdit" name="spin_s2Len_oes_departure">
+              <property name="text"><string>8300.00</string></property>
+             </widget>
+            </item>
+
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_s2Div_oes_departure">
+              <property name="text"><string>Section 2 Divergence (%):</string></property>
+             </widget>
+            </item>
+            <item row="7" column="1">
+             <widget class="QLineEdit" name="spin_s2Div_oes_departure">
+              <property name="text"><string>57.80</string></property>
+             </widget>
+            </item>
+
+            <item row="8" column="0" colspan="2">
              <widget class="QLabel" name="label_oes_departure_note">
               <property name="text">
-               <string>Uses the shared Runway Layer and Direction fields above. Table 4-13 fixed dimensions, no ADG.</string>
+               <string>Uses the shared Runway Layer and Direction fields above. No ADG (Table 4-13 is a single dimension set).</string>
               </property>
               <property name="wordWrap"><bool>true</bool></property>
               <property name="styleSheet"><string>QLabel { font-size: 11px; padding: 4px; }</string></property>
              </widget>
             </item>
 
-            <item row="2" column="0" colspan="2">
+            <item row="9" column="0" colspan="2">
              <widget class="QPushButton" name="calculateButton_oes_departure">
               <property name="text"><string>Calculate Instrument Departure Surface</string></property>
+              <property name="minimumHeight"><number>30</number></property>
+             </widget>
+            </item>
+
+           </layout>
+          </widget>
+
+          <!-- SURFACE FOR PRECISION APPROACHES SUBTAB (#135) -->
+          <widget class="QWidget" name="oes_sub_precision_approach">
+           <attribute name="title"><string>Surface for Precision Approaches</string></attribute>
+           <layout class="QFormLayout" name="formLayout_oes_precision_approach">
+            <property name="fieldGrowthPolicy"><enum>QFormLayout::AllNonFixedFieldsGrow</enum></property>
+            <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>
+            <property name="horizontalSpacing"><number>15</number></property>
+            <property name="verticalSpacing"><number>6</number></property>
+
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_Z0_oes_precision">
+              <property name="text"><string>Threshold Elevation (m):</string></property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="spin_Z0_oes_precision">
+              <property name="text"><string>2548.00</string></property>
+              <property name="toolTip"><string>Threshold elevation used as the datum for the Approach/Missed Approach/Transitional components (Table 4-12).</string></property>
+             </widget>
+            </item>
+
+            <item row="1" column="0" colspan="2">
+             <widget class="QLabel" name="label_appr_header_oes_precision">
+              <property name="text"><string>Approach</string></property>
+              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 6px; }</string></property>
+             </widget>
+            </item>
+
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_apprDistThr_oes_precision">
+              <property name="text"><string>Distance from THR (m):</string></property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="spin_apprDistThr_oes_precision">
+              <property name="text"><string>60.00</string></property>
+             </widget>
+            </item>
+
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_apprInnerEdge_oes_precision">
+              <property name="text"><string>Inner Edge (m):</string></property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QLineEdit" name="spin_apprInnerEdge_oes_precision">
+              <property name="text"><string>300.00</string></property>
+             </widget>
+            </item>
+
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_apprS1Len_oes_precision">
+              <property name="text"><string>Section 1 Length (m):</string></property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QLineEdit" name="spin_apprS1Len_oes_precision">
+              <property name="text"><string>3000.00</string></property>
+             </widget>
+            </item>
+
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_apprS1Div_oes_precision">
+              <property name="text"><string>Section 1 Divergence (%):</string></property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QLineEdit" name="spin_apprS1Div_oes_precision">
+              <property name="text"><string>15.00</string></property>
+             </widget>
+            </item>
+
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_apprS1Slope_oes_precision">
+              <property name="text"><string>Section 1 Slope (%):</string></property>
+             </widget>
+            </item>
+            <item row="6" column="1">
+             <widget class="QLineEdit" name="spin_apprS1Slope_oes_precision">
+              <property name="text"><string>2.00</string></property>
+             </widget>
+            </item>
+
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_apprS2Len_oes_precision">
+              <property name="text"><string>Section 2 Length (m):</string></property>
+             </widget>
+            </item>
+            <item row="7" column="1">
+             <widget class="QLineEdit" name="spin_apprS2Len_oes_precision">
+              <property name="text"><string>9600.00</string></property>
+             </widget>
+            </item>
+
+            <item row="8" column="0">
+             <widget class="QLabel" name="label_apprS2Div_oes_precision">
+              <property name="text"><string>Section 2 Divergence (%):</string></property>
+             </widget>
+            </item>
+            <item row="8" column="1">
+             <widget class="QLineEdit" name="spin_apprS2Div_oes_precision">
+              <property name="text"><string>15.00</string></property>
+             </widget>
+            </item>
+
+            <item row="9" column="0">
+             <widget class="QLabel" name="label_apprS2Slope_oes_precision">
+              <property name="text"><string>Section 2 Slope (%):</string></property>
+             </widget>
+            </item>
+            <item row="9" column="1">
+             <widget class="QLineEdit" name="spin_apprS2Slope_oes_precision">
+              <property name="text"><string>2.50</string></property>
+             </widget>
+            </item>
+
+            <item row="10" column="0" colspan="2">
+             <widget class="QLabel" name="label_missed_header_oes_precision">
+              <property name="text"><string>Missed Approach</string></property>
+              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 6px; }</string></property>
+             </widget>
+            </item>
+
+            <item row="11" column="0">
+             <widget class="QLabel" name="label_missedDistThr_oes_precision">
+              <property name="text"><string>Distance after THR (m):</string></property>
+             </widget>
+            </item>
+            <item row="11" column="1">
+             <widget class="QLineEdit" name="spin_missedDistThr_oes_precision">
+              <property name="text"><string>900.00</string></property>
+             </widget>
+            </item>
+
+            <item row="12" column="0">
+             <widget class="QLabel" name="label_missedS1Len_oes_precision">
+              <property name="text"><string>Section 1 Length (m):</string></property>
+             </widget>
+            </item>
+            <item row="12" column="1">
+             <widget class="QLineEdit" name="spin_missedS1Len_oes_precision">
+              <property name="text"><string>1800.00</string></property>
+             </widget>
+            </item>
+
+            <item row="13" column="0">
+             <widget class="QLabel" name="label_missedS1Slope_oes_precision">
+              <property name="text"><string>Section 1 Slope (%):</string></property>
+             </widget>
+            </item>
+            <item row="13" column="1">
+             <widget class="QLineEdit" name="spin_missedS1Slope_oes_precision">
+              <property name="text"><string>2.50</string></property>
+              <property name="toolTip"><string>Section 1's divergence is not a separate input: its half-width is derived from the Transitional slope reaching this section's height of rise (Table 4-12 note; see new_ols_precision_approach.py).</string></property>
+             </widget>
+            </item>
+
+            <item row="14" column="0">
+             <widget class="QLabel" name="label_missedS2Len_oes_precision">
+              <property name="text"><string>Section 2 Length (m):</string></property>
+             </widget>
+            </item>
+            <item row="14" column="1">
+             <widget class="QLineEdit" name="spin_missedS2Len_oes_precision">
+              <property name="text"><string>10200.00</string></property>
+             </widget>
+            </item>
+
+            <item row="15" column="0">
+             <widget class="QLabel" name="label_missedS2Div_oes_precision">
+              <property name="text"><string>Section 2 Divergence (%):</string></property>
+             </widget>
+            </item>
+            <item row="15" column="1">
+             <widget class="QLineEdit" name="spin_missedS2Div_oes_precision">
+              <property name="text"><string>25.00</string></property>
+             </widget>
+            </item>
+
+            <item row="16" column="0">
+             <widget class="QLabel" name="label_missedS2Slope_oes_precision">
+              <property name="text"><string>Section 2 Slope (%):</string></property>
+             </widget>
+            </item>
+            <item row="16" column="1">
+             <widget class="QLineEdit" name="spin_missedS2Slope_oes_precision">
+              <property name="text"><string>2.50</string></property>
+             </widget>
+            </item>
+
+            <item row="17" column="0" colspan="2">
+             <widget class="QLabel" name="label_trans_header_oes_precision">
+              <property name="text"><string>Transitional</string></property>
+              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 6px; }</string></property>
+             </widget>
+            </item>
+
+            <item row="18" column="0">
+             <widget class="QLabel" name="label_transSlope_oes_precision">
+              <property name="text"><string>Slope (%):</string></property>
+             </widget>
+            </item>
+            <item row="18" column="1">
+             <widget class="QLineEdit" name="spin_transSlope_oes_precision">
+              <property name="text"><string>14.30</string></property>
+             </widget>
+            </item>
+
+            <item row="19" column="0" colspan="2">
+             <widget class="QLabel" name="label_oes_precision_approach_note">
+              <property name="text">
+               <string>Uses the shared Runway Layer, Threshold Layer, and Direction fields above. No ADG (Table 4-12 is a single dimension set).</string>
+              </property>
+              <property name="wordWrap"><bool>true</bool></property>
+              <property name="styleSheet"><string>QLabel { font-size: 11px; padding: 4px; }</string></property>
+             </widget>
+            </item>
+
+            <item row="20" column="0" colspan="2">
+             <widget class="QPushButton" name="calculateButton_oes_precision_approach">
+              <property name="text"><string>Calculate Surface for Precision Approaches</string></property>
               <property name="minimumHeight"><number>30</number></property>
              </widget>
             </item>

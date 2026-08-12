@@ -27,6 +27,17 @@ of always offsetting from ``back_azimuth``), so "left" stays the same
 physical side across the whole surface; using ``missed_azimuth ± 90``
 for the missed-approach half would silently swap left/right there.
 
+Per #159, every genuinely-used Table 4-12 value is UI-editable
+(appr_*/missed_*/trans_slope_pct — see the Parameters section below),
+defaulting to the ICAO table when not overridden.
+``missed_approach.inner_edge_m`` and
+``missed_approach.section_1.divergence_pct`` are intentionally not
+exposed: this script never reads them (both approach and missed-
+approach inner edges reuse ``half_inner`` from ``appr.inner_edge_m``
+only, and the missed-approach 1st-section half-width is derived from
+the transitional slope, not this divergence percentage — see
+qols/surfaces/new_ols_precision_approach.py's module docstring).
+
 Procedure to be used in Projected Coordinate System Only.
 """
 myglobals = set(globals().keys())
@@ -77,6 +88,10 @@ def _closest_feature(features, pt):
 # ---------------------------------------------------------------------------
 # Parameters
 # ---------------------------------------------------------------------------
+_defaults = get_precision_approach_dimensions()  # Table 4-12, used as fallback only
+_d_appr = _defaults['approach']
+_d_missed = _defaults['missed_approach']
+
 try:
     start_elevation_m = globals().get('start_elevation_m', 0.0)
     direction = globals().get('direction', 0)
@@ -84,6 +99,23 @@ try:
     threshold_layer = globals().get('threshold_layer', None)
     use_runway_selected = globals().get('use_runway_selected', True)
     use_threshold_selected = globals().get('use_threshold_selected', True)
+    appr_distance_from_threshold_m = globals().get(
+        'appr_distance_from_threshold_m', _d_appr['distance_from_threshold_m'])
+    appr_inner_edge_m = globals().get('appr_inner_edge_m', _d_appr['inner_edge_m'])
+    appr_s1_length_m = globals().get('appr_s1_length_m', _d_appr['section_1']['length_m'])
+    appr_s1_divergence_pct = globals().get('appr_s1_divergence_pct', _d_appr['section_1']['divergence_pct'])
+    appr_s1_slope_pct = globals().get('appr_s1_slope_pct', _d_appr['section_1']['slope_pct'])
+    appr_s2_length_m = globals().get('appr_s2_length_m', _d_appr['section_2']['length_m'])
+    appr_s2_divergence_pct = globals().get('appr_s2_divergence_pct', _d_appr['section_2']['divergence_pct'])
+    appr_s2_slope_pct = globals().get('appr_s2_slope_pct', _d_appr['section_2']['slope_pct'])
+    missed_distance_after_threshold_m = globals().get(
+        'missed_distance_after_threshold_m', _d_missed['distance_after_threshold_m'])
+    missed_s1_length_m = globals().get('missed_s1_length_m', _d_missed['section_1']['length_m'])
+    missed_s1_slope_pct = globals().get('missed_s1_slope_pct', _d_missed['section_1']['slope_pct'])
+    missed_s2_length_m = globals().get('missed_s2_length_m', _d_missed['section_2']['length_m'])
+    missed_s2_divergence_pct = globals().get('missed_s2_divergence_pct', _d_missed['section_2']['divergence_pct'])
+    missed_s2_slope_pct = globals().get('missed_s2_slope_pct', _d_missed['section_2']['slope_pct'])
+    trans_slope_pct = globals().get('trans_slope_pct', _defaults['transitional']['slope_pct'])
 except Exception as e:
     print(f"NewOLS_OES_PrecisionApproach: Error getting parameters, using defaults: {e}")
     start_elevation_m = 0.0
@@ -92,11 +124,47 @@ except Exception as e:
     threshold_layer = None
     use_runway_selected = True
     use_threshold_selected = True
+    appr_distance_from_threshold_m = _d_appr['distance_from_threshold_m']
+    appr_inner_edge_m = _d_appr['inner_edge_m']
+    appr_s1_length_m = _d_appr['section_1']['length_m']
+    appr_s1_divergence_pct = _d_appr['section_1']['divergence_pct']
+    appr_s1_slope_pct = _d_appr['section_1']['slope_pct']
+    appr_s2_length_m = _d_appr['section_2']['length_m']
+    appr_s2_divergence_pct = _d_appr['section_2']['divergence_pct']
+    appr_s2_slope_pct = _d_appr['section_2']['slope_pct']
+    missed_distance_after_threshold_m = _d_missed['distance_after_threshold_m']
+    missed_s1_length_m = _d_missed['section_1']['length_m']
+    missed_s1_slope_pct = _d_missed['section_1']['slope_pct']
+    missed_s2_length_m = _d_missed['section_2']['length_m']
+    missed_s2_divergence_pct = _d_missed['section_2']['divergence_pct']
+    missed_s2_slope_pct = _d_missed['section_2']['slope_pct']
+    trans_slope_pct = _defaults['transitional']['slope_pct']
 
-dims = get_precision_approach_dimensions()
+# #159 — "expose all the parameters": every genuinely-used Table 4-12
+# value above is UI-editable, defaulting to the ICAO table when not
+# overridden. missed_approach.inner_edge_m and
+# missed_approach.section_1.divergence_pct are intentionally excluded
+# (not read by this script at all — see module docstring — exposing
+# them as editable would mislead).
+dims = {
+    'approach': {
+        'distance_from_threshold_m': appr_distance_from_threshold_m,
+        'inner_edge_m': appr_inner_edge_m,
+        'section_1': {'length_m': appr_s1_length_m, 'divergence_pct': appr_s1_divergence_pct,
+                      'slope_pct': appr_s1_slope_pct},
+        'section_2': {'length_m': appr_s2_length_m, 'divergence_pct': appr_s2_divergence_pct,
+                      'slope_pct': appr_s2_slope_pct},
+    },
+    'missed_approach': {
+        'distance_after_threshold_m': missed_distance_after_threshold_m,
+        'section_1': {'length_m': missed_s1_length_m, 'slope_pct': missed_s1_slope_pct},
+        'section_2': {'length_m': missed_s2_length_m, 'divergence_pct': missed_s2_divergence_pct,
+                      'slope_pct': missed_s2_slope_pct},
+    },
+    'transitional': {'slope_pct': trans_slope_pct},
+}
 appr = dims['approach']
 missed = dims['missed_approach']
-trans_slope_pct = dims['transitional']['slope_pct']
 
 map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
 
