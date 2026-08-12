@@ -415,85 +415,107 @@
       <!-- OES TAB -->
       <widget class="QWidget" name="tab_oes">
        <attribute name="title"><string>OES</string></attribute>
-       <layout class="QFormLayout" name="formLayout_oes">
-        <property name="fieldGrowthPolicy"><enum>QFormLayout::AllNonFixedFieldsGrow</enum></property>
-        <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>
-        <property name="horizontalSpacing"><number>15</number></property>
-        <property name="verticalSpacing"><number>6</number></property>
+       <layout class="QVBoxLayout" name="verticalLayout_oes">
 
-        <item row="0" column="0">
-         <widget class="QLabel" name="label_widthApp_oes">
-          <property name="text"><string>Width App (m):</string></property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLineEdit" name="spin_widthApp_oes">
-          <property name="text"><string>155.00</string></property>
-          <property name="toolTip"><string>Approach inner edge width from OFS tab. Auto-populated; editable.</string></property>
-         </widget>
-        </item>
-
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_Z0_oes">
-          <property name="text"><string>Start Elevation (m):</string></property>
-         </widget>
-        </item>
-        <item row="1" column="1">
-         <widget class="QLineEdit" name="spin_Z0_oes">
-          <property name="text"><string>2548.00</string></property>
-         </widget>
-        </item>
-
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_ZE_oes">
-          <property name="text"><string>End Elevation (m):</string></property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QLineEdit" name="spin_ZE_oes">
-          <property name="text"><string>2546.50</string></property>
-         </widget>
-        </item>
-
-        <item row="3" column="0">
-         <widget class="QLabel" name="label_slope_oes">
-          <property name="text"><string>Slope (%):</string></property>
-         </widget>
-        </item>
-        <item row="3" column="1">
-         <widget class="QLineEdit" name="spin_slope_oes">
-          <property name="text"><string>20.00</string></property>
-          <property name="toolTip"><string>Transitional surface slope in percent. Default 20%.</string></property>
-         </widget>
-        </item>
-
-        <item row="4" column="0">
-         <widget class="QLabel" name="label_adg_horizontal_oes">
-          <property name="text"><string>ADG (Horizontal Surface):</string></property>
-         </widget>
-        </item>
-        <item row="4" column="1">
-         <widget class="QComboBox" name="combo_adg_horizontal_oes">
-          <property name="minimumHeight"><number>22</number></property>
-          <property name="currentIndex"><number>3</number></property>
-          <property name="toolTip"><string>Aeroplane Design Group for the Horizontal Surface (Table 4-10). Independent of the OFS tab's ADG Group — I/IIA, IIB, and IIC-V are distinct dimension tiers here.</string></property>
-          <item><property name="text"><string>I</string></property></item>
-          <item><property name="text"><string>IIA</string></property></item>
-          <item><property name="text"><string>IIB</string></property></item>
-          <item><property name="text"><string>IIC</string></property></item>
-          <item><property name="text"><string>III</string></property></item>
-          <item><property name="text"><string>IV</string></property></item>
-          <item><property name="text"><string>V</string></property></item>
-         </widget>
-        </item>
-
-        <item row="5" column="0" colspan="2">
-         <widget class="QLabel" name="label_oes_note">
-          <property name="text">
-           <string>Upper edge at 60 m above the highest threshold elevation. Lateral extent = 60 / (slope/100) from approach edge.</string>
+        <!-- #159 — each OES surface is its own subtab with its own
+             Calculate button and only its own parameters, instead of
+             one shared Calculate bundling every OES surface together. -->
+        <item>
+         <widget class="QTabWidget" name="oesSubTabWidget">
+          <property name="tabPosition">
+           <enum>QTabWidget::North</enum>
           </property>
-          <property name="wordWrap"><bool>true</bool></property>
-          <property name="styleSheet"><string>QLabel { font-size: 11px; padding: 4px; }</string></property>
+
+          <!-- HORIZONTAL SURFACE SUBTAB (#134) -->
+          <widget class="QWidget" name="oes_sub_horizontal">
+           <attribute name="title"><string>Horizontal Surface</string></attribute>
+           <layout class="QFormLayout" name="formLayout_oes_horizontal">
+            <property name="fieldGrowthPolicy"><enum>QFormLayout::AllNonFixedFieldsGrow</enum></property>
+            <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>
+            <property name="horizontalSpacing"><number>15</number></property>
+            <property name="verticalSpacing"><number>6</number></property>
+
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_adg_horizontal_oes">
+              <property name="text"><string>ADG (Horizontal Surface):</string></property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="combo_adg_horizontal_oes">
+              <property name="minimumHeight"><number>22</number></property>
+              <property name="currentIndex"><number>3</number></property>
+              <property name="toolTip"><string>Aeroplane Design Group for the Horizontal Surface (Table 4-10). Independent of the OFS tab's ADG Group — I/IIA, IIB, and IIC-V are distinct dimension tiers here.</string></property>
+              <item><property name="text"><string>I</string></property></item>
+              <item><property name="text"><string>IIA</string></property></item>
+              <item><property name="text"><string>IIB</string></property></item>
+              <item><property name="text"><string>IIC</string></property></item>
+              <item><property name="text"><string>III</string></property></item>
+              <item><property name="text"><string>IV</string></property></item>
+              <item><property name="text"><string>V</string></property></item>
+             </widget>
+            </item>
+
+            <item row="1" column="0" colspan="2">
+             <widget class="QLabel" name="label_oes_horizontal_note">
+              <property name="text">
+               <string>Uses the shared ARP Elevation and Direction fields above. Table 4-10 ring set, keyed by ADG.</string>
+              </property>
+              <property name="wordWrap"><bool>true</bool></property>
+              <property name="styleSheet"><string>QLabel { font-size: 11px; padding: 4px; }</string></property>
+             </widget>
+            </item>
+
+            <item row="2" column="0" colspan="2">
+             <widget class="QPushButton" name="calculateButton_oes_horizontal">
+              <property name="text"><string>Calculate Horizontal Surface</string></property>
+              <property name="minimumHeight"><number>30</number></property>
+             </widget>
+            </item>
+
+           </layout>
+          </widget>
+
+          <!-- INSTRUMENT DEPARTURE SURFACE SUBTAB (#136) -->
+          <widget class="QWidget" name="oes_sub_departure">
+           <attribute name="title"><string>Instrument Departure Surface</string></attribute>
+           <layout class="QFormLayout" name="formLayout_oes_departure">
+            <property name="fieldGrowthPolicy"><enum>QFormLayout::AllNonFixedFieldsGrow</enum></property>
+            <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>
+            <property name="horizontalSpacing"><number>15</number></property>
+            <property name="verticalSpacing"><number>6</number></property>
+
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_Z0_oes">
+              <property name="text"><string>DER Elevation (m):</string></property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="spin_Z0_oes">
+              <property name="text"><string>2548.00</string></property>
+              <property name="toolTip"><string>Departure End of Runway elevation. Surface starts 5 m above this value (Table 4-13).</string></property>
+             </widget>
+            </item>
+
+            <item row="1" column="0" colspan="2">
+             <widget class="QLabel" name="label_oes_departure_note">
+              <property name="text">
+               <string>Uses the shared Runway Layer and Direction fields above. Table 4-13 fixed dimensions, no ADG.</string>
+              </property>
+              <property name="wordWrap"><bool>true</bool></property>
+              <property name="styleSheet"><string>QLabel { font-size: 11px; padding: 4px; }</string></property>
+             </widget>
+            </item>
+
+            <item row="2" column="0" colspan="2">
+             <widget class="QPushButton" name="calculateButton_oes_departure">
+              <property name="text"><string>Calculate Instrument Departure Surface</string></property>
+              <property name="minimumHeight"><number>30</number></property>
+             </widget>
+            </item>
+
+           </layout>
+          </widget>
+
          </widget>
         </item>
 
