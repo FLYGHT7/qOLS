@@ -469,11 +469,32 @@ if contour_interval_m > 0:
     # (pt_08*/pt_01T*/pt_02T*), not a straight chord between two points.
     _elevs = [e for e in _elevs if e < ZIH - 1e-6]
 
-    _verts_left = [(p.x(), p.y(), p.z()) for p in (pt_08L, pt_01TL, pt_02TL, pt_02L, pt_01AL)]
-    _verts_right = [(p.x(), p.y(), p.z()) for p in (pt_08R, pt_01TR, pt_02TR, pt_02R, pt_01AR)]
+    # #155 — the 5-vertex pentagon is NOT one flat surface: it is two
+    # ruled patches glued along the internal rib pt_01AL-pt_01TL.
+    #   - Strip patch (trapezoid): toe pt_02L(ZE)->pt_01AL(Z0) along the
+    #     runway strip, flat top pt_02TL(ZIH)->pt_01TL(ZIH).
+    #   - Fan patch (triangle): apex pt_01AL(Z0), flat top edge
+    #     pt_01TL(ZIH)->pt_08L(ZIH) - a genuine cone, so its own
+    #     per-level contour really is a straight chord.
+    # Slicing the whole pentagon in one call (the old behaviour) picks
+    # the fan patch's far edge and the strip patch's far end-cap for
+    # almost every level, skipping the shared rib and drawing one long
+    # diagonal across nearly the whole runway. Slicing each patch on
+    # its own fixes this: both rings close on the same rib edge
+    # pt_01AL->pt_01TL, so for any level between Z0 and ZIH both
+    # patches report the identical crossing point there, and the two
+    # segments chain into one connected, correctly-bent line with no
+    # stitching needed. Contours are naturally capped at ZIH, since no
+    # patch's top edge (flat) ever registers a crossing.
+    _verts_left_strip = [(p.x(), p.y(), p.z()) for p in (pt_01TL, pt_02TL, pt_02L, pt_01AL)]
+    _verts_left_fan = [(p.x(), p.y(), p.z()) for p in (pt_01TL, pt_08L, pt_01AL)]
+    _verts_right_strip = [(p.x(), p.y(), p.z()) for p in (pt_01TR, pt_02TR, pt_02R, pt_01AR)]
+    _verts_right_fan = [(p.x(), p.y(), p.z()) for p in (pt_01TR, pt_08R, pt_01AR)]
 
-    _specs_left = _cu.contour_specs_for_polygon_slice(_verts_left, _elevs)
-    _specs_right = _cu.contour_specs_for_polygon_slice(_verts_right, _elevs)
+    _specs_left = (_cu.contour_specs_for_polygon_slice(_verts_left_strip, _elevs)
+                   + _cu.contour_specs_for_polygon_slice(_verts_left_fan, _elevs))
+    _specs_right = (_cu.contour_specs_for_polygon_slice(_verts_right_strip, _elevs)
+                     + _cu.contour_specs_for_polygon_slice(_verts_right_fan, _elevs))
     _all_specs = _specs_left + _specs_right
 
     if _all_specs:
