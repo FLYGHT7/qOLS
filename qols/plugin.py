@@ -197,14 +197,14 @@ class QOLS:
 
             if st == SurfaceType.NEW_OLS_OFS_APPROACH:
                 self.execute_new_ols_ofs_approach(params)
-            elif st == SurfaceType.NEW_OLS_OES_TRANSITIONAL:
-                # #134: Transitional is an OFS-only concept (it flanks the
-                # OFS Approach surface and already runs from that tab's
-                # Calculate via execute_new_ols_ofs_approach). The OES tab
-                # computes Horizontal Surface (#134) and the Surface for
-                # Precision Approaches (#135) — two distinct surfaces,
-                # each with its own dispatch method.
+            elif st == SurfaceType.NEW_OLS_OES_HORIZONTAL:
+                # #159 — OES surfaces are each calculated individually from
+                # their own subtab now, instead of bundled behind one
+                # shared Calculate click.
                 self.execute_new_ols_oes_horizontal(params)
+            elif st == SurfaceType.NEW_OLS_OES_DEPARTURE:
+                self.execute_new_ols_oes_departure(params)
+            elif st == SurfaceType.NEW_OLS_OES_PRECISION_APPROACH:
                 self.execute_new_ols_oes_precision_approach(params)
             else:
                 raise ValueError(f"Unhandled New OLS surface type: {st!r}")
@@ -396,23 +396,26 @@ class QOLS:
         self.execute_script(script_path, params)
 
     def execute_new_ols_oes_horizontal(self, params):
-        """Horizontal Surface (#134) — a distinct surface from Transitional,
-        just sharing the OES tab's inputs (ADG, aerodrome elevation)."""
-        oes = params.get('specific_params', {})
-        horiz_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-oes-horizontal-UTM.py')
-        horiz_params = params.copy()
-        horiz_params['specific_params'] = {
-            'adg': oes.get('adg', 'IIC'),
-            'aerodrome_elevation_m': oes.get('highest_thr_elev_m', 0.0),
-            'direction': oes.get('direction', 0),
-        }
-        self.execute_script(horiz_path, horiz_params)
+        """Horizontal Surface (#134) — its own OES subtab (#159), triggered
+        individually; get_parameters() already shapes specific_params as
+        adg/aerodrome_elevation_m/direction, no remapping needed."""
+        script_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-oes-horizontal-UTM.py')
+        self.execute_script(script_path, params)
+
+    def execute_new_ols_oes_departure(self, params):
+        """Instrument Departure Surface (#136) — its own OES subtab (#159),
+        triggered individually; get_parameters() already shapes
+        specific_params as start_elevation_m/direction, no remapping
+        needed (Table 4-13 needs no ADG)."""
+        script_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-oes-departure-UTM.py')
+        self.execute_script(script_path, params)
 
     def execute_new_ols_oes_precision_approach(self, params):
-        """Surface for Precision Approaches (#135) — a distinct surface
-        from Transitional and Horizontal; reuses the OES tab's existing
-        start_elevation_m/runway_layer/threshold_layer/direction as-is,
-        no param remapping needed (Table 4-12 needs no ADG)."""
+        """Surface for Precision Approaches (#135) — its own OES subtab
+        (#159), triggered individually; get_parameters() already shapes
+        specific_params as start_elevation_m/direction, no remapping
+        needed (Table 4-12 needs no ADG; runway_layer/threshold_layer
+        are already shared at the top level of params)."""
         script_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-oes-precision-approach-UTM.py')
         self.execute_script(script_path, params)
 

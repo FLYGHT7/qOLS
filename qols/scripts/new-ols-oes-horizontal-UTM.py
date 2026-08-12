@@ -17,6 +17,11 @@ Conical vs. Inner Horizontal, via get_ring_hole_pairs() pairing each
 tier with the immediately-smaller tier whose disc must be subtracted
 from it.
 
+Per #159, each of the 3 tiers' radius/height is UI-editable
+(tier{1,2,3}_{radius,height}_m); ADG only selects how many of the
+(possibly-edited) tiers are drawn via get_adg_tier_count(), it does
+not change their values.
+
 Procedure to be used in Projected Coordinate System Only.
 """
 myglobals = set(globals().keys())
@@ -28,7 +33,7 @@ from qgis.gui import *
 import math
 from math import sqrt
 from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
-from qols.surfaces.new_ols_horizontal import get_horizontal_surface_rings, get_ring_hole_pairs
+from qols.surfaces.new_ols_horizontal import get_horizontal_surface_rings, get_ring_hole_pairs, get_adg_tier_count
 from qols.geometry_difference import difference_flat, flatten_ring_z
 
 _script_success = False
@@ -126,12 +131,20 @@ def _ring_polygon_2d(ring_xy):
 # ---------------------------------------------------------------------------
 # Parameter extraction
 # ---------------------------------------------------------------------------
+_default_tiers = get_horizontal_surface_rings('V')  # full 3-tier list, used as fallback only
+
 try:
     adg = globals().get('adg', 'IIC')
     aerodrome_elevation_m = globals().get('aerodrome_elevation_m', 0.0)
     direction = globals().get('direction', 0)
     runway_layer = globals().get('runway_layer', None)
     use_runway_selected = globals().get('use_runway_selected', True)
+    tier1_radius_m = globals().get('tier1_radius_m', _default_tiers[0]['radius_m'])
+    tier1_height_m = globals().get('tier1_height_m', _default_tiers[0]['height_m'])
+    tier2_radius_m = globals().get('tier2_radius_m', _default_tiers[1]['radius_m'])
+    tier2_height_m = globals().get('tier2_height_m', _default_tiers[1]['height_m'])
+    tier3_radius_m = globals().get('tier3_radius_m', _default_tiers[2]['radius_m'])
+    tier3_height_m = globals().get('tier3_height_m', _default_tiers[2]['height_m'])
 except Exception as e:
     print(f"NewOLS_OES_Horizontal: Error getting parameters, using defaults: {e}")
     adg = 'IIC'
@@ -139,8 +152,19 @@ except Exception as e:
     direction = 0
     runway_layer = None
     use_runway_selected = True
+    tier1_radius_m, tier1_height_m = _default_tiers[0]['radius_m'], _default_tiers[0]['height_m']
+    tier2_radius_m, tier2_height_m = _default_tiers[1]['radius_m'], _default_tiers[1]['height_m']
+    tier3_radius_m, tier3_height_m = _default_tiers[2]['radius_m'], _default_tiers[2]['height_m']
 
-rings = get_horizontal_surface_rings(adg)
+# UI-editable tiers (defaulted from Table 4-10, overridable per-tier);
+# ADG only selects how many of them apply (#159 — "expose all the
+# parameters", not just ADG).
+all_tiers = [
+    {'radius_m': tier1_radius_m, 'height_m': tier1_height_m},
+    {'radius_m': tier2_radius_m, 'height_m': tier2_height_m},
+    {'radius_m': tier3_radius_m, 'height_m': tier3_height_m},
+]
+rings = all_tiers[:get_adg_tier_count(adg)]
 print(f"NewOLS_OES_Horizontal: ADG={adg} -> {len(rings)} ring(s): {rings}")
 
 map_srid = iface.mapCanvas().mapSettings().destinationCrs().authid()
@@ -203,8 +227,15 @@ for feat in selection:
     # the racetracks must not include the inner tier's area, mirroring
     # #124's Conical-vs-Inner-Horizontal fix). True non-overlapping
     # annuli don't need a specific draw order.
+    #
+    # #134 follow-up #2: unlike Conical (a genuine sloped frustum, whose
+    # inner/outer boundaries sit at different elevations by design),
+    # each Horizontal Surface ring is flat — every vertex, both its
+    # outer edge and its inner hole edge, sits at that ring's own
+    # height above the aerodrome elevation. So exterior_z and
+    # interior_z below must be the SAME value (z_absolute), not the
+    # previous (smaller) ring's height.
     prev_disc_geom = None
-    prev_z = None
     for ring, hole_source in get_ring_hole_pairs(rings):
         radius_m = ring['radius_m']
         height_m = ring['height_m']
@@ -221,11 +252,10 @@ for feat in selection:
             polygon_geometry = QgsGeometry(QgsPolygon(QgsLineString(ext_pts)))
         else:
             polygon_geometry = difference_flat(
-                disc_geom, prev_disc_geom, exterior_z=z_absolute, interior_z=prev_z
+                disc_geom, prev_disc_geom, exterior_z=z_absolute, interior_z=z_absolute
             )
 
         prev_disc_geom = disc_geom
-        prev_z = z_absolute
 
         feature = QgsFeature()
         feature.setGeometry(polygon_geometry)
