@@ -81,6 +81,14 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
         'spin_missedS2Div_oes_precision':     25.0,
         'spin_missedS2Slope_oes_precision':    2.5,
         'spin_transSlope_oes_precision':      14.3,
+        # OES Surface for Straight-in Instrument Approaches (#137) —
+        # Table 4-11. lowerLength defaults to the Horizontal OES ADG-I
+        # ring radius (Table 4-10's own tier1_radius default above).
+        'spin_lowerHeight_oes_straightin':      45.0,
+        'spin_lowerLength_oes_straightin':    3350.0,
+        'spin_upperHeight_oes_straightin':      60.0,
+        'spin_upperShorterSide_oes_straightin': 7410.0,
+        'spin_upperLongerSideFromThreshold_oes_straightin': 5350.0,
         # ARP (Aerodrome Reference Point) — shared by both tabs, moved to
         # a single top-level field (#131).
         'spin_ARP_elevation':     2548.0,
@@ -129,9 +137,15 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
     spin_missedS2Div_oes_precision: QLineEdit
     spin_missedS2Slope_oes_precision: QLineEdit
     spin_transSlope_oes_precision: QLineEdit
+    spin_lowerHeight_oes_straightin: QLineEdit
+    spin_lowerLength_oes_straightin: QLineEdit
+    spin_upperHeight_oes_straightin: QLineEdit
+    spin_upperShorterSide_oes_straightin: QLineEdit
+    spin_upperLongerSideFromThreshold_oes_straightin: QLineEdit
     calculateButton_oes_horizontal: QPushButton
     calculateButton_oes_departure: QPushButton
     calculateButton_oes_precision_approach: QPushButton
+    calculateButton_oes_straightin: QPushButton
     spin_ARP_elevation: QLineEdit
     runwaySelectionStatusLabel: QLabel
     thresholdSelectionStatusLabel: QLabel
@@ -205,6 +219,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             self._connect(self.calculateButton_oes_horizontal.clicked, self.on_calculate_clicked)
             self._connect(self.calculateButton_oes_departure.clicked, self.on_calculate_clicked)
             self._connect(self.calculateButton_oes_precision_approach.clicked, self.on_calculate_clicked)
+            self._connect(self.calculateButton_oes_straightin.clicked, self.on_calculate_clicked)
             self._connect(self.cancelButton.clicked, self.on_close_clicked)
             self._connect(self.directionButton.clicked, self.toggle_direction)
 
@@ -255,6 +270,9 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             'spin_missedS1Slope_oes_precision', 'spin_missedS2Len_oes_precision',
             'spin_missedS2Div_oes_precision', 'spin_missedS2Slope_oes_precision',
             'spin_transSlope_oes_precision',
+            'spin_lowerHeight_oes_straightin', 'spin_lowerLength_oes_straightin',
+            'spin_upperHeight_oes_straightin', 'spin_upperShorterSide_oes_straightin',
+            'spin_upperLongerSideFromThreshold_oes_straightin',
             'spin_ARP_elevation',  # #131 — shared ARP elevation field
         ]
         decimal_pattern = r'^-?\d*(?:\.\d*)?$'
@@ -808,7 +826,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                         's2_length_m': self.get_numeric_value('spin_s2Len_oes_departure'),
                         's2_divergence_pct': self.get_numeric_value('spin_s2Div_oes_departure'),
                     }
-                else:
+                elif oes_sub_index == 2:
                     surface_type = SurfaceType.NEW_OLS_OES_PRECISION_APPROACH
                     specific_params = {
                         'start_elevation_m': self.get_numeric_value('spin_Z0_oes_precision'),
@@ -829,6 +847,18 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                         'missed_s2_divergence_pct': self.get_numeric_value('spin_missedS2Div_oes_precision'),
                         'missed_s2_slope_pct': self.get_numeric_value('spin_missedS2Slope_oes_precision'),
                         'trans_slope_pct': self.get_numeric_value('spin_transSlope_oes_precision'),
+                    }
+                else:
+                    surface_type = SurfaceType.NEW_OLS_OES_STRAIGHT_IN_APPROACH
+                    specific_params = {
+                        'aerodrome_elevation_m': arp_elevation_m,
+                        'direction': s_value,
+                        'lower_height_m': self.get_numeric_value('spin_lowerHeight_oes_straightin'),
+                        'lower_length_m': self.get_numeric_value('spin_lowerLength_oes_straightin'),
+                        'upper_height_m': self.get_numeric_value('spin_upperHeight_oes_straightin'),
+                        'upper_shorter_side_m': self.get_numeric_value('spin_upperShorterSide_oes_straightin'),
+                        'upper_longer_side_from_threshold_m':
+                            self.get_numeric_value('spin_upperLongerSideFromThreshold_oes_straightin'),
                     }
 
             return {

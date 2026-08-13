@@ -266,6 +266,7 @@
         <item row="0" column="1">
          <widget class="QComboBox" name="combo_rwyType_ofs">
           <property name="minimumHeight"><number>22</number></property>
+          <property name="toolTip"><string>Selects which ICAO table this tab's defaults come from: Non-instrument (Table 4-1) or Instrument (Table 4-2).</string></property>
           <item><property name="text"><string>Non-instrument</string></property></item>
           <item><property name="text"><string>Instrument</string></property></item>
          </widget>
@@ -280,6 +281,7 @@
          <widget class="QComboBox" name="combo_adg_ofs">
           <property name="minimumHeight"><number>22</number></property>
           <property name="currentIndex"><number>2</number></property>
+          <property name="toolTip"><string>Aeroplane Design Group for the Approach surface (Tables 4-1/4-2). IIA and IIB share one value set here; the Horizontal Surface tab's Table 4-10 splits them into separate tiers instead.</string></property>
           <item><property name="text"><string>I</string></property></item>
           <item><property name="text"><string>IIA-IIB</string></property></item>
           <item><property name="text"><string>IIC</string></property></item>
@@ -309,6 +311,7 @@
         <item row="3" column="1">
          <widget class="QLineEdit" name="spin_distThr_ofs">
           <property name="text"><string>60.00</string></property>
+          <property name="toolTip"><string>Tables 4-1/4-2: distance from the threshold to the start (inner edge) of the Approach surface, measured along the runway centreline extended beyond the threshold.</string></property>
          </widget>
         </item>
 
@@ -332,6 +335,7 @@
         <item row="5" column="1">
          <widget class="QLineEdit" name="spin_divergence_ofs">
           <property name="text"><string>10.00</string></property>
+          <property name="toolTip"><string>Tables 4-1/4-2: each side's outward splay of the surface, added to the half inner-edge width per metre of length (10% for all ADG groups and both runway types).</string></property>
          </widget>
         </item>
 
@@ -343,6 +347,7 @@
         <item row="6" column="1">
          <widget class="QLineEdit" name="spin_length_ofs">
           <property name="text"><string>4500.00</string></property>
+          <property name="toolTip"><string>Tables 4-1/4-2: length of the Approach surface, measured from the inner edge outward along the runway centreline azimuth.</string></property>
          </widget>
         </item>
 
@@ -366,6 +371,7 @@
         <item row="8" column="1">
          <widget class="QLineEdit" name="spin_Z0_ofs">
           <property name="text"><string>2548.00</string></property>
+          <property name="toolTip"><string>Elevation of the surface's inner edge, typically the threshold elevation.</string></property>
          </widget>
         </item>
 
@@ -377,6 +383,7 @@
         <item row="9" column="1">
          <widget class="QLineEdit" name="spin_ZE_ofs">
           <property name="text"><string>2546.50</string></property>
+          <property name="toolTip"><string>Elevation of the surface's outer edge, at the far end of Length (m) along the surface slope from Start Elevation.</string></property>
          </widget>
         </item>
 
@@ -455,73 +462,100 @@
              </widget>
             </item>
 
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_tier1Radius_oes_horizontal">
-              <property name="text"><string>Tier 1 Radius, I/IIA (m):</string></property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QLineEdit" name="spin_tier1Radius_oes_horizontal">
-              <property name="text"><string>3350.00</string></property>
+            <item row="1" column="0" colspan="2">
+             <widget class="QLabel" name="label_tier1_header_oes_horizontal">
+              <property name="text"><string>Tier 1 (ADG I / IIA)</string></property>
+              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 12px; padding-bottom: 4px; }</string></property>
              </widget>
             </item>
 
             <item row="2" column="0">
-             <widget class="QLabel" name="label_tier1Height_oes_horizontal">
-              <property name="text"><string>Tier 1 Height, I/IIA (m):</string></property>
+             <widget class="QLabel" name="label_tier1Radius_oes_horizontal">
+              <property name="text"><string>Radius (m):</string></property>
              </widget>
             </item>
             <item row="2" column="1">
-             <widget class="QLineEdit" name="spin_tier1Height_oes_horizontal">
-              <property name="text"><string>45.00</string></property>
+             <widget class="QLineEdit" name="spin_tier1Radius_oes_horizontal">
+              <property name="text"><string>3350.00</string></property>
+              <property name="toolTip"><string>Table 4-10: outer radius of the first (innermost) horizontal surface tier, applying to ADG I and IIA, measured from the ARP.</string></property>
              </widget>
             </item>
 
             <item row="3" column="0">
-             <widget class="QLabel" name="label_tier2Radius_oes_horizontal">
-              <property name="text"><string>Tier 2 Radius, IIB (m):</string></property>
+             <widget class="QLabel" name="label_tier1Height_oes_horizontal">
+              <property name="text"><string>Height (m):</string></property>
              </widget>
             </item>
             <item row="3" column="1">
-             <widget class="QLineEdit" name="spin_tier2Radius_oes_horizontal">
-              <property name="text"><string>5350.00</string></property>
+             <widget class="QLineEdit" name="spin_tier1Height_oes_horizontal">
+              <property name="text"><string>45.00</string></property>
+              <property name="toolTip"><string>Table 4-10: height of the first horizontal surface tier above the ARP elevation, applying to ADG I and IIA.</string></property>
              </widget>
             </item>
 
-            <item row="4" column="0">
-             <widget class="QLabel" name="label_tier2Height_oes_horizontal">
-              <property name="text"><string>Tier 2 Height, IIB (m):</string></property>
-             </widget>
-            </item>
-            <item row="4" column="1">
-             <widget class="QLineEdit" name="spin_tier2Height_oes_horizontal">
-              <property name="text"><string>60.00</string></property>
+            <item row="4" column="0" colspan="2">
+             <widget class="QLabel" name="label_tier2_header_oes_horizontal">
+              <property name="text"><string>Tier 2 (ADG IIB)</string></property>
+              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 12px; padding-bottom: 4px; }</string></property>
              </widget>
             </item>
 
             <item row="5" column="0">
-             <widget class="QLabel" name="label_tier3Radius_oes_horizontal">
-              <property name="text"><string>Tier 3 Radius, IIC-V (m):</string></property>
+             <widget class="QLabel" name="label_tier2Radius_oes_horizontal">
+              <property name="text"><string>Radius (m):</string></property>
              </widget>
             </item>
             <item row="5" column="1">
-             <widget class="QLineEdit" name="spin_tier3Radius_oes_horizontal">
-              <property name="text"><string>10750.00</string></property>
+             <widget class="QLineEdit" name="spin_tier2Radius_oes_horizontal">
+              <property name="text"><string>5350.00</string></property>
+              <property name="toolTip"><string>Table 4-10: outer radius of the second horizontal surface tier, applying to ADG IIB. Selecting IIB or higher keeps the Tier 1 ring underneath it as a separate annulus.</string></property>
              </widget>
             </item>
 
             <item row="6" column="0">
-             <widget class="QLabel" name="label_tier3Height_oes_horizontal">
-              <property name="text"><string>Tier 3 Height, IIC-V (m):</string></property>
+             <widget class="QLabel" name="label_tier2Height_oes_horizontal">
+              <property name="text"><string>Height (m):</string></property>
              </widget>
             </item>
             <item row="6" column="1">
-             <widget class="QLineEdit" name="spin_tier3Height_oes_horizontal">
-              <property name="text"><string>90.00</string></property>
+             <widget class="QLineEdit" name="spin_tier2Height_oes_horizontal">
+              <property name="text"><string>60.00</string></property>
+              <property name="toolTip"><string>Table 4-10: height of the second horizontal surface tier above the ARP elevation, applying to ADG IIB.</string></property>
              </widget>
             </item>
 
             <item row="7" column="0" colspan="2">
+             <widget class="QLabel" name="label_tier3_header_oes_horizontal">
+              <property name="text"><string>Tier 3 (ADG IIC-V)</string></property>
+              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 12px; padding-bottom: 4px; }</string></property>
+             </widget>
+            </item>
+
+            <item row="8" column="0">
+             <widget class="QLabel" name="label_tier3Radius_oes_horizontal">
+              <property name="text"><string>Radius (m):</string></property>
+             </widget>
+            </item>
+            <item row="8" column="1">
+             <widget class="QLineEdit" name="spin_tier3Radius_oes_horizontal">
+              <property name="text"><string>10750.00</string></property>
+              <property name="toolTip"><string>Table 4-10: outer radius of the third (outermost) horizontal surface tier, applying to ADG IIC through V. Selecting IIC or higher keeps both Tier 1 and Tier 2 rings underneath it.</string></property>
+             </widget>
+            </item>
+
+            <item row="9" column="0">
+             <widget class="QLabel" name="label_tier3Height_oes_horizontal">
+              <property name="text"><string>Height (m):</string></property>
+             </widget>
+            </item>
+            <item row="9" column="1">
+             <widget class="QLineEdit" name="spin_tier3Height_oes_horizontal">
+              <property name="text"><string>90.00</string></property>
+              <property name="toolTip"><string>Table 4-10: height of the third horizontal surface tier above the ARP elevation, applying to ADG IIC through V.</string></property>
+             </widget>
+            </item>
+
+            <item row="10" column="0" colspan="2">
              <widget class="QLabel" name="label_oes_horizontal_note">
               <property name="text">
                <string>Uses the shared ARP Elevation and Direction fields above. ADG selects how many tiers (rings) are drawn, from the bottom up; tier values themselves are editable.</string>
@@ -531,7 +565,7 @@
              </widget>
             </item>
 
-            <item row="8" column="0" colspan="2">
+            <item row="11" column="0" colspan="2">
              <widget class="QPushButton" name="calculateButton_oes_horizontal">
               <property name="text"><string>Calculate Horizontal Surface</string></property>
               <property name="minimumHeight"><number>30</number></property>
@@ -570,6 +604,7 @@
             <item row="1" column="1">
              <widget class="QLineEdit" name="spin_initHeight_oes_departure">
               <property name="text"><string>5.00</string></property>
+              <property name="toolTip"><string>Table 4-13: height of the surface's inner edge above DER elevation, before the slope begins (5 m by the table).</string></property>
              </widget>
             </item>
 
@@ -581,6 +616,7 @@
             <item row="2" column="1">
              <widget class="QLineEdit" name="spin_innerEdge_oes_departure">
               <property name="text"><string>300.00</string></property>
+              <property name="toolTip"><string>Table 4-13: full width of the surface at the DER, centred on the extended runway centreline (300 m by the table).</string></property>
              </widget>
             </item>
 
@@ -592,54 +628,73 @@
             <item row="3" column="1">
              <widget class="QLineEdit" name="spin_slope_oes_departure">
               <property name="text"><string>2.50</string></property>
+              <property name="toolTip"><string>Table 4-13: constant upward slope shared by Section 1 and Section 2, applied from the DER along the runway azimuth (2.5% by the table).</string></property>
              </widget>
             </item>
 
-            <item row="4" column="0">
-             <widget class="QLabel" name="label_s1Len_oes_departure">
-              <property name="text"><string>Section 1 Length (m):</string></property>
-             </widget>
-            </item>
-            <item row="4" column="1">
-             <widget class="QLineEdit" name="spin_s1Len_oes_departure">
-              <property name="text"><string>3500.00</string></property>
+            <item row="4" column="0" colspan="2">
+             <widget class="QLabel" name="label_section1_header_oes_departure">
+              <property name="text"><string>Section 1</string></property>
+              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 12px; padding-bottom: 4px; }</string></property>
              </widget>
             </item>
 
             <item row="5" column="0">
-             <widget class="QLabel" name="label_s1Div_oes_departure">
-              <property name="text"><string>Section 1 Divergence (%):</string></property>
+             <widget class="QLabel" name="label_s1Len_oes_departure">
+              <property name="text"><string>Length (m):</string></property>
              </widget>
             </item>
             <item row="5" column="1">
-             <widget class="QLineEdit" name="spin_s1Div_oes_departure">
-              <property name="text"><string>26.80</string></property>
+             <widget class="QLineEdit" name="spin_s1Len_oes_departure">
+              <property name="text"><string>3500.00</string></property>
+              <property name="toolTip"><string>Table 4-13: length of Section 1, measured from the DER along the extended runway centreline, in the takeoff/climb-out direction.</string></property>
              </widget>
             </item>
 
             <item row="6" column="0">
-             <widget class="QLabel" name="label_s2Len_oes_departure">
-              <property name="text"><string>Section 2 Length (m):</string></property>
+             <widget class="QLabel" name="label_s1Div_oes_departure">
+              <property name="text"><string>Divergence (%):</string></property>
              </widget>
             </item>
             <item row="6" column="1">
+             <widget class="QLineEdit" name="spin_s1Div_oes_departure">
+              <property name="text"><string>26.80</string></property>
+              <property name="toolTip"><string>Table 4-13: each side's outward splay in Section 1, added to the half inner-edge width per metre of Section 1 length (approx. 15 deg splay, 26.8% by the table).</string></property>
+             </widget>
+            </item>
+
+            <item row="7" column="0" colspan="2">
+             <widget class="QLabel" name="label_section2_header_oes_departure">
+              <property name="text"><string>Section 2</string></property>
+              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 12px; padding-bottom: 4px; }</string></property>
+             </widget>
+            </item>
+
+            <item row="8" column="0">
+             <widget class="QLabel" name="label_s2Len_oes_departure">
+              <property name="text"><string>Length (m):</string></property>
+             </widget>
+            </item>
+            <item row="8" column="1">
              <widget class="QLineEdit" name="spin_s2Len_oes_departure">
               <property name="text"><string>8300.00</string></property>
+              <property name="toolTip"><string>Table 4-13: length of Section 2, measured from the end of Section 1 continuing along the same azimuth.</string></property>
              </widget>
             </item>
 
-            <item row="7" column="0">
+            <item row="9" column="0">
              <widget class="QLabel" name="label_s2Div_oes_departure">
-              <property name="text"><string>Section 2 Divergence (%):</string></property>
+              <property name="text"><string>Divergence (%):</string></property>
              </widget>
             </item>
-            <item row="7" column="1">
+            <item row="9" column="1">
              <widget class="QLineEdit" name="spin_s2Div_oes_departure">
               <property name="text"><string>57.80</string></property>
+              <property name="toolTip"><string>Table 4-13: each side's outward splay in Section 2, added to Section 1's half-width per metre of Section 2 length (approx. 30 deg splay, 57.8% by the table).</string></property>
              </widget>
             </item>
 
-            <item row="8" column="0" colspan="2">
+            <item row="10" column="0" colspan="2">
              <widget class="QLabel" name="label_oes_departure_note">
               <property name="text">
                <string>Uses the shared Runway Layer and Direction fields above. No ADG (Table 4-13 is a single dimension set).</string>
@@ -649,7 +704,7 @@
              </widget>
             </item>
 
-            <item row="9" column="0" colspan="2">
+            <item row="11" column="0" colspan="2">
              <widget class="QPushButton" name="calculateButton_oes_departure">
               <property name="text"><string>Calculate Instrument Departure Surface</string></property>
               <property name="minimumHeight"><number>30</number></property>
@@ -683,7 +738,7 @@
             <item row="1" column="0" colspan="2">
              <widget class="QLabel" name="label_appr_header_oes_precision">
               <property name="text"><string>Approach</string></property>
-              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 6px; }</string></property>
+              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 12px; padding-bottom: 4px; }</string></property>
              </widget>
             </item>
 
@@ -695,6 +750,7 @@
             <item row="2" column="1">
              <widget class="QLineEdit" name="spin_apprDistThr_oes_precision">
               <property name="text"><string>60.00</string></property>
+              <property name="toolTip"><string>Table 4-12: distance from the threshold to the start (inner edge) of the Approach surface, measured along the runway centreline extended away from the runway (60 m by the table).</string></property>
              </widget>
             </item>
 
@@ -706,6 +762,7 @@
             <item row="3" column="1">
              <widget class="QLineEdit" name="spin_apprInnerEdge_oes_precision">
               <property name="text"><string>300.00</string></property>
+              <property name="toolTip"><string>Table 4-12: full width of the Approach surface's inner edge, centred on the extended runway centreline (300 m by the table); also reused as the Missed Approach surface's own inner-edge width.</string></property>
              </widget>
             </item>
 
@@ -717,6 +774,7 @@
             <item row="4" column="1">
              <widget class="QLineEdit" name="spin_apprS1Len_oes_precision">
               <property name="text"><string>3000.00</string></property>
+              <property name="toolTip"><string>Table 4-12: length of the Approach surface's Section 1, measured from the inner edge outward along the approach azimuth.</string></property>
              </widget>
             </item>
 
@@ -728,6 +786,7 @@
             <item row="5" column="1">
              <widget class="QLineEdit" name="spin_apprS1Div_oes_precision">
               <property name="text"><string>15.00</string></property>
+              <property name="toolTip"><string>Table 4-12: each side's outward splay in Section 1, added to the half inner-edge width per metre of Section 1 length.</string></property>
              </widget>
             </item>
 
@@ -739,6 +798,7 @@
             <item row="6" column="1">
              <widget class="QLineEdit" name="spin_apprS1Slope_oes_precision">
               <property name="text"><string>2.00</string></property>
+              <property name="toolTip"><string>Table 4-12: upward slope of Section 1, applied from the inner edge outward along the approach azimuth.</string></property>
              </widget>
             </item>
 
@@ -750,6 +810,7 @@
             <item row="7" column="1">
              <widget class="QLineEdit" name="spin_apprS2Len_oes_precision">
               <property name="text"><string>9600.00</string></property>
+              <property name="toolTip"><string>Table 4-12: length of the Approach surface's Section 2, measured from the end of Section 1 continuing along the approach azimuth.</string></property>
              </widget>
             </item>
 
@@ -761,6 +822,7 @@
             <item row="8" column="1">
              <widget class="QLineEdit" name="spin_apprS2Div_oes_precision">
               <property name="text"><string>15.00</string></property>
+              <property name="toolTip"><string>Table 4-12: each side's outward splay in Section 2, added to Section 1's half-width per metre of Section 2 length.</string></property>
              </widget>
             </item>
 
@@ -772,13 +834,14 @@
             <item row="9" column="1">
              <widget class="QLineEdit" name="spin_apprS2Slope_oes_precision">
               <property name="text"><string>2.50</string></property>
+              <property name="toolTip"><string>Table 4-12: upward slope of Section 2, applied from the end of Section 1 outward along the approach azimuth.</string></property>
              </widget>
             </item>
 
             <item row="10" column="0" colspan="2">
              <widget class="QLabel" name="label_missed_header_oes_precision">
               <property name="text"><string>Missed Approach</string></property>
-              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 6px; }</string></property>
+              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 12px; padding-bottom: 4px; }</string></property>
              </widget>
             </item>
 
@@ -790,6 +853,7 @@
             <item row="11" column="1">
              <widget class="QLineEdit" name="spin_missedDistThr_oes_precision">
               <property name="text"><string>900.00</string></property>
+              <property name="toolTip"><string>Table 4-12: distance from the threshold to the start of the Missed Approach surface, measured past the threshold in the landing direction of travel (900 m by the table).</string></property>
              </widget>
             </item>
 
@@ -801,6 +865,7 @@
             <item row="12" column="1">
              <widget class="QLineEdit" name="spin_missedS1Len_oes_precision">
               <property name="text"><string>1800.00</string></property>
+              <property name="toolTip"><string>Table 4-12: length of the Missed Approach surface's Section 1, measured from its inner edge continuing past the threshold.</string></property>
              </widget>
             </item>
 
@@ -824,6 +889,7 @@
             <item row="14" column="1">
              <widget class="QLineEdit" name="spin_missedS2Len_oes_precision">
               <property name="text"><string>10200.00</string></property>
+              <property name="toolTip"><string>Table 4-12: length of the Missed Approach surface's Section 2, measured from the end of Section 1 continuing in the same direction.</string></property>
              </widget>
             </item>
 
@@ -835,6 +901,7 @@
             <item row="15" column="1">
              <widget class="QLineEdit" name="spin_missedS2Div_oes_precision">
               <property name="text"><string>25.00</string></property>
+              <property name="toolTip"><string>Table 4-12: each side's outward splay of Section 2, added to Section 1's half-width per metre of Section 2 length.</string></property>
              </widget>
             </item>
 
@@ -846,13 +913,14 @@
             <item row="16" column="1">
              <widget class="QLineEdit" name="spin_missedS2Slope_oes_precision">
               <property name="text"><string>2.50</string></property>
+              <property name="toolTip"><string>Table 4-12: upward slope of the Missed Approach surface's Section 2.</string></property>
              </widget>
             </item>
 
             <item row="17" column="0" colspan="2">
              <widget class="QLabel" name="label_trans_header_oes_precision">
               <property name="text"><string>Transitional</string></property>
-              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 6px; }</string></property>
+              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 12px; padding-bottom: 4px; }</string></property>
              </widget>
             </item>
 
@@ -864,6 +932,7 @@
             <item row="18" column="1">
              <widget class="QLineEdit" name="spin_transSlope_oes_precision">
               <property name="text"><string>14.30</string></property>
+              <property name="toolTip"><string>Table 4-12: slope of the Transitional surface, rising outward from the sides of the Approach and Missed Approach inner edges up to the Horizontal surface elevation.</string></property>
              </widget>
             </item>
 
@@ -880,6 +949,109 @@
             <item row="20" column="0" colspan="2">
              <widget class="QPushButton" name="calculateButton_oes_precision_approach">
               <property name="text"><string>Calculate Surface for Precision Approaches</string></property>
+              <property name="minimumHeight"><number>30</number></property>
+             </widget>
+            </item>
+
+           </layout>
+          </widget>
+
+          <!-- SURFACE FOR STRAIGHT-IN INSTRUMENT APPROACHES SUBTAB (#137) -->
+          <widget class="QWidget" name="oes_sub_straight_in_approach">
+           <attribute name="title"><string>Straight-in Instrument Approaches</string></attribute>
+           <layout class="QFormLayout" name="formLayout_oes_straightin">
+            <property name="fieldGrowthPolicy"><enum>QFormLayout::AllNonFixedFieldsGrow</enum></property>
+            <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>
+            <property name="horizontalSpacing"><number>15</number></property>
+            <property name="verticalSpacing"><number>6</number></property>
+
+            <item row="0" column="0" colspan="2">
+             <widget class="QLabel" name="label_lower_header_oes_straightin">
+              <property name="text"><string>Lower Section</string></property>
+              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 12px; padding-bottom: 4px; }</string></property>
+             </widget>
+            </item>
+
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_lowerHeight_oes_straightin">
+              <property name="text"><string>Height (m):</string></property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="spin_lowerHeight_oes_straightin">
+              <property name="text"><string>45.00</string></property>
+              <property name="toolTip"><string>Table 4-11: height of the Lower section above the ARP elevation (45 m by the table, matching the Horizontal OES surface's ADG-I tier height).</string></property>
+             </widget>
+            </item>
+
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_lowerLength_oes_straightin">
+              <property name="text"><string>Length (m):</string></property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="spin_lowerLength_oes_straightin">
+              <property name="text"><string>3350.00</string></property>
+              <property name="toolTip"><string>Table 4-11: "Horizontal OES as per ADG I" — the Horizontal OES surface's ADG-I ring radius.</string></property>
+             </widget>
+            </item>
+
+            <item row="3" column="0" colspan="2">
+             <widget class="QLabel" name="label_upper_header_oes_straightin">
+              <property name="text"><string>Upper Section</string></property>
+              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 12px; padding-bottom: 4px; }</string></property>
+             </widget>
+            </item>
+
+            <item row="4" column="0">
+             <widget class="QLabel" name="label_upperHeight_oes_straightin">
+              <property name="text"><string>Height (m):</string></property>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QLineEdit" name="spin_upperHeight_oes_straightin">
+              <property name="text"><string>60.00</string></property>
+              <property name="toolTip"><string>Table 4-11: height of the Upper section above the ARP elevation (60 m by the table).</string></property>
+             </widget>
+            </item>
+
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_upperShorterSide_oes_straightin">
+              <property name="text"><string>Shorter Side (m):</string></property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QLineEdit" name="spin_upperShorterSide_oes_straightin">
+              <property name="text"><string>7410.00</string></property>
+              <property name="toolTip"><string>Table 4-11: full width of the Upper section's rectangle, measured across the runway centreline (7410 m by the table).</string></property>
+             </widget>
+            </item>
+
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_upperLongerSideFromThreshold_oes_straightin">
+              <property name="text"><string>Longer Side From THR (m):</string></property>
+             </widget>
+            </item>
+            <item row="6" column="1">
+             <widget class="QLineEdit" name="spin_upperLongerSideFromThreshold_oes_straightin">
+              <property name="text"><string>5350.00</string></property>
+              <property name="toolTip"><string>Table 4-11: length the Upper section's rectangle extends beyond each threshold along the runway centreline (5350 m by the table).</string></property>
+             </widget>
+            </item>
+
+            <item row="7" column="0" colspan="2">
+             <widget class="QLabel" name="label_oes_straightin_note">
+              <property name="text">
+               <string>Uses the shared Runway Layer, ARP Elevation, and Direction fields above. No ADG (Table 4-11 is a single dimension set, always drawn for every ADG).</string>
+              </property>
+              <property name="wordWrap"><bool>true</bool></property>
+              <property name="styleSheet"><string>QLabel { font-size: 11px; padding: 4px; }</string></property>
+             </widget>
+            </item>
+
+            <item row="8" column="0" colspan="2">
+             <widget class="QPushButton" name="calculateButton_oes_straightin">
+              <property name="text"><string>Calculate Surface for Straight-in Instrument Approaches</string></property>
               <property name="minimumHeight"><number>30</number></property>
              </widget>
             </item>

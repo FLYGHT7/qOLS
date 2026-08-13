@@ -206,6 +206,8 @@ class QOLS:
                 self.execute_new_ols_oes_departure(params)
             elif st == SurfaceType.NEW_OLS_OES_PRECISION_APPROACH:
                 self.execute_new_ols_oes_precision_approach(params)
+            elif st == SurfaceType.NEW_OLS_OES_STRAIGHT_IN_APPROACH:
+                self.execute_new_ols_oes_straight_in_approach(params)
             else:
                 raise ValueError(f"Unhandled New OLS surface type: {st!r}")
 
@@ -417,6 +419,14 @@ class QOLS:
         needed (Table 4-12 needs no ADG; runway_layer/threshold_layer
         are already shared at the top level of params)."""
         script_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-oes-precision-approach-UTM.py')
+        self.execute_script(script_path, params)
+
+    def execute_new_ols_oes_straight_in_approach(self, params):
+        """Surface for Straight-in Instrument Approaches (#137) — its own
+        OES subtab, triggered individually; get_parameters() already
+        shapes specific_params as aerodrome_elevation_m/direction/lower_*/
+        upper_*, no remapping needed (Table 4-11 needs no ADG)."""
+        script_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-oes-straight-in-approach-UTM.py')
         self.execute_script(script_path, params)
 
     def execute_combined_inner_conical_surface(self, params):
