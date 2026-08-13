@@ -11,6 +11,7 @@ pyproject.toml
 .claude/
 skills-lock.json
 CLAUDE.md
+graphify-out/
 
 # Python cache
 __pycache__/
