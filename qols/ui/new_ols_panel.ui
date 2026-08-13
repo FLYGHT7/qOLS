@@ -428,14 +428,27 @@
              Calculate button and only its own parameters, instead of
              one shared Calculate bundling every OES surface together. -->
         <item>
-         <widget class="QTabWidget" name="oesSubTabWidget">
-          <property name="tabPosition">
-           <enum>QTabWidget::North</enum>
-          </property>
+         <widget class="QWidget" name="oesTabSelectorContainer">
+          <layout class="QVBoxLayout" name="oesTabSelectorLayout">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <property name="margin">
+            <number>0</number>
+           </property>
+           <item>
+            <layout class="QHBoxLayout" name="oesTabRow1Layout"/>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="oesTabRow2Layout"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
 
-          <!-- HORIZONTAL SURFACE SUBTAB (#134) -->
+        <item>
+         <widget class="QStackedWidget" name="oesSubTabStack">
           <widget class="QWidget" name="oes_sub_horizontal">
-           <attribute name="title"><string>Horizontal Surface</string></attribute>
            <layout class="QFormLayout" name="formLayout_oes_horizontal">
             <property name="fieldGrowthPolicy"><enum>QFormLayout::AllNonFixedFieldsGrow</enum></property>
             <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>
@@ -577,7 +590,6 @@
 
           <!-- INSTRUMENT DEPARTURE SURFACE SUBTAB (#136) -->
           <widget class="QWidget" name="oes_sub_departure">
-           <attribute name="title"><string>Instrument Departure Surface</string></attribute>
            <layout class="QFormLayout" name="formLayout_oes_departure">
             <property name="fieldGrowthPolicy"><enum>QFormLayout::AllNonFixedFieldsGrow</enum></property>
             <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>
@@ -716,7 +728,6 @@
 
           <!-- SURFACE FOR PRECISION APPROACHES SUBTAB (#135) -->
           <widget class="QWidget" name="oes_sub_precision_approach">
-           <attribute name="title"><string>Surface for Precision Approaches</string></attribute>
            <layout class="QFormLayout" name="formLayout_oes_precision_approach">
             <property name="fieldGrowthPolicy"><enum>QFormLayout::AllNonFixedFieldsGrow</enum></property>
             <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>
@@ -958,7 +969,6 @@
 
           <!-- SURFACE FOR STRAIGHT-IN INSTRUMENT APPROACHES SUBTAB (#137) -->
           <widget class="QWidget" name="oes_sub_straight_in_approach">
-           <attribute name="title"><string>Straight-in Instrument Approaches</string></attribute>
            <layout class="QFormLayout" name="formLayout_oes_straightin">
             <property name="fieldGrowthPolicy"><enum>QFormLayout::AllNonFixedFieldsGrow</enum></property>
             <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>

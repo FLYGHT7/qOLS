@@ -10,11 +10,12 @@ from ..surfaces.new_ols_approach import get_new_ols_approach_defaults
 from ..surface_types import SurfaceType
 from .. import logger
 from ..direction_marker import build_marker_geometry
+from .tab_row_selector import TwoRowTabSelector
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot, QRegularExpression
 from qgis.PyQt.QtGui import QColor, QRegularExpressionValidator
 from qgis.PyQt.QtWidgets import (
-    QApplication, QComboBox, QDialog, QDockWidget, QTabWidget,
+    QApplication, QComboBox, QDialog, QDockWidget, QHBoxLayout, QStackedWidget, QTabBar,
     QLabel, QLineEdit, QMessageBox, QPushButton, QTextBrowser, QToolTip, QVBoxLayout,
 )
 from ..compat import EVENT_MOUSE_MOVE, TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL, GEOM_TYPE_POLYGON
@@ -105,7 +106,17 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
     spin_Z0_ofs: QLineEdit
     spin_ZE_ofs: QLineEdit
     spin_contour_interval_ofs: QLineEdit
-    oesSubTabWidget: QTabWidget
+    # Two-row OES tab bar (#164) — mirrors the classic panel's own #123
+    # fix. PyQt6's uic can't construct a bare QTabBar from .ui XML (not
+    # in its Designer-placeable widget table, unlike QTabWidget/
+    # QStackedWidget), so oesTabBarRow1/oesTabBarRow2 are built in
+    # Python in __init__ and inserted into the (XML-declared, empty)
+    # oesTabRow1Layout/oesTabRow2Layout — not setupUi() attributes
+    # either. oesSubTabWidget itself is a TwoRowTabSelector instance,
+    # also built in __init__.
+    oesTabRow1Layout: QHBoxLayout
+    oesTabRow2Layout: QHBoxLayout
+    oesSubTabStack: QStackedWidget
     combo_adg_horizontal_oes: QComboBox
     spin_tier1Radius_oes_horizontal: QLineEdit
     spin_tier1Height_oes_horizontal: QLineEdit
@@ -173,6 +184,43 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
 
         try:
             self.setupUi(self)
+
+            # Two-row OES tab selector (#164) — same fix as the classic
+            # panel's #123: PyQt6's uic can't build a bare QTabBar
+            # straight from .ui XML, so both bars are constructed here
+            # and inserted into the (empty) oesTabRow1Layout/
+            # oesTabRow2Layout declared in new_ols_panel.ui. Native
+            # look, no custom styling. oesSubTabStack's 4 pages stay in
+            # their original order (0=Horizontal ... 3=Straight-in) —
+            # get_parameters()'s oes_sub_index dispatch depends on that
+            # exact stack order, not on which row a tab visually sits
+            # in. Row 1: Horizontal, Departure. Row 2: Precision
+            # Approach, Straight-in.
+            self.oesTabBarRow1 = QTabBar(self)
+            self.oesTabBarRow2 = QTabBar(self)
+            self.oesTabRow1Layout.addWidget(self.oesTabBarRow1)
+            self.oesTabRow2Layout.addWidget(self.oesTabBarRow2)
+            for text in ("Horizontal Surface", "Instrument Departure Surface"):
+                self.oesTabBarRow1.addTab(text)
+            for text in ("Surface for Precision Approaches", "Straight-in Instrument Approaches"):
+                self.oesTabBarRow2.addTab(text)
+
+            # oesSubTabWidget itself is this shim, not a setupUi()
+            # attribute; it presents the same currentIndex()/tabText()/
+            # widget()/currentChanged surface a QTabWidget did, so the
+            # existing oesSubTabWidget.currentIndex() call in
+            # get_parameters() keeps working unchanged.
+            self.oesSubTabWidget = TwoRowTabSelector(
+                bars=[self.oesTabBarRow1, self.oesTabBarRow2],
+                stack_indices_per_bar=[[0, 1], [2, 3]],
+                tab_texts=[
+                    "Horizontal Surface", "Instrument Departure Surface",
+                    "Surface for Precision Approaches", "Straight-in Instrument Approaches",
+                ],
+                stack=self.oesSubTabStack,
+                parent=self,
+            )
+
             self.setup_numeric_lineedit_validation()
             self.setup_layer_filters()
             self.setup_enhanced_combos()
