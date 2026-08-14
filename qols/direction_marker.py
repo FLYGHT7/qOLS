@@ -11,6 +11,16 @@ QGIS-aware wrapper the dockwidgets call.
 The direction formula mirrors the ``s``-index convention ported from the
 legacy ``TransitionalSurface_UTM.py`` into the New OLS scripts (see #113):
 ``s = direction; near_end_pt = line_pts[s]; far_end_pt = line_pts[-1 - s]``.
+
+The threshold-anchoring shortcut (``resolve_anchor_feature``) mirrors
+#132's fix in ``new-ols-ofs-approach-UTM.py``: with exactly one
+threshold candidate, use it directly instead of re-deriving it by
+distance to ``near_end_pt`` — otherwise the marker jumps to the
+opposite threshold every time direction is toggled, since
+``near_end_pt`` itself flips between the runway's two endpoints. #132
+fixed this for the real OFS Approach calculation but the fix was never
+propagated to this shared preview module, discovered while testing
+#161's Take-off Climb subtab.
 """
 from __future__ import annotations
 
@@ -19,6 +29,7 @@ import math
 __all__ = [
     "resolve_direction_azimuth",
     "triangle_marker_vertices",
+    "resolve_anchor_feature",
     "build_marker_geometry",
 ]
 
@@ -115,6 +126,20 @@ def _closest_feature(features, pt: tuple[float, float]):
     )
 
 
+def resolve_anchor_feature(candidates, near_end_pt, closest_fn=_closest_feature):
+    """Mirrors #132's fix (``new-ols-ofs-approach-UTM.py``): with exactly
+    one candidate, use it directly rather than re-deriving it by distance
+    to ``near_end_pt``. A single selection isn't ambiguous, and
+    ``near_end_pt`` — which flips between the runway's two endpoints when
+    direction toggles — shouldn't be able to make the marker jump away
+    from the one feature the user actually selected. #132 fixed this for
+    the real OFS Approach calculation but never propagated the fix here,
+    so the preview marker kept jumping between thresholds on every tab."""
+    if len(candidates) == 1:
+        return candidates[0]
+    return closest_fn(candidates, near_end_pt)
+
+
 def build_marker_geometry(
     runway_layer,
     threshold_layer,
@@ -150,7 +175,7 @@ def build_marker_geometry(
     except IndexError:
         return None
 
-    near_thr_feat = _closest_feature(threshold_sel, near_end_pt)
+    near_thr_feat = resolve_anchor_feature(threshold_sel, near_end_pt)
     thr_pt = near_thr_feat.geometry().asPoint()
     tip = (thr_pt.x(), thr_pt.y())
 

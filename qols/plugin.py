@@ -208,6 +208,8 @@ class QOLS:
                 self.execute_new_ols_oes_precision_approach(params)
             elif st == SurfaceType.NEW_OLS_OES_STRAIGHT_IN_APPROACH:
                 self.execute_new_ols_oes_straight_in_approach(params)
+            elif st == SurfaceType.NEW_OLS_OES_TAKEOFF_CLIMB:
+                self.execute_new_ols_oes_takeoff_climb(params)
             else:
                 raise ValueError(f"Unhandled New OLS surface type: {st!r}")
 
@@ -427,6 +429,14 @@ class QOLS:
         shapes specific_params as aerodrome_elevation_m/direction/lower_*/
         upper_*, no remapping needed (Table 4-11 needs no ADG)."""
         script_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-oes-straight-in-approach-UTM.py')
+        self.execute_script(script_path, params)
+
+    def execute_new_ols_oes_takeoff_climb(self, params):
+        """Take-off Climb Surface (#161) — its own OES subtab, triggered
+        individually; get_parameters() already shapes specific_params as
+        start_elevation_m/cwy_length_m/direction/Table-4-14-4-15 fields,
+        no remapping needed."""
+        script_path = os.path.join(self.plugin_dir, 'scripts', 'new-ols-oes-takeoff-climb-UTM.py')
         self.execute_script(script_path, params)
 
     def execute_combined_inner_conical_surface(self, params):

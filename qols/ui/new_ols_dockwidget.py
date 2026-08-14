@@ -7,6 +7,7 @@ Runs as an independent dock widget with its own toolbar button.
 import os
 import traceback
 from ..surfaces.new_ols_approach import get_new_ols_approach_defaults
+from ..surfaces.new_ols_takeoff_climb import get_valid_adg_groups, get_takeoff_climb_surface_dimensions
 from ..surface_types import SurfaceType
 from .. import logger
 from ..direction_marker import build_marker_geometry
@@ -90,6 +91,16 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
         'spin_upperHeight_oes_straightin':      60.0,
         'spin_upperShorterSide_oes_straightin': 7410.0,
         'spin_upperLongerSideFromThreshold_oes_straightin': 5350.0,
+        # OES Take-off Climb Surface (#161) — Table 4-14 ADG I defaults
+        # (Mass Category combo's initial state).
+        'spin_Z0_oes_takeoff':              2548.0,
+        'spin_CWYLength_oes_takeoff':           0.0,
+        'spin_distFromRwyEnd_oes_takeoff':     30.0,
+        'spin_innerEdge_oes_takeoff':          60.0,
+        'spin_divergence_oes_takeoff':         10.0,
+        'spin_finalWidth_oes_takeoff':        380.0,
+        'spin_length_oes_takeoff':           1600.0,
+        'spin_slope_oes_takeoff':               5.0,
         # ARP (Aerodrome Reference Point) — shared by both tabs, moved to
         # a single top-level field (#131).
         'spin_ARP_elevation':     2548.0,
@@ -153,10 +164,21 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
     spin_upperHeight_oes_straightin: QLineEdit
     spin_upperShorterSide_oes_straightin: QLineEdit
     spin_upperLongerSideFromThreshold_oes_straightin: QLineEdit
+    combo_massCategory_oes_takeoff: QComboBox
+    combo_adg_oes_takeoff: QComboBox
+    spin_Z0_oes_takeoff: QLineEdit
+    spin_CWYLength_oes_takeoff: QLineEdit
+    spin_distFromRwyEnd_oes_takeoff: QLineEdit
+    spin_innerEdge_oes_takeoff: QLineEdit
+    spin_divergence_oes_takeoff: QLineEdit
+    spin_finalWidth_oes_takeoff: QLineEdit
+    spin_length_oes_takeoff: QLineEdit
+    spin_slope_oes_takeoff: QLineEdit
     calculateButton_oes_horizontal: QPushButton
     calculateButton_oes_departure: QPushButton
     calculateButton_oes_precision_approach: QPushButton
     calculateButton_oes_straightin: QPushButton
+    calculateButton_oes_takeoff: QPushButton
     spin_ARP_elevation: QLineEdit
     runwaySelectionStatusLabel: QLabel
     thresholdSelectionStatusLabel: QLabel
@@ -190,19 +212,23 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             # straight from .ui XML, so both bars are constructed here
             # and inserted into the (empty) oesTabRow1Layout/
             # oesTabRow2Layout declared in new_ols_panel.ui. Native
-            # look, no custom styling. oesSubTabStack's 4 pages stay in
-            # their original order (0=Horizontal ... 3=Straight-in) —
+            # look, no custom styling. oesSubTabStack's 5 pages stay in
+            # their original order (0=Horizontal ... 4=Take-off Climb) —
             # get_parameters()'s oes_sub_index dispatch depends on that
             # exact stack order, not on which row a tab visually sits
             # in. Row 1: Horizontal, Departure. Row 2: Precision
-            # Approach, Straight-in.
+            # Approach, Straight-in, Take-off Climb (#161 — extended
+            # this row rather than adding a 3rd, minimal-diff choice;
+            # if a 6th OES surface is ever added, this mapping needs
+            # revisiting again).
             self.oesTabBarRow1 = QTabBar(self)
             self.oesTabBarRow2 = QTabBar(self)
             self.oesTabRow1Layout.addWidget(self.oesTabBarRow1)
             self.oesTabRow2Layout.addWidget(self.oesTabBarRow2)
             for text in ("Horizontal Surface", "Instrument Departure Surface"):
                 self.oesTabBarRow1.addTab(text)
-            for text in ("Surface for Precision Approaches", "Straight-in Instrument Approaches"):
+            for text in ("Surface for Precision Approaches", "Straight-in Instrument Approaches",
+                         "Take-off Climb Surface"):
                 self.oesTabBarRow2.addTab(text)
 
             # oesSubTabWidget itself is this shim, not a setupUi()
@@ -212,10 +238,11 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             # get_parameters() keeps working unchanged.
             self.oesSubTabWidget = TwoRowTabSelector(
                 bars=[self.oesTabBarRow1, self.oesTabBarRow2],
-                stack_indices_per_bar=[[0, 1], [2, 3]],
+                stack_indices_per_bar=[[0, 1], [2, 3, 4]],
                 tab_texts=[
                     "Horizontal Surface", "Instrument Departure Surface",
                     "Surface for Precision Approaches", "Straight-in Instrument Approaches",
+                    "Take-off Climb Surface",
                 ],
                 stack=self.oesSubTabStack,
                 parent=self,
@@ -246,6 +273,15 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             except Exception as e:
                 logger.warning(f"Could not apply initial New OLS defaults: {e}")
 
+            try:
+                self._connect(self.combo_massCategory_oes_takeoff.currentIndexChanged,
+                              self._refresh_adg_options_for_takeoff)
+                self._connect(self.combo_adg_oes_takeoff.currentIndexChanged,
+                              self.apply_takeoff_climb_defaults)
+                self._refresh_adg_options_for_takeoff()
+            except Exception as e:
+                logger.warning(f"Could not apply initial Take-off Climb defaults: {e}")
+
             self._connect(self.useSelectedRunwayCheckBox.toggled, self.update_selection_info)
             self._connect(self.useSelectedThresholdCheckBox.toggled, self.update_selection_info)
             self._connect(self.useSelectedArpCheckBox.toggled, self.update_selection_info)  # #131
@@ -268,6 +304,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             self._connect(self.calculateButton_oes_departure.clicked, self.on_calculate_clicked)
             self._connect(self.calculateButton_oes_precision_approach.clicked, self.on_calculate_clicked)
             self._connect(self.calculateButton_oes_straightin.clicked, self.on_calculate_clicked)
+            self._connect(self.calculateButton_oes_takeoff.clicked, self.on_calculate_clicked)
             self._connect(self.cancelButton.clicked, self.on_close_clicked)
             self._connect(self.directionButton.clicked, self.toggle_direction)
 
@@ -321,6 +358,10 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             'spin_lowerHeight_oes_straightin', 'spin_lowerLength_oes_straightin',
             'spin_upperHeight_oes_straightin', 'spin_upperShorterSide_oes_straightin',
             'spin_upperLongerSideFromThreshold_oes_straightin',
+            'spin_Z0_oes_takeoff', 'spin_CWYLength_oes_takeoff',
+            'spin_distFromRwyEnd_oes_takeoff', 'spin_innerEdge_oes_takeoff',
+            'spin_divergence_oes_takeoff', 'spin_finalWidth_oes_takeoff',
+            'spin_length_oes_takeoff', 'spin_slope_oes_takeoff',
             'spin_ARP_elevation',  # #131 — shared ARP elevation field
         ]
         decimal_pattern = r'^-?\d*(?:\.\d*)?$'
@@ -587,6 +628,43 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             self.set_numeric_value('spin_divergence_ofs', d['divergence_pct'])
             self.set_numeric_value('spin_length_ofs', d['length_m'])
             self.set_numeric_value('spin_slope_ofs', d['slope_pct'])
+        except Exception as e:
+            logger.warning(f"Unhandled error: {e}")
+
+    @pyqtSlot()
+    def apply_takeoff_climb_defaults(self):
+        """Populate OES Take-off Climb fields from ICAO Tables 4-14/4-15 (#161)."""
+        try:
+            mass_category = self.combo_massCategory_oes_takeoff.currentText()
+            adg = self.combo_adg_oes_takeoff.currentText()
+            d = get_takeoff_climb_surface_dimensions(mass_category, adg)
+            self.set_numeric_value('spin_distFromRwyEnd_oes_takeoff', d['distance_from_runway_end_m'])
+            self.set_numeric_value('spin_innerEdge_oes_takeoff', d['inner_edge_m'])
+            self.set_numeric_value('spin_divergence_oes_takeoff', d['divergence_pct'])
+            self.set_numeric_value('spin_finalWidth_oes_takeoff', d['final_width_m'])
+            self.set_numeric_value('spin_length_oes_takeoff', d['length_m'])
+            self.set_numeric_value('spin_slope_oes_takeoff', d['slope_pct'])
+        except Exception as e:
+            logger.warning(f"Unhandled error: {e}")
+
+    @pyqtSlot()
+    def _refresh_adg_options_for_takeoff(self):
+        """Narrow the ADG combo to the groups valid for the selected mass
+        category (#161) — Table 4-14 only applies to ADG I/IIA-IIB, Table
+        4-15 applies to all six. Re-populating fires the combo's own
+        currentIndexChanged, so signals are blocked while items are
+        replaced to avoid spurious intermediate default-population calls."""
+        try:
+            mass_category = self.combo_massCategory_oes_takeoff.currentText()
+            valid = get_valid_adg_groups(mass_category)
+            combo = self.combo_adg_oes_takeoff
+            previous = combo.currentText()
+            combo.blockSignals(True)
+            combo.clear()
+            combo.addItems(valid)
+            combo.setCurrentText(previous if previous in valid else valid[0])
+            combo.blockSignals(False)
+            self.apply_takeoff_climb_defaults()
         except Exception as e:
             logger.warning(f"Unhandled error: {e}")
 
@@ -896,7 +974,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                         'missed_s2_slope_pct': self.get_numeric_value('spin_missedS2Slope_oes_precision'),
                         'trans_slope_pct': self.get_numeric_value('spin_transSlope_oes_precision'),
                     }
-                else:
+                elif oes_sub_index == 3:
                     surface_type = SurfaceType.NEW_OLS_OES_STRAIGHT_IN_APPROACH
                     specific_params = {
                         'aerodrome_elevation_m': arp_elevation_m,
@@ -907,6 +985,19 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                         'upper_shorter_side_m': self.get_numeric_value('spin_upperShorterSide_oes_straightin'),
                         'upper_longer_side_from_threshold_m':
                             self.get_numeric_value('spin_upperLongerSideFromThreshold_oes_straightin'),
+                    }
+                else:
+                    surface_type = SurfaceType.NEW_OLS_OES_TAKEOFF_CLIMB
+                    specific_params = {
+                        'start_elevation_m': self.get_numeric_value('spin_Z0_oes_takeoff'),
+                        'direction': s_value,
+                        'cwy_length_m': self.get_numeric_value('spin_CWYLength_oes_takeoff'),
+                        'distance_from_runway_end_m': self.get_numeric_value('spin_distFromRwyEnd_oes_takeoff'),
+                        'inner_edge_m': self.get_numeric_value('spin_innerEdge_oes_takeoff'),
+                        'divergence_pct': self.get_numeric_value('spin_divergence_oes_takeoff'),
+                        'final_width_m': self.get_numeric_value('spin_finalWidth_oes_takeoff'),
+                        'length_m': self.get_numeric_value('spin_length_oes_takeoff'),
+                        'slope_pct': self.get_numeric_value('spin_slope_oes_takeoff'),
                     }
 
             return {
