@@ -80,6 +80,58 @@ def create_layer_icon(size=16):
     return img
 
 
+def create_kmz_toolbar_icon(size=512):
+    """Create a map-pin + export-arrow icon for the "Export to KML" toolbar
+    action (#153), matching icon_current.png/icon_new.png's flat green
+    style (RGB 46,125,50) and 512x512 static-PNG-at-plugin-root convention."""
+    img = Image.new('RGBA', (size, size), (255, 255, 255, 0))
+    draw = ImageDraw.Draw(img)
+    color = (46, 125, 50, 255)
+
+    # Map pin (teardrop): circular head + triangular point, filled with the
+    # same solid color so the two primitives merge into one seamless shape.
+    cx = size * 0.38
+    head_cy = size * 0.36
+    head_r = size * 0.22
+    apex_y = size * 0.88
+
+    draw.ellipse([cx - head_r, head_cy - head_r, cx + head_r, head_cy + head_r], fill=color)
+
+    tangent_dx = head_r * 0.92
+    tangent_y = head_cy + head_r * 0.40
+    draw.polygon([
+        (cx - tangent_dx, tangent_y),
+        (cx + tangent_dx, tangent_y),
+        (cx, apex_y),
+    ], fill=color)
+
+    # Punch a hole in the pin head for the classic ring-pin silhouette.
+    hole_r = head_r * 0.42
+    draw.ellipse([cx - hole_r, head_cy - hole_r, cx + hole_r, head_cy + hole_r], fill=(0, 0, 0, 0))
+
+    # Export arrow (line pointing out of the pin toward the upper right),
+    # signalling "send this data out" rather than just "location."
+    arrow_width = size * 0.05
+    tail = (size * 0.56, size * 0.62)
+    tip = (size * 0.92, size * 0.18)
+    draw.line([tail, tip], fill=color, width=int(arrow_width))
+
+    head_len = size * 0.16
+    dx, dy = tip[0] - tail[0], tip[1] - tail[1]
+    length = (dx ** 2 + dy ** 2) ** 0.5
+    ux, uy = dx / length, dy / length
+    px, py = -uy, ux
+    back = (tip[0] - ux * head_len, tip[1] - uy * head_len)
+    barb_w = head_len * 0.6
+    draw.polygon([
+        tip,
+        (back[0] + px * barb_w, back[1] + py * barb_w),
+        (back[0] - px * barb_w, back[1] - py * barb_w),
+    ], fill=color)
+
+    return img
+
+
 def generate_icons():
     """Generate all icon files"""
     icons_dir = os.path.join(os.path.dirname(__file__), 'icons')
