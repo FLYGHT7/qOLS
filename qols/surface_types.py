@@ -39,6 +39,7 @@ class SurfaceType(str, Enum):
     NEW_OLS_OES_DEPARTURE = "New OLS - OES Departure"
     NEW_OLS_OES_PRECISION_APPROACH = "New OLS - OES Precision Approach"
     NEW_OLS_OES_STRAIGHT_IN_APPROACH = "New OLS - OES Straight-in Instrument Approach"
+    NEW_OLS_OES_TAKEOFF_CLIMB = "New OLS - OES Take-off Climb"
 
     @classmethod
     def from_tab_text(cls, text: str) -> "SurfaceType":

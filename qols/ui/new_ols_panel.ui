@@ -1069,6 +1069,169 @@
            </layout>
           </widget>
 
+          <!-- TAKE-OFF CLIMB SURFACE SUBTAB (#161) -->
+          <widget class="QWidget" name="oes_sub_takeoff_climb">
+           <layout class="QFormLayout" name="formLayout_oes_takeoff">
+            <property name="fieldGrowthPolicy"><enum>QFormLayout::AllNonFixedFieldsGrow</enum></property>
+            <property name="labelAlignment"><set>Qt::AlignRight|Qt::AlignVCenter</set></property>
+            <property name="horizontalSpacing"><number>15</number></property>
+            <property name="verticalSpacing"><number>6</number></property>
+
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_massCategory_oes_takeoff">
+              <property name="text"><string>Mass Category:</string></property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="combo_massCategory_oes_takeoff">
+              <property name="minimumHeight"><number>22</number></property>
+              <property name="toolTip"><string>Selects which ICAO table this tab's defaults come from: Table 4-14 (aeroplane mass up to 5 700 kg, ADG I/IIA-IIB only) or Table 4-15 (mass above 5 700 kg, all ADG I-V).</string></property>
+              <item><property name="text"><string>Up to 5 700 kg (Table 4-14)</string></property></item>
+              <item><property name="text"><string>Over 5 700 kg (Table 4-15)</string></property></item>
+             </widget>
+            </item>
+
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_adg_oes_takeoff">
+              <property name="text"><string>ADG Group:</string></property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="combo_adg_oes_takeoff">
+              <property name="minimumHeight"><number>22</number></property>
+              <property name="toolTip"><string>Aeroplane Design Group for the Take-off Climb surface. Options narrow to I/IIA-IIB when Mass Category is Table 4-14.</string></property>
+              <item><property name="text"><string>I</string></property></item>
+              <item><property name="text"><string>IIA-IIB</string></property></item>
+              <item><property name="text"><string>IIC</string></property></item>
+              <item><property name="text"><string>III</string></property></item>
+              <item><property name="text"><string>IV</string></property></item>
+              <item><property name="text"><string>V</string></property></item>
+             </widget>
+            </item>
+
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_Z0_oes_takeoff">
+              <property name="text"><string>Runway End Elevation (m):</string></property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="spin_Z0_oes_takeoff">
+              <property name="text"><string>2548.00</string></property>
+              <property name="toolTip"><string>Elevation of the runway end the surface originates from.</string></property>
+             </widget>
+            </item>
+
+            <item row="3" column="0">
+             <widget class="QLabel" name="label_CWYLength_oes_takeoff">
+              <property name="text"><string>Clearway Length (m):</string></property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QLineEdit" name="spin_CWYLength_oes_takeoff">
+              <property name="text"><string>0.00</string></property>
+              <property name="toolTip"><string>Table 4-14: the surface starts at the end of the clearway if its length exceeds the table's "Distance from runway end". Table 4-15: the surface starts at TODA (runway end + clearway), so this value is used directly as the origin offset.</string></property>
+             </widget>
+            </item>
+
+            <item row="4" column="0" colspan="2">
+             <widget class="QLabel" name="label_dims_header_oes_takeoff">
+              <property name="text"><string>Table 4-14 / 4-15 Dimensions</string></property>
+              <property name="styleSheet"><string>QLabel { font-weight: bold; padding-top: 12px; padding-bottom: 4px; }</string></property>
+             </widget>
+            </item>
+
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_distFromRwyEnd_oes_takeoff">
+              <property name="text"><string>Dist. From Rwy End (m):</string></property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QLineEdit" name="spin_distFromRwyEnd_oes_takeoff">
+              <property name="text"><string>30.00</string></property>
+              <property name="toolTip"><string>Table 4-14: distance from the runway end. Table 4-15: 0 — the surface starts at TODA, which already includes the clearway.</string></property>
+             </widget>
+            </item>
+
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_innerEdge_oes_takeoff">
+              <property name="text"><string>Length of Inner Edge (m):</string></property>
+             </widget>
+            </item>
+            <item row="6" column="1">
+             <widget class="QLineEdit" name="spin_innerEdge_oes_takeoff">
+              <property name="text"><string>60.00</string></property>
+              <property name="toolTip"><string>Table 4-14/4-15: full width of the surface at its origin.</string></property>
+             </widget>
+            </item>
+
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_divergence_oes_takeoff">
+              <property name="text"><string>Divergence, Each Side (%):</string></property>
+             </widget>
+            </item>
+            <item row="7" column="1">
+             <widget class="QLineEdit" name="spin_divergence_oes_takeoff">
+              <property name="text"><string>10.00</string></property>
+              <property name="toolTip"><string>Table 4-14/4-15: rate the surface widens on each side until it reaches Final Width.</string></property>
+             </widget>
+            </item>
+
+            <item row="8" column="0">
+             <widget class="QLabel" name="label_finalWidth_oes_takeoff">
+              <property name="text"><string>Final Width (m):</string></property>
+             </widget>
+            </item>
+            <item row="8" column="1">
+             <widget class="QLineEdit" name="spin_finalWidth_oes_takeoff">
+              <property name="text"><string>380.00</string></property>
+              <property name="toolTip"><string>Table 4-14/4-15: width the surface reaches once divergence caps out; stays constant for the remainder of Length. Table 4-15's value may be reduced under specific conditions per ICAO Doc 9137 Part 6 (not modeled here).</string></property>
+             </widget>
+            </item>
+
+            <item row="9" column="0">
+             <widget class="QLabel" name="label_length_oes_takeoff">
+              <property name="text"><string>Length (m):</string></property>
+             </widget>
+            </item>
+            <item row="9" column="1">
+             <widget class="QLineEdit" name="spin_length_oes_takeoff">
+              <property name="text"><string>1600.00</string></property>
+              <property name="toolTip"><string>Table 4-14/4-15: total length of the surface from its origin. The sloped plane climbs for this entire length, even past the point where width divergence has already capped out.</string></property>
+             </widget>
+            </item>
+
+            <item row="10" column="0">
+             <widget class="QLabel" name="label_slope_oes_takeoff">
+              <property name="text"><string>Slope (%):</string></property>
+             </widget>
+            </item>
+            <item row="10" column="1">
+             <widget class="QLineEdit" name="spin_slope_oes_takeoff">
+              <property name="text"><string>5.00</string></property>
+              <property name="toolTip"><string>Table 4-14/4-15: upward slope of the surface from the runway-end elevation.</string></property>
+             </widget>
+            </item>
+
+            <item row="11" column="0" colspan="2">
+             <widget class="QLabel" name="label_oes_takeoff_note">
+              <property name="text">
+               <string>Uses the shared Runway Layer and Direction fields above; no Threshold Layer needed (mirrors the Instrument Departure Surface). Mass Category and ADG populate the fields below from Tables 4-14/4-15; every value remains editable.</string>
+              </property>
+              <property name="wordWrap"><bool>true</bool></property>
+              <property name="styleSheet"><string>QLabel { font-size: 11px; padding: 4px; }</string></property>
+             </widget>
+            </item>
+
+            <item row="12" column="0" colspan="2">
+             <widget class="QPushButton" name="calculateButton_oes_takeoff">
+              <property name="text"><string>Calculate Take-off Climb Surface</string></property>
+              <property name="minimumHeight"><number>30</number></property>
+             </widget>
+            </item>
+
+           </layout>
+          </widget>
+
          </widget>
         </item>
 
