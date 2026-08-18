@@ -3,7 +3,7 @@ name=qOLS
 qgisMinimumVersion=3.0
 qgisMaximumVersion=4.99
 description=Obstacle Limitation Surfaces plugin for QGIS
-version=0.1.1
+version=0.2.0
 author=FLYGHT7
 email=info@flyght7.com
 
