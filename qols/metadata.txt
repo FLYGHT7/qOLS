@@ -3,7 +3,7 @@ name=qOLS
 qgisMinimumVersion=3.0
 qgisMaximumVersion=4.99
 description=Obstacle Limitation Surfaces plugin for QGIS
-version=0.2.0
+version=0.2.1
 author=FLYGHT7
 email=info@flyght7.com
 
@@ -22,6 +22,11 @@ experimental=True
 deprecated=False
 
 changelog=
+     Version 0.2.1:
+	 - fixed remaining Qt6 enum compatibility issues (compat.py extended, all raw enum access removed from qols_dockwidget.py, both dockwidgets, KML export, and New OLS scripts)
+	 - resolved Bandit security findings (self-generated KML XML parsing justified, silent except/pass blocks now log, bare except narrowed)
+	 - suppressed known Flake8 star-import findings in New OLS scripts with documented justification, fixed 2 real missing-import bugs in default-population code
+	 - fixed KML export failing with no success/failure message and no output file (#153 follow-up)
      Version 0.2.0:
 	 - bug squashing effort including selected features not working properly - gets stuck
 	 - optimization of script for qt6

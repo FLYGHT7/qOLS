@@ -36,6 +36,7 @@ from .. import logger
 from ..compat import (
     DISTANCE_UNIT_DEGREES,
     FILE_ACTION_CREATE_OR_OVERWRITE,
+    MSG_CRITICAL,
     MSG_SUCCESS,
     MSG_WARNING,
     SYMBOLOGY_NO_SYMBOLOGY,
@@ -308,10 +309,14 @@ def export_layer(iface, layer, options: KmlExportOptions) -> Optional[Tuple[str,
     features = list(export_source.getFeatures())
     metadata = build_feature_metadata(export_source.fields(), features, target_name_field, color_info, mode)
 
-    kml_ns = postprocess_kml_tree(
-        tree, metadata, group_by_label=options.group_by_label, theme=options.theme)
-    ET.register_namespace('', kml_ns)
-    tree.write(kml_path, encoding="utf-8", xml_declaration=True)
+    try:
+        kml_ns = postprocess_kml_tree(
+            tree, metadata, group_by_label=options.group_by_label, theme=options.theme)
+        ET.register_namespace('', kml_ns)
+        tree.write(kml_path, encoding="utf-8", xml_declaration=True)
+    except Exception as e:
+        logger.error(f"KML post-processing failed for '{layer.name()}': {e}")
+        return None
 
     return layer.name(), kml_path
 
@@ -344,16 +349,31 @@ def run_kml_export(iface) -> None:
     os.makedirs(options.output_dir, exist_ok=True)
 
     exported = []
+    failed = []
     for layer in layers:
-        result = export_layer(iface, layer, options)
+        try:
+            result = export_layer(iface, layer, options)
+        except Exception as e:
+            logger.error(f"Unexpected error exporting '{layer.name()}': {e}")
+            result = None
         if result is not None:
             exported.append(result)
+        else:
+            failed.append(layer.name())
 
     if exported:
         links = [
             f'<a href="{QUrl.fromLocalFile(os.path.dirname(path)).toString()}">{name}</a>'
             for name, path in exported
         ]
+        message = "Exported layers: " + ", ".join(links)
+        if failed:
+            message += " — failed: " + ", ".join(failed) + " (see Log Messages panel for details)"
         iface.messageBar().pushMessage(
-            "Export Complete", "Exported layers: " + ", ".join(links),
-            level=MSG_SUCCESS, duration=10)
+            "Export Complete" if not failed else "Export Partially Complete", message,
+            level=MSG_SUCCESS if not failed else MSG_WARNING, duration=10)
+    else:
+        iface.messageBar().pushMessage(
+            "QOLS",
+            "KML export failed for: " + ", ".join(failed) + " (see View → Panels → Log Messages for details)",
+            level=MSG_CRITICAL, duration=10)
