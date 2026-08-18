@@ -22,6 +22,8 @@ from ..surfaces.icao import (
 )
 from ..rules import manager as rule_mgr
 from ..surfaces.approach import get_approach_defaults as icao_get_approach_defaults
+from ..surfaces.new_ols_approach import get_new_ols_approach_defaults
+from ..surfaces.new_ols_transitional import get_new_ols_transitional_defaults
 from ..surface_types import SurfaceType
 from .. import logger  # CR-01
 from ..direction_marker import build_marker_geometry
@@ -35,8 +37,11 @@ from qgis.PyQt.QtWidgets import (
     QHBoxLayout, QLabel, QLineEdit, QMessageBox, QPushButton, QStackedWidget, QTabBar,
     QTextBrowser, QToolTip, QVBoxLayout,
 )
-from ..compat import EVENT_MOUSE_MOVE, TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL, GEOM_TYPE_POLYGON
-from qgis.core import QgsMapLayerProxyModel, QgsProject, QgsWkbTypes, QgsVectorLayer
+from ..compat import (
+    EVENT_MOUSE_MOVE, TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL,
+    GEOM_TYPE_POLYGON, GEOM_TYPE_POINT, GEOM_TYPE_LINE, FILTER_VECTOR_LAYER,
+)
+from qgis.core import QgsProject, QgsVectorLayer
 from qgis.gui import QgsRubberBand
 
 # Direction-marker triangle dimensions in screen pixels (converted to map
@@ -983,14 +988,14 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         try:
 
             # Configure Runway Layer Centerline combo - only show LINE geometry layers
-            self.runwayLayerCombo.setFilters(QgsMapLayerProxyModel.VectorLayer)
+            self.runwayLayerCombo.setFilters(FILTER_VECTOR_LAYER)
             self.runwayLayerCombo.setExceptedLayerList([])
             # Enable additional display options for runway combo
             self.runwayLayerCombo.setShowCrs(False)
             self.runwayLayerCombo.setAllowEmptyLayer(False)
 
             # Configure threshold layer combo - only show POINT geometry layers
-            self.thresholdLayerCombo.setFilters(QgsMapLayerProxyModel.VectorLayer)
+            self.thresholdLayerCombo.setFilters(FILTER_VECTOR_LAYER)
             self.thresholdLayerCombo.setExceptedLayerList([])
             # Enable additional display options for threshold combo
             self.thresholdLayerCombo.setShowCrs(False)
@@ -1000,7 +1005,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Unlike Runway/Threshold, empty is a valid state: only surfaces
             # that actually consume the ARP layer (e.g. Outer Horizontal)
             # require one to be selected.
-            self.arpLayerCombo.setFilters(QgsMapLayerProxyModel.VectorLayer)
+            self.arpLayerCombo.setFilters(FILTER_VECTOR_LAYER)
             self.arpLayerCombo.setExceptedLayerList([])
             self.arpLayerCombo.setShowCrs(False)
             self.arpLayerCombo.setAllowEmptyLayer(True)
@@ -1030,10 +1035,10 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             arp_excluded = []
 
             for layer in vector_layers:
-                if layer.geometryType() != QgsWkbTypes.LineGeometry:
+                if layer.geometryType() != GEOM_TYPE_LINE:
                     runway_excluded.append(layer)
 
-                if layer.geometryType() != QgsWkbTypes.PointGeometry:
+                if layer.geometryType() != GEOM_TYPE_POINT:
                     threshold_excluded.append(layer)
                     arp_excluded.append(layer)  # #131 — ARP layer is also POINT-only
 
@@ -1174,11 +1179,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         """Get readable geometry type name."""
         try:
             geom_type = layer.geometryType()
-            if geom_type == QgsWkbTypes.PointGeometry:
+            if geom_type == GEOM_TYPE_POINT:
                 return "Point"
-            elif geom_type == QgsWkbTypes.LineGeometry:
+            elif geom_type == GEOM_TYPE_LINE:
                 return "LineString"
-            elif geom_type == QgsWkbTypes.PolygonGeometry:
+            elif geom_type == GEOM_TYPE_POLYGON:
                 return "Polygon"
             else:
                 return "Unknown"
@@ -1430,7 +1435,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
 
             # Validate Runway Layer Centerline
             if runway_layer:
-                if runway_layer.geometryType() != QgsWkbTypes.LineGeometry:
+                if runway_layer.geometryType() != GEOM_TYPE_LINE:
                     geom_type = self.get_layer_geometry_info(runway_layer)
                     self.show_error_message(
                         f"Invalid Runway Layer Centerline!\n"
@@ -1443,7 +1448,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
 
             # Validate threshold layer
             if threshold_layer:
-                if threshold_layer.geometryType() != QgsWkbTypes.PointGeometry:
+                if threshold_layer.geometryType() != GEOM_TYPE_POINT:
                     geom_type = self.get_layer_geometry_info(threshold_layer)
                     self.show_error_message(
                         f"Invalid Threshold Layer!\n"
@@ -1457,7 +1462,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             # Validate ARP layer (#131) — optional, so only checked when set
             arp_layer = self.arpLayerCombo.currentLayer()
             if arp_layer:
-                if arp_layer.geometryType() != QgsWkbTypes.PointGeometry:
+                if arp_layer.geometryType() != GEOM_TYPE_POINT:
                     geom_type = self.get_layer_geometry_info(arp_layer)
                     self.show_error_message(
                         f"Invalid ARP Layer!\n"
@@ -1482,11 +1487,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
 
             geom_type = layer.geometryType()
 
-            if geom_type == QgsWkbTypes.PointGeometry:
+            if geom_type == GEOM_TYPE_POINT:
                 return "Point"
-            elif geom_type == QgsWkbTypes.LineGeometry:
+            elif geom_type == GEOM_TYPE_LINE:
                 return "Line"
-            elif geom_type == QgsWkbTypes.PolygonGeometry:
+            elif geom_type == GEOM_TYPE_POLYGON:
                 return "Polygon"
             else:
                 return f"Unknown ({geom_type})"
@@ -1514,11 +1519,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 geom_info = self.get_layer_geometry_info(layer)
                 layer_info = f"'{layer.name()}' ({geom_info}, {layer.featureCount()} features)"
 
-                if layer.geometryType() == QgsWkbTypes.LineGeometry:
+                if layer.geometryType() == GEOM_TYPE_LINE:
                     line_layers.append(layer_info)
-                elif layer.geometryType() == QgsWkbTypes.PointGeometry:
+                elif layer.geometryType() == GEOM_TYPE_POINT:
                     point_layers.append(layer_info)
-                elif layer.geometryType() == QgsWkbTypes.PolygonGeometry:
+                elif layer.geometryType() == GEOM_TYPE_POLYGON:
                     polygon_layers.append(layer_info)
                 else:
                     other_layers.append(layer_info)
@@ -1614,8 +1619,8 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
     def _clear_direction_marker(self):
         try:
             self._direction_marker_band.reset(GEOM_TYPE_POLYGON)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Could not clear direction marker: {e}")
 
     def update_transitional_direction_button(self):
         """Update the transitional direction button text and style."""
@@ -1783,7 +1788,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 return False
 
             # CRITICAL CHECK 5: Validate Runway Layer Centerline geometry (must be LINE)
-            if runway_layer.geometryType() != QgsWkbTypes.LineGeometry:
+            if runway_layer.geometryType() != GEOM_TYPE_LINE:
                 runway_geom_type = self.get_layer_geometry_info(runway_layer)
                 self.show_error_message(
                     f"Wrong Geometry Type for Runway!\n\n"
@@ -1795,7 +1800,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 return False
 
             # CRITICAL CHECK 6: Validate threshold layer geometry (must be POINT)
-            if threshold_layer.geometryType() != QgsWkbTypes.PointGeometry:
+            if threshold_layer.geometryType() != GEOM_TYPE_POINT:
                 threshold_geom_type = self.get_layer_geometry_info(threshold_layer)
                 self.show_error_message(
                     f"Wrong Geometry Type for Threshold!\n\n"

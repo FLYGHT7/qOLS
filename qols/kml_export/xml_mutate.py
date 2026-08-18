@@ -13,7 +13,7 @@ the smaller functions are exposed individually for focused unit testing.
 """
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # nosec B405 - only builds/mutates elements, never parses external/untrusted input
 from typing import Callable, Dict, List, Tuple
 
 from .colors import rgba_to_kml_abgr

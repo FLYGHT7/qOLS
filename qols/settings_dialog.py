@@ -78,11 +78,11 @@ class RulesSettingsDialog(QDialog):
     def _on_open_folder(self):
         try:
             if os.name == 'nt' and hasattr(os, 'startfile'):
-                os.startfile(self._rules_dir)  # type: ignore[attr-defined]
+                os.startfile(self._rules_dir)  # type: ignore[attr-defined]  # nosec B606 - no shell param
             else:
                 QDesktopServices.openUrl(QUrl.fromLocalFile(self._rules_dir))
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"QOLS: Warning - could not open rules folder: {e}")
 
     def selected_rule_set(self):
         return self.combo.currentText().strip() if self.combo.currentText() else None

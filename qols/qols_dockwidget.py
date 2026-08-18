@@ -11,8 +11,11 @@ from .surface_types import SurfaceType
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, QTimer
 from qgis.PyQt.QtWidgets import QDockWidget, QToolTip
-from .compat import TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL
-from qgis.core import QgsMapLayerProxyModel, QgsProject, QgsWkbTypes, QgsVectorLayer
+from .compat import (
+    TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL,
+    FILTER_VECTOR_LAYER, GEOM_TYPE_POINT, GEOM_TYPE_LINE, GEOM_TYPE_POLYGON,
+)
+from qgis.core import QgsProject, QgsVectorLayer
 
 # Load the UI file
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -274,12 +277,12 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                             # Otherwise, leave user's precision as-is
                         except ValueError:
                             lineedit.setText('0.00')
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"QOLS: Warning - focus-out formatting failed: {e}")
             try:
                 lineedit.editingFinished.connect(format_on_focus_out)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"QOLS: Warning - could not connect editingFinished signal: {e}")
         except Exception as e:
             print(f"QOLS: Warning - smart formatting setup failed for {getattr(lineedit, 'objectName', lambda: '')()}: {e}")  # noqa: E501
 
@@ -816,14 +819,14 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             print("QOLS: Setting up layer filters")
 
             # Configure Runway Layer Centerline combo - only show LINE geometry layers
-            self.runwayLayerCombo.setFilters(QgsMapLayerProxyModel.VectorLayer)
+            self.runwayLayerCombo.setFilters(FILTER_VECTOR_LAYER)
             self.runwayLayerCombo.setExceptedLayerList([])
             # Enable additional display options for runway combo
             self.runwayLayerCombo.setShowCrs(False)
             self.runwayLayerCombo.setAllowEmptyLayer(False)
 
             # Configure threshold layer combo - only show POINT geometry layers
-            self.thresholdLayerCombo.setFilters(QgsMapLayerProxyModel.VectorLayer)
+            self.thresholdLayerCombo.setFilters(FILTER_VECTOR_LAYER)
             self.thresholdLayerCombo.setExceptedLayerList([])
             # Enable additional display options for threshold combo
             self.thresholdLayerCombo.setShowCrs(False)
@@ -853,10 +856,10 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             threshold_excluded = []
 
             for layer in vector_layers:
-                if layer.geometryType() != QgsWkbTypes.LineGeometry:
+                if layer.geometryType() != GEOM_TYPE_LINE:
                     runway_excluded.append(layer)
 
-                if layer.geometryType() != QgsWkbTypes.PointGeometry:
+                if layer.geometryType() != GEOM_TYPE_POINT:
                     threshold_excluded.append(layer)
 
             # Apply exclusion lists
@@ -995,11 +998,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         """Get readable geometry type name."""
         try:
             geom_type = layer.geometryType()
-            if geom_type == 0:  # QgsWkbTypes.PointGeometry
+            if geom_type == 0:  # GEOM_TYPE_POINT
                 return "Point"
-            elif geom_type == 1:  # QgsWkbTypes.LineGeometry
+            elif geom_type == 1:  # GEOM_TYPE_LINE
                 return "LineString"
-            elif geom_type == 2:  # QgsWkbTypes.PolygonGeometry
+            elif geom_type == 2:  # GEOM_TYPE_POLYGON
                 return "Polygon"
             else:
                 return "Unknown"
@@ -1263,7 +1266,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
 
             # Validate Runway Layer Centerline
             if runway_layer:
-                if runway_layer.geometryType() != QgsWkbTypes.LineGeometry:
+                if runway_layer.geometryType() != GEOM_TYPE_LINE:
                     geom_type = self.get_layer_geometry_info(runway_layer)
                     self.show_error_message(
                         f"Invalid Runway Layer Centerline!\n"
@@ -1276,7 +1279,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
 
             # Validate threshold layer
             if threshold_layer:
-                if threshold_layer.geometryType() != QgsWkbTypes.PointGeometry:
+                if threshold_layer.geometryType() != GEOM_TYPE_POINT:
                     geom_type = self.get_layer_geometry_info(threshold_layer)
                     self.show_error_message(
                         f"Invalid Threshold Layer!\n"
@@ -1301,11 +1304,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
 
             geom_type = layer.geometryType()
 
-            if geom_type == QgsWkbTypes.PointGeometry:
+            if geom_type == GEOM_TYPE_POINT:
                 return "Point"
-            elif geom_type == QgsWkbTypes.LineGeometry:
+            elif geom_type == GEOM_TYPE_LINE:
                 return "Line"
-            elif geom_type == QgsWkbTypes.PolygonGeometry:
+            elif geom_type == GEOM_TYPE_POLYGON:
                 return "Polygon"
             else:
                 return f"Unknown ({geom_type})"
@@ -1330,11 +1333,11 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
             for layer in vector_layers:
                 layer_info = f"'{layer.name()}' ({self.get_layer_geometry_info(layer)}, {layer.featureCount()} features)"  # noqa: E501
 
-                if layer.geometryType() == QgsWkbTypes.LineGeometry:
+                if layer.geometryType() == GEOM_TYPE_LINE:
                     line_layers.append(layer_info)
-                elif layer.geometryType() == QgsWkbTypes.PointGeometry:
+                elif layer.geometryType() == GEOM_TYPE_POINT:
                     point_layers.append(layer_info)
-                elif layer.geometryType() == QgsWkbTypes.PolygonGeometry:
+                elif layer.geometryType() == GEOM_TYPE_POLYGON:
                     polygon_layers.append(layer_info)
                 else:
                     other_layers.append(layer_info)
@@ -1551,7 +1554,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 return False
 
             # CRITICAL CHECK 5: Validate Runway Layer Centerline geometry (must be LINE)
-            if runway_layer.geometryType() != QgsWkbTypes.LineGeometry:
+            if runway_layer.geometryType() != GEOM_TYPE_LINE:
                 runway_geom_type = self.get_layer_geometry_info(runway_layer)
                 self.show_error_message(
                     f"Wrong Geometry Type for Runway!\n\n"
@@ -1563,7 +1566,7 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 return False
 
             # CRITICAL CHECK 6: Validate threshold layer geometry (must be POINT)
-            if threshold_layer.geometryType() != QgsWkbTypes.PointGeometry:
+            if threshold_layer.geometryType() != GEOM_TYPE_POINT:
                 threshold_geom_type = self.get_layer_geometry_info(threshold_layer)
                 self.show_error_message(
                     f"Wrong Geometry Type for Threshold!\n\n"
@@ -1703,10 +1706,10 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
                 raise Exception(f"CRITICAL ERROR: Threshold layer '{threshold_layer.name()}' no longer exists in project.")  # noqa: E501
 
             # SAFETY CHECK: Re-verify geometry types (layers could have changed)
-            if runway_layer.geometryType() != QgsWkbTypes.LineGeometry:
+            if runway_layer.geometryType() != GEOM_TYPE_LINE:
                 raise Exception(f"CRITICAL ERROR: Runway Layer Centerline '{runway_layer.name()}' geometry changed to {self.get_layer_geometry_info(runway_layer)}.")  # noqa: E501
 
-            if threshold_layer.geometryType() != QgsWkbTypes.PointGeometry:
+            if threshold_layer.geometryType() != GEOM_TYPE_POINT:
                 raise Exception(f"CRITICAL ERROR: Threshold layer '{threshold_layer.name()}' geometry changed to {self.get_layer_geometry_info(threshold_layer)}.")  # noqa: E501
 
             # Get separate selection settings for each layer

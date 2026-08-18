@@ -99,12 +99,12 @@ def _racetrack_ring_xy(start_point, end_point, angle0, back_angle0, radius, trto
     def _append_arc(p1, p2, p3, skip_first):
         cstring = QgsCircularString()
         cstring.setPoints([QgsPoint(p1[0], p1[1]), QgsPoint(p2[0], p2[1]), QgsPoint(p3[0], p3[1])])
-        segmented = QgsGeometry(cstring).convertToType(QgsWkbTypes.LineGeometry, True)
+        segmented = QgsGeometry(cstring).convertToType(GEOM_TYPE_LINE, True)
         pts = []
         if segmented:
-            if segmented.wkbType() == QgsWkbTypes.LineString:
+            if segmented.wkbType() == WKB_LINE_STRING:
                 pts = list(segmented.asPolyline())
-            elif segmented.wkbType() == QgsWkbTypes.MultiLineString:
+            elif segmented.wkbType() == WKB_MULTI_LINE_STRING:
                 for part in segmented.asMultiPolyline():
                     pts.extend(part)
         if not pts:

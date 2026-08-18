@@ -12,6 +12,7 @@ from qgis.PyQt.QtCore import QUrl
 from qgis.PyQt.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton, QDialogButtonBox
 from qgis.PyQt.QtGui import QDesktopServices
 
+from .. import logger
 from ..rules import manager as rule_mgr
 from ..compat import BTN_SAVE, BTN_CANCEL
 
@@ -87,11 +88,11 @@ class RulesSettingsDialog(QDialog):
     def _on_open_folder(self):
         try:
             if os.name == 'nt' and hasattr(os, 'startfile'):
-                os.startfile(self._rules_dir)  # type: ignore[attr-defined]
+                os.startfile(self._rules_dir)  # type: ignore[attr-defined]  # nosec B606 - no shell param
             else:
                 QDesktopServices.openUrl(QUrl.fromLocalFile(self._rules_dir))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Could not open rules folder: {e}")
 
     def selected_rule_set(self):
         return self.combo.currentText().strip() if self.combo.currentText() else None

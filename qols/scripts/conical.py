@@ -219,11 +219,11 @@ def _build_ring_points(radius):
                         QgsPoint(xc[0], xc[1]),
                         QgsPoint(x2[0], x2[1])])
     geom1 = QgsGeometry(cString1)
-    segmented1 = geom1.convertToType(QgsWkbTypes.LineGeometry, True)
-    if segmented1 and segmented1.wkbType() == QgsWkbTypes.LineString:
+    segmented1 = geom1.convertToType(GEOM_TYPE_LINE, True)
+    if segmented1 and segmented1.wkbType() == WKB_LINE_STRING:
         for point in segmented1.asPolyline():
             points.append((point.x(), point.y()))
-    elif segmented1 and segmented1.wkbType() == QgsWkbTypes.MultiLineString:
+    elif segmented1 and segmented1.wkbType() == WKB_MULTI_LINE_STRING:
         for part in segmented1.asMultiPolyline():
             for point in part:
                 points.append((point.x(), point.y()))
@@ -239,13 +239,13 @@ def _build_ring_points(radius):
                         QgsPoint(x5[0], x5[1]),
                         QgsPoint(x4[0], x4[1])])
     geom2 = QgsGeometry(cString2)
-    segmented2 = geom2.convertToType(QgsWkbTypes.LineGeometry, True)
-    if segmented2 and segmented2.wkbType() == QgsWkbTypes.LineString:
+    segmented2 = geom2.convertToType(GEOM_TYPE_LINE, True)
+    if segmented2 and segmented2.wkbType() == WKB_LINE_STRING:
         for i, point in enumerate(segmented2.asPolyline()):
             if i == 0:  # Same as x6, already added
                 continue
             points.append((point.x(), point.y()))
-    elif segmented2 and segmented2.wkbType() == QgsWkbTypes.MultiLineString:
+    elif segmented2 and segmented2.wkbType() == WKB_MULTI_LINE_STRING:
         for part_idx, part in enumerate(segmented2.asMultiPolyline()):
             for point_idx, point in enumerate(part):
                 if part_idx == 0 and point_idx == 0:

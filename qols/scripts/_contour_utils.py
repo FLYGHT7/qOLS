@@ -370,8 +370,8 @@ def apply_contour_style(layer, script_file: str, label_font_size: float = None) 
             _msg, success = layer.loadNamedStyle(styles_path)
             if success:
                 applied_qml = True
-        except Exception:
-            pass  # fall through to hardcoded fallback
+        except Exception:  # nosec B110 - falls through to the hardcoded fallback style below, nothing lost
+            pass
 
     if not applied_qml:
         # Fallback: hardcoded style (previous behaviour, always safe)
