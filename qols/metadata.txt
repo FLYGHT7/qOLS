@@ -20,3 +20,35 @@ category=Vector
 icon=icon.png
 experimental=True
 deprecated=False
+
+changelog=
+     Version 0.2.0:
+	 - bug squashing effort including selected features not working properly - gets stuck
+	 - optimization of script for qt6
+	 - zero issues on QGIS Plugin Store scanner
+	 - block OLS calculations when project CRS is geographic enforcing use of a projected coordinate system
+	 - transitional Surface new OLS initial implementation 
+	 - transitional Surface (current OLS) inverted direction should swap Start/End elevation for calculations
+	 - live direction marker for Take-Off (and OFZ) surfaces
+	 - store surface parameters in a field plus show as HTML
+	 - distinct filled-color icons for Current vs New OLS toolbar actions
+	 - two-row tab selector for the classic panel
+	 - conical Surface must not overlap Inner Horizontal
+	 - Inner Horizontal and Conical Surfaces elevations corrected  
+	 - Conical Surface contours included 
+	 - Outer Horizontal inclusion of Z values
+	 - option for merged transitional surface preserving Z values in current OLS implementation 
+	 - ARP layer and elevation now common to all surfaces to reduce manual input and coherence
+	 - initial backbone implementation of the new OLS concept framework with the introduction of the OFS (Approach and Transitional)
+	 - ADG Reference Table button fixed
+	 - New OLS concept transitional layer name change
+	 - live direction-preview marker for Approach/Transitional (and OFS/OES)
+	 - Surface for precision approaches (OES, New OLS)
+	 - Instrument departure surface (OES, New OLS)
+	 - Transitional Surface contours must stay local to each ruled patch
+	 - Straight-in Instrument Approach surface (New OLS OES)
+	 - Split OES into tabs to avoid excessive scrolling
+	 - Add Take-off Climb Surface functionality to New OLS
+	 - Implement KML export functionality
+     Version 0.1.1
+	 - Initial public release version
