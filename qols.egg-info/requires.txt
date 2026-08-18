@@ -1,0 +1,6 @@
+
+[dev]
+pytest>=7.0
+pytest-qt
+flake8
+bandit

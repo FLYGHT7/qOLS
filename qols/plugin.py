@@ -9,7 +9,10 @@ import os
 import sys
 import math
 import traceback
-from .compat import DOCK_RIGHT, MSG_INFO, MSG_WARNING, MSG_CRITICAL, MSG_SUCCESS
+from .compat import (
+    DOCK_RIGHT, MSG_INFO, MSG_WARNING, MSG_CRITICAL, MSG_SUCCESS,
+    GEOM_TYPE_LINE, GEOM_TYPE_POLYGON, WKB_LINE_STRING, WKB_MULTI_LINE_STRING,
+)
 from qgis.PyQt.QtCore import QCoreApplication, QVariant
 from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtWidgets import QAction, QInputDialog
@@ -40,8 +43,8 @@ class QOLS:
         self.panel_new_ols = None
         try:
             _ = rule_mgr.list_rule_sets()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Could not warm rule-set cache at startup: {e}")
 
     def tr(self, message):
         return QCoreApplication.translate('QOLS', message)
@@ -714,6 +717,10 @@ class QOLS:
                 'MSG_WARNING': MSG_WARNING,
                 'MSG_CRITICAL': MSG_CRITICAL,
                 'MSG_SUCCESS': MSG_SUCCESS,
+                'GEOM_TYPE_LINE': GEOM_TYPE_LINE,
+                'GEOM_TYPE_POLYGON': GEOM_TYPE_POLYGON,
+                'WKB_LINE_STRING': WKB_LINE_STRING,
+                'WKB_MULTI_LINE_STRING': WKB_MULTI_LINE_STRING,
                 # Convenience aliases
                 'active_rule_set': rule_mgr.get_active_rule_set_name(),
             }

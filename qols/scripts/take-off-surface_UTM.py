@@ -442,7 +442,7 @@ for var in (newglobals - myglobals):
     if var not in ['iface', '_script_success']:
         try:
             del globals()[var]
-        except:
+        except KeyError:
             pass
 
 print(f"TakeOffSurface: Globals cleanup completed")

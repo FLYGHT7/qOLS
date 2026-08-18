@@ -19,7 +19,7 @@ with two deliberate behavior changes beyond straight porting:
 from __future__ import annotations
 
 import os
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # nosec B405 - self-written KML only, not external input
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
@@ -27,14 +27,20 @@ import processing
 from qgis.core import (
     QgsCoordinateReferenceSystem,
     QgsCoordinateTransformContext,
-    QgsUnitTypes,
     QgsVectorFileWriter,
 )
 from qgis.PyQt.QtCore import QSettings, QUrl
 from qgis.PyQt.QtGui import QColor
 
 from .. import logger
-from ..compat import MSG_SUCCESS, MSG_WARNING
+from ..compat import (
+    DISTANCE_UNIT_DEGREES,
+    FILE_ACTION_CREATE_OR_OVERWRITE,
+    MSG_SUCCESS,
+    MSG_WARNING,
+    SYMBOLOGY_NO_SYMBOLOGY,
+    WRITER_NO_ERROR,
+)
 from .colors import FILL_ALPHA, OUTLINE_ALPHA
 from .xml_mutate import postprocess_kml_tree
 
@@ -190,7 +196,7 @@ def get_color_for_feature(feat, color_info, mode) -> QColor:
 def densify_layer(layer, interval_meters: float):
     """Densifies *layer*'s geometry vertices by *interval_meters*, returning an in-memory layer."""
     crs = layer.crs()
-    if crs.mapUnits() == QgsUnitTypes.DistanceDegrees:
+    if crs.mapUnits() == DISTANCE_UNIT_DEGREES:
         interval = interval_meters / 111320.0
     else:
         interval = interval_meters
@@ -209,15 +215,15 @@ def write_layer_to_kml(layer, kml_path: str) -> Optional[str]:
     options = QgsVectorFileWriter.SaveVectorOptions()
     options.driverName = "KML"
     options.layerName = layer.name()
-    options.symbologyExport = QgsVectorFileWriter.NoSymbology
-    options.actionOnExistingFile = QgsVectorFileWriter.CreateOrOverwriteFile
+    options.symbologyExport = SYMBOLOGY_NO_SYMBOLOGY
+    options.actionOnExistingFile = FILE_ACTION_CREATE_OR_OVERWRITE
     options.fileEncoding = 'UTF-8'
     options.sourceCrs = layer.crs()
     options.destCrs = QgsCoordinateReferenceSystem("EPSG:4326")
 
     result, err_msg = QgsVectorFileWriter.writeAsVectorFormatV2(
         layer, kml_path, QgsCoordinateTransformContext(), options)
-    return None if result == QgsVectorFileWriter.NoError else err_msg
+    return None if result == WRITER_NO_ERROR else err_msg
 
 
 def build_feature_metadata(layer_fields, features, label_field, color_info, mode) -> List[dict]:
@@ -294,7 +300,7 @@ def export_layer(iface, layer, options: KmlExportOptions) -> Optional[Tuple[str,
         return None
 
     try:
-        tree = ET.parse(kml_path)
+        tree = ET.parse(kml_path)  # nosec B314 - just written by write_layer_to_kml() above, not external XML
     except ET.ParseError as e:
         logger.error(f"KML XML parse failed for '{layer.name()}': {e}")
         return None

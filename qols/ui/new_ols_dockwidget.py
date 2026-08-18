@@ -11,6 +11,7 @@ from ..surfaces.new_ols_takeoff_climb import get_valid_adg_groups, get_takeoff_c
 from ..surface_types import SurfaceType
 from .. import logger
 from ..direction_marker import build_marker_geometry
+from ..parameters_inspector import show_project_parameters_table
 from .tab_row_selector import TwoRowTabSelector
 from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot, QRegularExpression
@@ -19,8 +20,11 @@ from qgis.PyQt.QtWidgets import (
     QApplication, QComboBox, QDialog, QDockWidget, QHBoxLayout, QStackedWidget, QTabBar,
     QLabel, QLineEdit, QMessageBox, QPushButton, QTextBrowser, QToolTip, QVBoxLayout,
 )
-from ..compat import EVENT_MOUSE_MOVE, TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL, GEOM_TYPE_POLYGON
-from qgis.core import QgsMapLayerProxyModel, QgsProject, QgsWkbTypes, QgsVectorLayer
+from ..compat import (
+    EVENT_MOUSE_MOVE, TOOLTIP_ROLE, MSG_INFO, MSG_CRITICAL,
+    GEOM_TYPE_POLYGON, GEOM_TYPE_POINT, GEOM_TYPE_LINE, FILTER_VECTOR_LAYER,
+)
+from qgis.core import QgsProject, QgsVectorLayer
 from qgis.gui import QgsRubberBand
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -398,17 +402,17 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
 
     def setup_layer_filters(self):
         try:
-            self.runwayLayerCombo.setFilters(QgsMapLayerProxyModel.VectorLayer)
+            self.runwayLayerCombo.setFilters(FILTER_VECTOR_LAYER)
             self.runwayLayerCombo.setExceptedLayerList([])
             self.runwayLayerCombo.setShowCrs(False)
             self.runwayLayerCombo.setAllowEmptyLayer(False)
-            self.thresholdLayerCombo.setFilters(QgsMapLayerProxyModel.VectorLayer)
+            self.thresholdLayerCombo.setFilters(FILTER_VECTOR_LAYER)
             self.thresholdLayerCombo.setExceptedLayerList([])
             self.thresholdLayerCombo.setShowCrs(False)
             self.thresholdLayerCombo.setAllowEmptyLayer(False)
             # ARP layer is optional (#131) — most surfaces only need the
             # shared elevation number, not the layer geometry.
-            self.arpLayerCombo.setFilters(QgsMapLayerProxyModel.VectorLayer)
+            self.arpLayerCombo.setFilters(FILTER_VECTOR_LAYER)
             self.arpLayerCombo.setExceptedLayerList([])
             self.arpLayerCombo.setShowCrs(False)
             self.arpLayerCombo.setAllowEmptyLayer(True)
@@ -424,9 +428,9 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                 layer for layer in QgsProject.instance().mapLayers().values()
                 if isinstance(layer, QgsVectorLayer)
             ]
-            runway_excluded = [lyr for lyr in vector_layers if lyr.geometryType() != QgsWkbTypes.LineGeometry]
-            threshold_excluded = [lyr for lyr in vector_layers if lyr.geometryType() != QgsWkbTypes.PointGeometry]
-            arp_excluded = [lyr for lyr in vector_layers if lyr.geometryType() != QgsWkbTypes.PointGeometry]  # #131
+            runway_excluded = [lyr for lyr in vector_layers if lyr.geometryType() != GEOM_TYPE_LINE]
+            threshold_excluded = [lyr for lyr in vector_layers if lyr.geometryType() != GEOM_TYPE_POINT]
+            arp_excluded = [lyr for lyr in vector_layers if lyr.geometryType() != GEOM_TYPE_POINT]  # #131
             self.runwayLayerCombo.setExceptedLayerList(runway_excluded)
             self.thresholdLayerCombo.setExceptedLayerList(threshold_excluded)
             self.arpLayerCombo.setExceptedLayerList(arp_excluded)
@@ -527,11 +531,11 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
     def get_geometry_type_name(self, layer):
         try:
             geom_type = layer.geometryType()
-            if geom_type == QgsWkbTypes.PointGeometry:
+            if geom_type == GEOM_TYPE_POINT:
                 return "Point"
-            elif geom_type == QgsWkbTypes.LineGeometry:
+            elif geom_type == GEOM_TYPE_LINE:
                 return "LineString"
-            elif geom_type == QgsWkbTypes.PolygonGeometry:
+            elif geom_type == GEOM_TYPE_POLYGON:
                 return "Polygon"
             return "Unknown"
         except Exception:
@@ -542,11 +546,11 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             if not isinstance(layer, QgsVectorLayer):
                 return "Not a vector layer"
             geom_type = layer.geometryType()
-            if geom_type == QgsWkbTypes.PointGeometry:
+            if geom_type == GEOM_TYPE_POINT:
                 return "Point"
-            elif geom_type == QgsWkbTypes.LineGeometry:
+            elif geom_type == GEOM_TYPE_LINE:
                 return "Line"
-            elif geom_type == QgsWkbTypes.PolygonGeometry:
+            elif geom_type == GEOM_TYPE_POLYGON:
                 return "Polygon"
             return f"Unknown ({geom_type})"
         except Exception as e:
@@ -808,7 +812,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                 )
                 return False
 
-            if runway_layer.geometryType() != QgsWkbTypes.LineGeometry:
+            if runway_layer.geometryType() != GEOM_TYPE_LINE:
                 self.show_error_message(
                     f"Wrong Geometry Type for Runway!\n\n"
                     f"Layer: '{runway_layer.name()}'\n"
@@ -817,7 +821,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                 )
                 return False
 
-            if threshold_layer.geometryType() != QgsWkbTypes.PointGeometry:
+            if threshold_layer.geometryType() != GEOM_TYPE_POINT:
                 self.show_error_message(
                     f"Wrong Geometry Type for Threshold!\n\n"
                     f"Layer: '{threshold_layer.name()}'\n"
@@ -1066,8 +1070,8 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
     def _clear_direction_marker(self):
         try:
             self._direction_marker_band.reset(GEOM_TYPE_POLYGON)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Could not clear direction marker: {e}")
 
     @pyqtSlot()
     def update_selection_info(self):
@@ -1163,7 +1167,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             runway_layer = self.runwayLayerCombo.currentLayer()
             threshold_layer = self.thresholdLayerCombo.currentLayer()
             arp_layer = self.arpLayerCombo.currentLayer()  # #131
-            if runway_layer and runway_layer.geometryType() != QgsWkbTypes.LineGeometry:
+            if runway_layer and runway_layer.geometryType() != GEOM_TYPE_LINE:
                 self.show_error_message(
                     f"Invalid Runway Layer Centerline!\n"
                     f"'{runway_layer.name()}' contains {self.get_layer_geometry_info(runway_layer)} geometry.\n"
@@ -1171,7 +1175,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                 )
                 self.runwayLayerCombo.setLayer(None)
                 return
-            if threshold_layer and threshold_layer.geometryType() != QgsWkbTypes.PointGeometry:
+            if threshold_layer and threshold_layer.geometryType() != GEOM_TYPE_POINT:
                 self.show_error_message(
                     f"Invalid Threshold Layer!\n"
                     f"'{threshold_layer.name()}' contains {self.get_layer_geometry_info(threshold_layer)} geometry.\n"
@@ -1180,7 +1184,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                 self.thresholdLayerCombo.setLayer(None)
                 return
             # ARP is optional (#131) — only validated when actually set
-            if arp_layer and arp_layer.geometryType() != QgsWkbTypes.PointGeometry:
+            if arp_layer and arp_layer.geometryType() != GEOM_TYPE_POINT:
                 self.show_error_message(
                     f"Invalid ARP Layer!\n"
                     f"'{arp_layer.name()}' contains {self.get_layer_geometry_info(arp_layer)} geometry.\n"

@@ -61,7 +61,7 @@ def _normalize_polyline_points(geometry: 'QgsGeometry', iface=None):
                     pts = curve.points()
                     if pts and len(pts) >= 2:
                         return [QgsPoint(p) for p in pts]
-            except Exception:
+            except Exception:  # nosec B110 - falls through to the raise below, nothing lost
                 pass
             raise Exception("Line geometry cannot be converted to a polyline. Only single line or curve types are permitted.")
     except Exception as e:

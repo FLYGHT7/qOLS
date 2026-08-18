@@ -261,17 +261,17 @@ for feat in selection:
     # Convert to regular geometry and extract points with high resolution
     geom1 = QgsGeometry(cString1)
     # Convert to segmented curve with many points for smooth polygon
-    segmented1 = geom1.convertToType(QgsWkbTypes.LineGeometry, True)
+    segmented1 = geom1.convertToType(GEOM_TYPE_LINE, True)
     if segmented1:
         # Handle both LineString and MultiLineString cases
-        if segmented1.wkbType() == QgsWkbTypes.LineString:
+        if segmented1.wkbType() == WKB_LINE_STRING:
             polyline1 = segmented1.asPolyline()
             print(f"InnerHorizontal: Arc 1 interpolated to {len(polyline1)} points (LineString)")
 
             # Add arc points with height
             for point in polyline1:
                 polygon_points.append(QgsPoint(point.x(), point.y(), z_absolute))
-        elif segmented1.wkbType() == QgsWkbTypes.MultiLineString:
+        elif segmented1.wkbType() == WKB_MULTI_LINE_STRING:
             multiline1 = segmented1.asMultiPolyline()
             print(f"InnerHorizontal: Arc 1 interpolated to {len(multiline1)} parts (MultiLineString)")
 
@@ -308,10 +308,10 @@ for feat in selection:
     # Convert to regular geometry and extract points with high resolution
     geom2 = QgsGeometry(cString2)
     # Convert to segmented curve with many points for smooth polygon
-    segmented2 = geom2.convertToType(QgsWkbTypes.LineGeometry, True)
+    segmented2 = geom2.convertToType(GEOM_TYPE_LINE, True)
     if segmented2:
         # Handle both LineString and MultiLineString cases
-        if segmented2.wkbType() == QgsWkbTypes.LineString:
+        if segmented2.wkbType() == WKB_LINE_STRING:
             polyline2 = segmented2.asPolyline()
             print(f"InnerHorizontal: Arc 2 interpolated to {len(polyline2)} points (LineString)")
 
@@ -320,7 +320,7 @@ for feat in selection:
                 if i == 0:  # Skip first point as it's the same as x6 we just added
                     continue
                 polygon_points.append(QgsPoint(point.x(), point.y(), z_absolute))
-        elif segmented2.wkbType() == QgsWkbTypes.MultiLineString:
+        elif segmented2.wkbType() == WKB_MULTI_LINE_STRING:
             multiline2 = segmented2.asMultiPolyline()
             print(f"InnerHorizontal: Arc 2 interpolated to {len(multiline2)} parts (MultiLineString)")
 
