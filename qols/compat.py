@@ -8,7 +8,7 @@ branching on the Qt version inline.
 
 from qgis.PyQt.QtCore import Qt, QEvent
 from qgis.PyQt.QtGui import QPainter
-from qgis.PyQt.QtWidgets import QDialogButtonBox
+from qgis.PyQt.QtWidgets import QDialogButtonBox, QMessageBox
 from qgis.core import Qgis, QgsWkbTypes, QgsAction
 
 # ---------------------------------------------------------------------------
@@ -34,6 +34,26 @@ try:
 except AttributeError:
     BTN_SAVE = QDialogButtonBox.Save    # type: ignore[attr-defined]
     BTN_CANCEL = QDialogButtonBox.Cancel  # type: ignore[attr-defined]
+
+# ---------------------------------------------------------------------------
+# QDialogButtonBox standard buttons (Ok)
+# Qt5 (PyQt5):  QDialogButtonBox.Ok
+# Qt6 (PyQt6):  QDialogButtonBox.StandardButton.Ok
+# ---------------------------------------------------------------------------
+try:
+    BTN_OK = QDialogButtonBox.StandardButton.Ok
+except AttributeError:
+    BTN_OK = QDialogButtonBox.Ok  # type: ignore[attr-defined]
+
+# ---------------------------------------------------------------------------
+# QMessageBox button role (for custom multi-button prompts, #153)
+# Qt5 (PyQt5):  QMessageBox.ActionRole
+# Qt6 (PyQt6):  QMessageBox.ButtonRole.ActionRole
+# ---------------------------------------------------------------------------
+try:
+    BTN_ROLE_ACTION = QMessageBox.ButtonRole.ActionRole
+except AttributeError:
+    BTN_ROLE_ACTION = QMessageBox.ActionRole  # type: ignore[attr-defined]
 
 # ---------------------------------------------------------------------------
 # Item data roles
@@ -115,7 +135,7 @@ except AttributeError:
 
 __all__ = [
     "DOCK_RIGHT", "DOCK_LEFT",
-    "BTN_SAVE", "BTN_CANCEL",
+    "BTN_SAVE", "BTN_CANCEL", "BTN_OK", "BTN_ROLE_ACTION",
     "TOOLTIP_ROLE",
     "COLOR_LIGHT_GRAY", "COLOR_DARK_GRAY",
     "RENDER_ANTIALIAS",

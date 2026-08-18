@@ -78,6 +78,7 @@ class QOLS:
     def initGui(self):
         icon_current_path = os.path.join(self.plugin_dir, 'icon_current.png')
         icon_new_path = os.path.join(self.plugin_dir, 'icon_new.png')
+        icon_kmz_path = os.path.join(self.plugin_dir, 'icon_kmz.png')
         try:
             self.add_action(
                 icon_current_path,
@@ -89,6 +90,12 @@ class QOLS:
                 text=self.tr(u'New OLS'),
                 callback=self.show_new_ols_panel,
                 status_tip=self.tr('Open New OLS Panel'),
+                parent=self.iface.mainWindow())
+            self.add_action(
+                icon_kmz_path,
+                text=self.tr(u'Export to KML'),
+                callback=self.on_export_kml,
+                status_tip=self.tr('Export selected layers to KML'),
                 parent=self.iface.mainWindow())
             self.first_start = True
 
@@ -285,6 +292,14 @@ class QOLS:
                     self._refresh_panel_defaults()
         except Exception as e:
             logger.error(f"Error opening settings dialog: {e}")
+
+    def on_export_kml(self):
+        """Export the layers currently selected in the QGIS Layers panel to KML (#153)."""
+        try:
+            from .kml_export import run_kml_export
+            run_kml_export(self.iface)
+        except Exception as e:
+            logger.error(f"Error exporting to KML: {e}\n{traceback.format_exc()}")
 
     def on_calculate(self):
         """Execute the selected surface calculation script with parameters."""
