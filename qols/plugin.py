@@ -303,6 +303,8 @@ class QOLS:
             run_kml_export(self.iface)
         except Exception as e:
             logger.error(f"Error exporting to KML: {e}\n{traceback.format_exc()}")
+            self.iface.messageBar().pushMessage(
+                "QOLS", f"KML export failed: {e}", level=MSG_CRITICAL, duration=8)
 
     def on_calculate(self):
         """Execute the selected surface calculation script with parameters."""
