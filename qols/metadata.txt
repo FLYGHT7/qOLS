@@ -27,6 +27,8 @@ changelog=
 	 - resolved Bandit security findings (self-generated KML XML parsing justified, silent except/pass blocks now log, bare except narrowed)
 	 - suppressed known Flake8 star-import findings in New OLS scripts with documented justification, fixed 2 real missing-import bugs in default-population code
 	 - fixed KML export failing with no success/failure message and no output file (#153 follow-up)
+	 - fixed KML export dialog crashing with "object has no attribute 'Accepted'" under Qt6/QGIS 4.x (#153 follow-up)
+	 - fixed setup.cfg (Flake8 suppressions) never shipping inside the uploaded plugin zip, causing the store scanner to see 300+ false Flake8 findings on the New OLS scripts
      Version 0.2.0:
 	 - bug squashing effort including selected features not working properly - gets stuck
 	 - optimization of script for qt6
