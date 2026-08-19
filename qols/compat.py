@@ -14,7 +14,7 @@ will flag these lines; that's expected and not a bug.
 
 from qgis.PyQt.QtCore import Qt, QEvent
 from qgis.PyQt.QtGui import QPainter
-from qgis.PyQt.QtWidgets import QDialogButtonBox, QMessageBox
+from qgis.PyQt.QtWidgets import QDialog, QDialogButtonBox, QMessageBox
 from qgis.core import Qgis, QgsWkbTypes, QgsAction, QgsMapLayerProxyModel, QgsVectorFileWriter, QgsUnitTypes
 
 # ---------------------------------------------------------------------------
@@ -60,6 +60,16 @@ try:
     BTN_ROLE_ACTION = QMessageBox.ButtonRole.ActionRole
 except AttributeError:
     BTN_ROLE_ACTION = QMessageBox.ActionRole  # type: ignore[attr-defined]
+
+# ---------------------------------------------------------------------------
+# QDialog result code (Accepted)
+# Qt5 (PyQt5):  QDialog.Accepted
+# Qt6 (PyQt6):  QDialog.DialogCode.Accepted
+# ---------------------------------------------------------------------------
+try:
+    DIALOG_ACCEPTED = QDialog.DialogCode.Accepted
+except AttributeError:
+    DIALOG_ACCEPTED = QDialog.Accepted  # type: ignore[attr-defined]
 
 # ---------------------------------------------------------------------------
 # Item data roles
@@ -207,6 +217,7 @@ except AttributeError:
 __all__ = [
     "DOCK_RIGHT", "DOCK_LEFT",
     "BTN_SAVE", "BTN_CANCEL", "BTN_OK", "BTN_ROLE_ACTION",
+    "DIALOG_ACCEPTED",
     "TOOLTIP_ROLE",
     "COLOR_LIGHT_GRAY", "COLOR_DARK_GRAY",
     "RENDER_ANTIALIAS",

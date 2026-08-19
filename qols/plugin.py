@@ -12,6 +12,7 @@ import traceback
 from .compat import (
     DOCK_RIGHT, MSG_INFO, MSG_WARNING, MSG_CRITICAL, MSG_SUCCESS,
     GEOM_TYPE_LINE, GEOM_TYPE_POLYGON, WKB_LINE_STRING, WKB_MULTI_LINE_STRING,
+    DIALOG_ACCEPTED,
 )
 from qgis.PyQt.QtCore import QCoreApplication, QVariant
 from qgis.PyQt.QtGui import QIcon, QColor
@@ -286,7 +287,7 @@ class QOLS:
         """Open the QOLS Settings dialog."""
         try:
             dlg = RulesSettingsDialog(self.iface.mainWindow())
-            if dlg.exec() == dlg.Accepted:
+            if dlg.exec() == DIALOG_ACCEPTED:
                 name = dlg.selected_rule_set()
                 if name:
                     rule_mgr.set_active_rule_set_name(name)

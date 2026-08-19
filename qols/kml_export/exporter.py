@@ -34,6 +34,7 @@ from qgis.PyQt.QtGui import QColor
 
 from .. import logger
 from ..compat import (
+    DIALOG_ACCEPTED,
     DISTANCE_UNIT_DEGREES,
     FILE_ACTION_CREATE_OR_OVERWRITE,
     MSG_CRITICAL,
@@ -335,7 +336,7 @@ def run_kml_export(iface) -> None:
 
     field_names = union_of_field_names(layers)
     dlg = KmlExportOptionsDialog(len(layers), field_names, parent=iface.mainWindow())
-    if dlg.exec() != dlg.Accepted:
+    if dlg.exec() != DIALOG_ACCEPTED:
         return
 
     options = KmlExportOptions(
