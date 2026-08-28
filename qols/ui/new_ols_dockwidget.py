@@ -1031,15 +1031,30 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             logger.warning(f"Could not show parameters table: {e}")
 
     def toggle_direction(self):
-        self.direction_start_to_end = not self.direction_start_to_end
-        self.update_direction_button()
-        self._update_direction_marker()
+        """Flip Start↔End. Never raises: a stale C++ wrapper (e.g. the map
+        canvas recreated on project reload) must not surface as an unhandled
+        slot exception / QGIS error dialog (#174 audit)."""
+        try:
+            self.direction_start_to_end = not self.direction_start_to_end
+            self.update_direction_button()
+            self._update_direction_marker()
+        except Exception as e:
+            logger.warning(f"Unhandled error in toggle_direction: {e}")
 
     def update_direction_button(self):
-        if self.direction_start_to_end:
-            self.directionButton.setText("Direction: Start to End")
-        else:
-            self.directionButton.setText("Direction: End to Start")
+        try:
+            if self.direction_start_to_end:
+                self.directionButton.setText("Direction: Start to End")
+            else:
+                self.directionButton.setText("Direction: End to Start")
+            # directionButton is checkable in the .ui — keep its checked
+            # highlight in sync with the tracked direction so the two can't
+            # drift apart (#174 audit). setChecked() does not emit clicked(),
+            # so this can't re-enter toggle_direction.
+            if self.directionButton.isChecked() != self.direction_start_to_end:
+                self.directionButton.setChecked(self.direction_start_to_end)
+        except Exception as e:
+            logger.warning(f"Unhandled error in update_direction_button: {e}")
 
     def _update_direction_marker(self):
         """Refresh the live direction-preview triangle (#117) for the
@@ -1062,16 +1077,36 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
             if geometry is None:
                 self._clear_direction_marker()
                 return
-            self._direction_marker_band.setToGeometry(geometry, None)
+            self._ensure_marker_band().setToGeometry(geometry, None)
         except Exception as e:
             logger.warning(f"Could not update direction marker: {e}")
             self._clear_direction_marker()
 
     def _clear_direction_marker(self):
         try:
-            self._direction_marker_band.reset(GEOM_TYPE_POLYGON)
+            self._ensure_marker_band().reset(GEOM_TYPE_POLYGON)
         except Exception as e:
             logger.warning(f"Could not clear direction marker: {e}")
+
+    def _ensure_marker_band(self):
+        """Return a live direction-marker rubber band, re-creating it if the
+        previous one's underlying C++ object was destroyed — e.g. the map
+        canvas being recreated on a project reload would otherwise leave the
+        marker permanently dead and log-spamming on every zoom (#174 audit).
+        """
+        band = getattr(self, '_direction_marker_band', None)
+        try:
+            if band is not None:
+                band.numberOfVertices()  # cheap; raises RuntimeError if C++ gone
+                return band
+        except RuntimeError:
+            pass
+        band = QgsRubberBand(self.iface.mapCanvas(), GEOM_TYPE_POLYGON)
+        band.setColor(QColor(0, 170, 0, 120))
+        band.setStrokeColor(QColor(0, 120, 0, 220))
+        band.setWidth(1)
+        self._direction_marker_band = band
+        return band
 
     @pyqtSlot()
     def update_selection_info(self):
@@ -1261,16 +1296,41 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
         self._connections.append((signal, slot))
 
     def closeEvent(self, event):
+        """Routine close (the dock's [X] button) = hide only.
+
+        Signal teardown lives in :meth:`teardown`, called from the plugin's
+        ``unload()`` — NOT here. Disconnecting every tracked signal on a
+        routine close left the panel permanently inert when reopened,
+        because the plugin caches the instance and never rebuilds it, so a
+        user had to restart QGIS to get a working panel back (#174).
+        """
         try:
-            for sig, slot in list(self._connections):
-                try:
-                    sig.disconnect(slot)
-                except RuntimeError:
-                    pass
-            self._connections.clear()
-            self.disconnect_layer_selection_signals()
             self._clear_direction_marker()
             self.closingPlugin.emit()
-            event.accept()
-        except Exception:
-            event.accept()
+        except Exception as e:
+            logger.warning(f"Unhandled error in closeEvent: {e}")
+        event.accept()
+
+    def teardown(self):
+        """Disconnect every tracked signal and release the canvas rubber band.
+
+        Called from the plugin's ``unload()`` (plugin uninstall / Plugin
+        Reloader / QGIS quit) — the only points where the panel is really
+        going away. Routine close via :meth:`closeEvent` must never reach
+        here (#174).
+        """
+        for sig, slot in list(self._connections):
+            try:
+                sig.disconnect(slot)
+            except (RuntimeError, TypeError):
+                pass
+        self._connections.clear()
+        try:
+            self.disconnect_layer_selection_signals()
+        except Exception as e:
+            logger.warning(f"Unhandled error during teardown: {e}")
+        try:
+            self._clear_direction_marker()
+            self.iface.mapCanvas().scene().removeItem(self._direction_marker_band)
+        except (RuntimeError, AttributeError) as e:
+            logger.warning(f"Could not remove direction marker on teardown: {e}")

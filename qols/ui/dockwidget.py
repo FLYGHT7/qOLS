@@ -2174,20 +2174,41 @@ class QolsDockWidget(QDockWidget, FORM_CLASS):
         self._connections.append((signal, slot))
 
     def closeEvent(self, event):
-        """Handle close event with proper cleanup."""
+        """Routine close (the dock's [X] button) = hide only.
+
+        Signal teardown lives in :meth:`teardown`, called from the plugin's
+        ``unload()`` — NOT here. Disconnecting every tracked signal on a
+        routine close left the panel permanently inert when reopened,
+        because the plugin caches the instance and never rebuilds it, so a
+        user had to restart QGIS to get a working panel back (#174).
+        """
         try:
-
-            # Disconnect tracked signals to prevent memory leaks
-            for sig, slot in list(self._connections):
-                try:
-                    sig.disconnect(slot)
-                except RuntimeError:
-                    pass
-            self._connections.clear()
-            self.disconnect_layer_selection_signals()
             self._clear_direction_marker()
-
             self.closingPlugin.emit()
-            event.accept()
-        except Exception:
-            event.accept()
+        except Exception as e:
+            logger.warning(f"Unhandled error in closeEvent: {e}")
+        event.accept()
+
+    def teardown(self):
+        """Disconnect every tracked signal and release the canvas rubber band.
+
+        Called from the plugin's ``unload()`` (plugin uninstall / Plugin
+        Reloader / QGIS quit) — the only points where the panel is really
+        going away. Routine close via :meth:`closeEvent` must never reach
+        here (#174).
+        """
+        for sig, slot in list(self._connections):
+            try:
+                sig.disconnect(slot)
+            except (RuntimeError, TypeError):
+                pass
+        self._connections.clear()
+        try:
+            self.disconnect_layer_selection_signals()
+        except Exception as e:
+            logger.warning(f"Unhandled error during teardown: {e}")
+        try:
+            self._clear_direction_marker()
+            self.iface.mapCanvas().scene().removeItem(self._direction_marker_band)
+        except (RuntimeError, AttributeError) as e:
+            logger.warning(f"Could not remove direction marker on teardown: {e}")
