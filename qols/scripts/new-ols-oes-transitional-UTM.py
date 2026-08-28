@@ -7,12 +7,15 @@ closed ring per side built from a list of shared points, one feature per
 side, no separate wing/strip pieces.
 
 Geometry (plan view, one side):
-  near_inner — runway-strip edge at the selected threshold, Z = start_elevation
-  near_outer — near_inner + lateral_near outward, Z = cap_elevation
-  far_outer  — runway-strip edge at the opposite threshold, offset by
-               lateral_far outward, Z = cap_elevation
-  far_inner  — runway-strip edge at the opposite threshold, Z = opp_start_elevation
-  far_vertex — approach inner edge at d_cap from near_inner, Z = cap_elevation
+  near_inner     — strip edge at the approach inner-edge start (pt_start,
+                   distance_from_threshold_m past the threshold), Z = start_elevation
+  near_thr_inner — strip edge at the threshold itself, Z = start_elevation (#173);
+                   near_thr_inner -> near_inner stays flat at THR over that gap
+  near_outer     — near_inner + lateral_near outward, Z = cap_elevation
+  far_outer      — runway-strip edge at the opposite threshold, offset by
+                   lateral_far outward, Z = cap_elevation
+  far_inner      — runway-strip edge at the opposite threshold, Z = opp_start_elevation
+  far_vertex     — approach inner edge at d_cap from near_inner, Z = cap_elevation
 where:
   d_cap        = cap_height / approach_slope     (≈ 1 802 m for 3.33 %, 60 m cap)
   lateral_near = (cap_elevation - start_elevation)     / trans_slope
@@ -218,6 +221,14 @@ print(f"QOLS New OLS OES: azimuth={azimuth:.2f}°, direction={direction}, latera
 # lateral_near/lateral_far are each derived from that end's own elevation —
 # not a single shared value — so the band narrows/widens realistically.
 #
+# #173: the inner (lower) edge also carries an extra vertex at the threshold
+# itself (near_thr_inner_*), Z = start_elevation_m. Without it the single
+# far_inner -> near_inner segment slopes across the whole strip *including*
+# the distance_from_threshold_m gap between the threshold and pt_start, which
+# must instead stay flat at THR elevation (the approach surface's inner edge
+# is flat there too). The threshold -> far_inner sub-segment then carries the
+# runway-profile elevation change on its own.
+#
 # At d_cap along the approach, the approach elevation = cap_elevation → wings
 # converge to a single point at approach-edge width from centreline, Z = cap_elevation.
 # ---------------------------------------------------------------------------
@@ -234,6 +245,12 @@ pt_far_axis.setZ(cap_elevation)
 near_inner_l = pt_start.project(half_inner, azimuth + 90)
 near_inner_l.setZ(start_elevation_m)
 
+# #173: strip-edge vertex at the threshold itself (not projected the extra
+# distance_from_threshold_m to pt_start), Z = THR — keeps near_thr_inner ->
+# near_inner flat at THR over that gap.
+near_thr_inner_l = thr_point.project(half_inner, azimuth + 90)
+near_thr_inner_l.setZ(start_elevation_m)
+
 near_outer_l = pt_start.project(half_inner + lateral_near, azimuth + 90)
 near_outer_l.setZ(cap_elevation)
 
@@ -243,6 +260,9 @@ far_l.setZ(cap_elevation)
 # Right side — near end (selected threshold)
 near_inner_r = pt_start.project(half_inner, azimuth - 90)
 near_inner_r.setZ(start_elevation_m)
+
+near_thr_inner_r = thr_point.project(half_inner, azimuth - 90)  # #173
+near_thr_inner_r.setZ(start_elevation_m)
 
 near_outer_r = pt_start.project(half_inner + lateral_near, azimuth - 90)
 near_outer_r.setZ(cap_elevation)
@@ -266,8 +286,11 @@ if has_opposite_threshold:
 
     # Same vertex order for both sides — mirroring comes from azimuth + 90
     # vs azimuth - 90 in the point projections above, not from reordering.
-    left_ring = [far_l, near_outer_l, far_outer_l, far_inner_l, near_inner_l]
-    right_ring = [far_r, near_outer_r, far_outer_r, far_inner_r, near_inner_r]
+    # near_thr_inner_* sits between far_inner_* and near_inner_* on the inner
+    # edge: far_inner -> near_thr_inner carries the runway-profile Z change,
+    # near_thr_inner -> near_inner stays flat at THR (#173).
+    left_ring = [far_l, near_outer_l, far_outer_l, far_inner_l, near_thr_inner_l, near_inner_l]
+    right_ring = [far_r, near_outer_r, far_outer_r, far_inner_r, near_thr_inner_r, near_inner_r]
 else:
     # No opposite threshold available — fall back to the wing-only triangle.
     left_ring = [near_inner_l, near_outer_l, far_l]
