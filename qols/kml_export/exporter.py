@@ -67,7 +67,10 @@ __all__ = [
 
 AUTOMATIC_FIELD_OPTION = "[Automatic / Default]"
 ELEV_FIELD = "elev_m"
-DEFAULT_Z = 10
+# Fallback altitude (metres, absolute) used ONLY for genuinely 2-D geometries
+# that carry no elevation information at all. 3-D geometries keep their real
+# per-vertex Z; an ``elev_m`` attribute, when present, overrides both (#153).
+DEFAULT_Z = 0
 
 _AUTO_LABEL_FIELD_NAMES = ("name", "label", "title", "id")
 _LAST_DIR_SETTINGS_KEY = "QOLS/KmlExportLastDir"
@@ -229,19 +232,25 @@ def write_layer_to_kml(layer, kml_path: str) -> Optional[str]:
 
 
 def build_feature_metadata(layer_fields, features, label_field, color_info, mode) -> List[dict]:
-    """Builds the per-feature metadata list ``xml_mutate.postprocess_kml_tree`` expects."""
+    """Builds the per-feature metadata list ``xml_mutate.postprocess_kml_tree`` expects.
+
+    ``elevation_z`` is an *optional* override (#153): a float only when the
+    layer carries an ``elev_m`` attribute with a usable value, otherwise
+    ``None`` — meaning "keep the geometry's real per-vertex Z". ``fallback_z``
+    is used by ``set_altitude_and_elevation`` only for 2-D coordinates that
+    have no Z to keep.
+    """
     field_names = [f.name() for f in layer_fields]
     has_elev_field = ELEV_FIELD in field_names
 
     metadata = []
     for feat in features:
+        override_z = None
         if has_elev_field and feat[ELEV_FIELD] is not None:
             try:
-                z_value = float(feat[ELEV_FIELD])
+                override_z = float(feat[ELEV_FIELD])
             except (ValueError, TypeError):
-                z_value = DEFAULT_Z
-        else:
-            z_value = DEFAULT_Z
+                override_z = None
 
         fill_color = get_color_for_feature(feat, color_info, mode)
         rgb = (fill_color.red(), fill_color.green(), fill_color.blue())
@@ -259,7 +268,8 @@ def build_feature_metadata(layer_fields, features, label_field, color_info, mode
             "attributes": attributes,
             "fill_rgba": rgb + (FILL_ALPHA,),
             "outline_rgba": rgb + (OUTLINE_ALPHA,),
-            "elevation_z": z_value,
+            "elevation_z": override_z,
+            "fallback_z": DEFAULT_Z,
             "label": label,
         })
     return metadata
