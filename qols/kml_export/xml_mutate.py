@@ -5,8 +5,9 @@ dependency), mirroring the pure/QGIS-aware split used in
 ``qols/direction_marker.py``. This is where ``ols_2_kml_v8.py``'s
 post-``QgsVectorFileWriter`` KML mutation logic lives: per-feature
 ``<Style>`` injection (deduped), clean ``<name>``/HTML ``<description>``,
-suppressing the Desktop sidebar preview, absolute altitude + per-feature
-Z, and optional grouping into per-label ``<Folder>`` elements.
+suppressing the Desktop sidebar preview, ``absolute`` altitude mode while
+preserving each vertex's real Z (#153), and optional grouping into
+per-label ``<Folder>`` elements.
 
 ``postprocess_kml_tree`` is the composed entry point exporter.py calls;
 the smaller functions are exposed individually for focused unit testing.
@@ -14,7 +15,7 @@ the smaller functions are exposed individually for focused unit testing.
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET  # nosec B405 - only builds/mutates elements, never parses external/untrusted input
-from typing import Callable, Dict, List, Tuple
+from typing import Callable, Dict, List, Optional, Tuple
 
 from .colors import rgba_to_kml_abgr
 from .html_table import generate_attribute_table_html
@@ -118,9 +119,23 @@ def strip_inline_style_and_link(placemark: ET.Element, ktag: KtagFn, ns: Dict[st
     placemark.insert(0, style_url)
 
 
-def set_altitude_and_elevation(placemark: ET.Element, ktag: KtagFn, ns: Dict[str, str], z_value: float) -> None:
-    """Sets ``<altitudeMode>absolute</altitudeMode>`` and rewrites every
-    coordinate tuple's Z value to *z_value*, for Polygon/LineString/Point geometries.
+def set_altitude_and_elevation(
+    placemark: ET.Element,
+    ktag: KtagFn,
+    ns: Dict[str, str],
+    override_z: Optional[float] = None,
+    *,
+    fallback_z: float = 0.0,
+) -> None:
+    """Sets ``<altitudeMode>absolute</altitudeMode>`` on every
+    Polygon/LineString/Point, then normalises each coordinate tuple's Z (#153):
+
+    * ``override_z`` is not ``None`` — force every tuple's Z to it (used when
+      the source layer carries an explicit ``elev_m`` attribute).
+    * otherwise, a tuple that already has a Z (``lon,lat,alt``) keeps it — the
+      real per-vertex elevation ``QgsVectorFileWriter`` wrote from the 3-D
+      geometry is preserved, not clobbered.
+    * a bare 2-D tuple (``lon,lat``) gains ``fallback_z``.
 
     Looks up ``<coordinates>`` recursively (``.//``), not as a direct
     child: for LineString/Point it *is* a direct child, but for Polygon
@@ -144,10 +159,14 @@ def set_altitude_and_elevation(placemark: ET.Element, ktag: KtagFn, ns: Dict[str
                 updated_coords = []
                 for coord_str in raw_coords:
                     parts = coord_str.split(",")
-                    if len(parts) >= 2:
-                        updated_coords.append(f"{parts[0]},{parts[1]},{z_value}")
-                    else:
+                    if len(parts) < 2:
                         updated_coords.append(coord_str)
+                    elif override_z is not None:
+                        updated_coords.append(f"{parts[0]},{parts[1]},{override_z}")
+                    elif len(parts) >= 3:
+                        updated_coords.append(f"{parts[0]},{parts[1]},{parts[2]}")
+                    else:
+                        updated_coords.append(f"{parts[0]},{parts[1]},{fallback_z}")
                 coords_elem.text = " ".join(updated_coords)
 
 
@@ -202,7 +221,9 @@ def postprocess_kml_tree(
     ``layer.getFeatures()`` order. Each entry is a dict with keys:
     ``name`` (str), ``attributes`` (ordered ``{field: value}`` dict),
     ``fill_rgba``/``outline_rgba`` (4-tuples of 0-255 ints), ``elevation_z``
-    (float), ``label`` (str, used for folder grouping when enabled).
+    (float or ``None`` — ``None`` means "keep the geometry's real Z", #153),
+    ``fallback_z`` (float, optional — Z for bare 2-D tuples, default 0.0),
+    ``label`` (str, used for folder grouping when enabled).
     """
     root = tree.getroot()
     ns, ktag = resolve_kml_namespace(root)
@@ -226,7 +247,8 @@ def postprocess_kml_tree(
         set_placemark_description_html(pm, ktag, ns, html)
         suppress_snippet(pm, ktag, ns)
         strip_inline_style_and_link(pm, ktag, ns, style_id)
-        set_altitude_and_elevation(pm, ktag, ns, meta["elevation_z"])
+        set_altitude_and_elevation(
+            pm, ktag, ns, meta["elevation_z"], fallback_z=meta.get("fallback_z", 0.0))
 
         labeled_placemarks.append((pm, meta["label"]))
 
