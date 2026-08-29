@@ -125,12 +125,22 @@ class QOLS:
         for action in self.actions:
             self.iface.removePluginMenu(self.menu, action)
             self.iface.removeToolBarIcon(action)
-        if self.panel:
-            self.panel.close()
-            self.panel = None
-        if self.panel_new_ols:
-            self.panel_new_ols.close()
-            self.panel_new_ols = None
+        # unload() is the ONE place a panel really goes away (uninstall /
+        # Plugin Reloader / QGIS quit) — so this is where signal teardown
+        # belongs, NOT in the panel's closeEvent (#174).
+        for attr in ('panel', 'panel_new_ols'):
+            panel = getattr(self, attr, None)
+            if panel is None:
+                continue
+            try:
+                panel.teardown()
+            except Exception as e:
+                logger.warning(f"Error tearing down {attr}: {e}")
+            try:
+                self.iface.removeDockWidget(panel)
+            except Exception as e:
+                logger.warning(f"Error removing {attr} dock widget: {e}")
+            setattr(self, attr, None)
 
     def show_panel(self):
         """Toggle the QOLS dockwidget panel (show/hide)."""
@@ -142,14 +152,18 @@ class QOLS:
                 return
 
             if not self.panel:
-                self.panel = QolsDockWidget(self.iface)
-                self.iface.addDockWidget(DOCK_RIGHT, self.panel)
-                self.panel.closingPlugin.connect(self.on_close_panel)
-                self.panel.calculateClicked.connect(self.on_calculate)
-                self.panel.closeClicked.connect(self.on_close_panel)
+                self._create_panel()
 
-            self.panel.show()
-            self.panel.raise_()
+            try:
+                self.panel.show()
+                self.panel.raise_()
+            except RuntimeError:
+                # C++ side was destroyed (deleteLater / native teardown) —
+                # rebuild once rather than show a dead widget (#174).
+                self.panel = None
+                self._create_panel()
+                self.panel.show()
+                self.panel.raise_()
             self.iface.messageBar().pushMessage(
                 "QOLS", "Panel opened!", level=MSG_INFO, duration=2)
 
@@ -157,6 +171,14 @@ class QOLS:
             logger.error(f"Error in show_panel: {e}\n{traceback.format_exc()}")
             self.iface.messageBar().pushMessage(
                 "QOLS Error", f"Error showing panel: {str(e)}", level=MSG_CRITICAL)
+
+    def _create_panel(self):
+        """Build the classic QOLS dock widget and wire its signals."""
+        self.panel = QolsDockWidget(self.iface)
+        self.iface.addDockWidget(DOCK_RIGHT, self.panel)
+        self.panel.closingPlugin.connect(self.on_close_panel)
+        self.panel.calculateClicked.connect(self.on_calculate)
+        self.panel.closeClicked.connect(self.on_close_panel)
 
     def on_close_panel(self):
         """Hide the panel when close is clicked."""
@@ -172,19 +194,31 @@ class QOLS:
                     "New OLS", "Panel closed!", level=MSG_INFO, duration=2)
                 return
             if self.panel_new_ols is None:
-                self.panel_new_ols = NewOlsDockWidget(self.iface)
-                self.iface.addDockWidget(DOCK_RIGHT, self.panel_new_ols)
-                self.panel_new_ols.closingPlugin.connect(self.on_close_new_ols_panel)
-                self.panel_new_ols.calculateClicked.connect(self.on_calculate_new_ols)
-                self.panel_new_ols.closeClicked.connect(self.on_close_new_ols_panel)
-            self.panel_new_ols.show()
-            self.panel_new_ols.raise_()
+                self._create_new_ols_panel()
+            try:
+                self.panel_new_ols.show()
+                self.panel_new_ols.raise_()
+            except RuntimeError:
+                # C++ side was destroyed (deleteLater / native teardown) —
+                # rebuild once rather than show a dead widget (#174).
+                self.panel_new_ols = None
+                self._create_new_ols_panel()
+                self.panel_new_ols.show()
+                self.panel_new_ols.raise_()
             self.iface.messageBar().pushMessage(
                 "New OLS", "Panel opened!", level=MSG_INFO, duration=2)
         except Exception as e:
             logger.error(f"Error in show_new_ols_panel: {e}\n{traceback.format_exc()}")
             self.iface.messageBar().pushMessage(
                 "New OLS Error", f"Error showing panel: {str(e)}", level=MSG_CRITICAL)
+
+    def _create_new_ols_panel(self):
+        """Build the New OLS dock widget and wire its signals."""
+        self.panel_new_ols = NewOlsDockWidget(self.iface)
+        self.iface.addDockWidget(DOCK_RIGHT, self.panel_new_ols)
+        self.panel_new_ols.closingPlugin.connect(self.on_close_new_ols_panel)
+        self.panel_new_ols.calculateClicked.connect(self.on_calculate_new_ols)
+        self.panel_new_ols.closeClicked.connect(self.on_close_new_ols_panel)
 
     def on_close_new_ols_panel(self):
         """Hide the New OLS panel when close is clicked."""
