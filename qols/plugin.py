@@ -510,23 +510,83 @@ class QOLS:
                 inner_params = specific_params
                 conical_params = specific_params
 
+            # Snapshot existing layer IDs before running each script (#178).
+            pre_inner_ids = set(QgsProject.instance().mapLayers().keys())
+
             inner_full_params = params.copy()
             inner_full_params['specific_params'] = inner_params
             inner_script_path = os.path.join(self.plugin_dir, 'scripts', 'inner-horizontal-racetrack.py')
             self.execute_script(inner_script_path, inner_full_params)
+
+            # Identify the newly added Inner Horizontal layer.
+            post_inner_ids = set(QgsProject.instance().mapLayers().keys())
+            new_inner_ids = post_inner_ids - pre_inner_ids
+            inner_name = (
+                f"InnerHorizontal_{inner_params.get('rwyClassification', 'Precision Approach CAT I')}"
+                f"_Code{inner_params.get('code', 4)}"
+            )
+            new_inner_layers = [
+                QgsProject.instance().mapLayers()[lid]
+                for lid in new_inner_ids
+                if QgsProject.instance().mapLayers()[lid].name() == inner_name
+            ]
+            if len(new_inner_layers) == 0:
+                raise RuntimeError(
+                    f"Inner Horizontal script created no new layer named '{inner_name}'"
+                )
+            if len(new_inner_layers) > 1:
+                raise RuntimeError(
+                    f"Inner Horizontal script created {len(new_inner_layers)} new layers "
+                    f"named '{inner_name}' — expected exactly one"
+                )
+            inner_layer = new_inner_layers[0]
+
+            # Snapshot before Conical.
+            pre_conical_ids = set(QgsProject.instance().mapLayers().keys())
 
             conical_full_params = params.copy()
             conical_full_params['specific_params'] = conical_params
             conical_script_path = os.path.join(self.plugin_dir, 'scripts', 'conical.py')
             self.execute_script(conical_script_path, conical_full_params)
 
-            self._trim_conical_to_ring(inner_params, conical_params)
+            # Identify the newly added Conical layer (ignore contour output).
+            post_conical_ids = set(QgsProject.instance().mapLayers().keys())
+            new_conical_ids = post_conical_ids - pre_conical_ids
+            conical_name = (
+                f"Conical_{conical_params.get('rwyClassification', 'Precision Approach CAT I')}"
+                f"_Code{conical_params.get('code', 4)}"
+            )
+            new_conical_layers = [
+                QgsProject.instance().mapLayers()[lid]
+                for lid in new_conical_ids
+                if QgsProject.instance().mapLayers()[lid].name() == conical_name
+            ]
+            if len(new_conical_layers) == 0:
+                raise RuntimeError(
+                    f"Conical script created no new layer named '{conical_name}'"
+                )
+            if len(new_conical_layers) > 1:
+                raise RuntimeError(
+                    f"Conical script created {len(new_conical_layers)} new layers "
+                    f"named '{conical_name}' — expected exactly one"
+                )
+            conical_layer = new_conical_layers[0]
+
+            self._trim_conical_to_ring(inner_layer, conical_layer, conical_params)
+
+            # Keep the combined surface visually orange as before the trim.
+            # Inner Horizontal remains a separate geometry, but its newly
+            # exposed fill/outline should match the Conical layer around it.
+            conical_symbol = conical_layer.renderer().symbol()
+            if conical_symbol is not None:
+                inner_layer.renderer().setSymbol(conical_symbol.clone())
+                inner_layer.triggerRepaint()
 
         except Exception as e:
             logger.error(f"Error in combined Inner Horizontal & Conical execution: {e}\n{traceback.format_exc()}")
             raise
 
-    def _trim_conical_to_ring(self, inner_params, conical_params):
+    def _trim_conical_to_ring(self, inner_layer, conical_layer, conical_params):
         """#124: subtract Inner Horizontal's footprint from Conical's so the
         two surfaces don't visually overlap — Conical should only cover
         the ring beyond Inner Horizontal's edge, per ICAO Annex 14.
@@ -536,16 +596,14 @@ class QOLS:
         exec()-namespace cleanup pattern shared by every script in
         qols/scripts/ — so ``execute_script()``'s returned namespace never
         actually contains ``v_layer`` by the time control returns here.
-        The layers are instead found by the same deterministic name each
-        script itself builds (``f"InnerHorizontal_{classification}_Code{code}"``
-        / ``f"Conical_{classification}_Code{code}"``), mirroring the
-        name-based lookup convention #121 already established for the
-        "Merged Transitional Surface" layer.
+        The layers are instead identified by their IDs before/after each
+        script run and passed in directly as concrete objects (#178),
+        which also keeps older same-named outputs from a previous
+        calculation from being trimmed in place.
 
         Defensive: leaves Conical's original geometry untouched (per
-        feature) if either layer can't be found unambiguously or a
-        difference fails — a failed trim must not delete the surface the
-        user just calculated.
+        feature) if the difference fails — a failed trim must not delete
+        the surface the user just calculated.
 
         #125: the trimmed ring's two edges sit at different absolute
         elevations above the shared datum — the inner edge (touching
@@ -589,29 +647,10 @@ class QOLS:
             f"conical_height={conical_height} -> bottom_z={bottom_z} (must match Inner Horizontal's own "
             f"Z, so the two surfaces meet as a single line), top_z={top_z}"
         )
-
-        inner_name = (
-            f"InnerHorizontal_{inner_params.get('rwyClassification', 'Precision Approach CAT I')}"
-            f"_Code{inner_params.get('code', 4)}"
-        )
-        conical_name = (
-            f"Conical_{conical_params.get('rwyClassification', 'Precision Approach CAT I')}"
-            f"_Code{conical_params.get('code', 4)}"
-        )
-        inner_matches = QgsProject.instance().mapLayersByName(inner_name)
-        conical_matches = QgsProject.instance().mapLayersByName(conical_name)
         logger.info(
-            f"_trim_conical_to_ring: '{inner_name}' -> {len(inner_matches)} match(es), "
-            f"'{conical_name}' -> {len(conical_matches)} match(es)"
+            f"_trim_conical_to_ring: inner layer='{inner_layer.name()}' id={inner_layer.id()}, "
+            f"conical layer='{conical_layer.name()}' id={conical_layer.id()}"
         )
-        if len(inner_matches) != 1 or len(conical_matches) != 1:
-            logger.warning(
-                "Could not trim Conical to a ring — expected exactly one Inner Horizontal and one "
-                "Conical layer by name; delete older same-named layers and recalculate if this persists."
-            )
-            return
-        inner_layer = inner_matches[0]
-        conical_layer = conical_matches[0]
 
         inner_geoms = [f.geometry() for f in inner_layer.getFeatures() if not f.geometry().isEmpty()]
         logger.info(f"_trim_conical_to_ring: {len(inner_geoms)} Inner Horizontal geometrie(s) found")
