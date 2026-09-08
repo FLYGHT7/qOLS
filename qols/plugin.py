@@ -574,14 +574,6 @@ class QOLS:
 
             self._trim_conical_to_ring(inner_layer, conical_layer, conical_params)
 
-            # Keep the combined surface visually orange as before the trim.
-            # Inner Horizontal remains a separate geometry, but its newly
-            # exposed fill/outline should match the Conical layer around it.
-            conical_symbol = conical_layer.renderer().symbol()
-            if conical_symbol is not None:
-                inner_layer.renderer().setSymbol(conical_symbol.clone())
-                inner_layer.triggerRepaint()
-
         except Exception as e:
             logger.error(f"Error in combined Inner Horizontal & Conical execution: {e}\n{traceback.format_exc()}")
             raise

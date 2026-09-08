@@ -397,11 +397,11 @@ register_parameters_action(v_layer)
 # Add to map
 QgsProject.instance().addMapLayers([v_layer])
 
-# Style the layer for 3D polygon
+# Style the central Inner Horizontal surface in the same orange as Conical.
 symbol = QgsFillSymbol.createSimple({
-    'color': '255,0,255,100',  # Magenta with transparency
+    'color': '255,165,0,100',  # Orange with transparency
     'style': 'solid',
-    'outline_color': '255,0,255,255',
+    'outline_color': '255,165,0,255',
     'outline_style': 'solid',
     'outline_width': '0.7'
 })
