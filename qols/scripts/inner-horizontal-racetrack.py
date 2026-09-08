@@ -163,8 +163,11 @@ for feat in selection:
     print(f"InnerHorizontal: Geometry points count (normalized): {len(line_pts)}")
 
     # Get runway endpoints from normalized line
-    start_point = QgsPoint(line_pts[0].x(), line_pts[0].y())   # Always first point
-    end_point = QgsPoint(line_pts[-1].x(), line_pts[-1].y())   # Always last point
+    start_point = QgsPoint(line_pts[0].x(), line_pts[0].y())
+    end_point = QgsPoint(line_pts[-1].x(), line_pts[-1].y())
+    # Reverse the anchors before the bearings so both semicircles face outward.
+    if s == -1:
+        start_point, end_point = end_point, start_point
     angle0 = start_point.azimuth(end_point)
 
     print(f"InnerHorizontal: Start point: {start_point.x()}, {start_point.y()}")
@@ -176,15 +179,7 @@ for feat in selection:
     if base_azimuth >= 360:
         base_azimuth -= 360
 
-    # Apply direction change
-    if s == -1:
-        azimuth = base_azimuth + 180
-        if azimuth >= 360:
-            azimuth -= 360
-        print(f"InnerHorizontal: REVERSE direction - final azimuth: {azimuth}")
-    else:
-        azimuth = base_azimuth
-        print(f"InnerHorizontal: NORMAL direction - final azimuth: {azimuth}")
+    azimuth = base_azimuth
 
     # Set angle0 for calculations (same as original code)
     angle0 = azimuth
