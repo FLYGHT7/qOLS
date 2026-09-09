@@ -18,7 +18,9 @@ with two deliberate behavior changes beyond straight porting:
 """
 from __future__ import annotations
 
+import math
 import os
+import tempfile
 import xml.etree.ElementTree as ET  # nosec B405 - self-written KML only, not external input
 from dataclasses import dataclass
 from typing import List, Optional, Tuple
@@ -44,13 +46,19 @@ from ..compat import (
     WRITER_NO_ERROR,
 )
 from .colors import FILL_ALPHA, OUTLINE_ALPHA
-from .xml_mutate import postprocess_kml_tree
+from .xml_mutate import (
+    FeatureMetadata,
+    KmlAltitudeSummary,
+    postprocess_kml_tree,
+    validate_kml_altitudes,
+)
 
 __all__ = [
     "AUTOMATIC_FIELD_OPTION",
     "ELEV_FIELD",
     "DEFAULT_Z",
     "KmlExportOptions",
+    "KmlExportResult",
     "collect_selected_layers",
     "union_of_field_names",
     "resolve_label_field",
@@ -67,9 +75,8 @@ __all__ = [
 
 AUTOMATIC_FIELD_OPTION = "[Automatic / Default]"
 ELEV_FIELD = "elev_m"
-# Fallback altitude (metres, absolute) used ONLY for genuinely 2-D geometries
-# that carry no elevation information at all. 3-D geometries keep their real
-# per-vertex Z; an ``elev_m`` attribute, when present, overrides both (#153).
+# Fallback altitude (metres, absolute) used only for genuinely 2-D geometries
+# without a usable ``elev_m`` attribute. Finite geometry Z always wins (#153).
 DEFAULT_Z = 0
 
 _AUTO_LABEL_FIELD_NAMES = ("name", "label", "title", "id")
@@ -83,6 +90,15 @@ class KmlExportOptions:
     group_by_label: bool
     theme: str
     densify_interval: float
+
+
+@dataclass(frozen=True)
+class KmlExportResult:
+    """Successful, altitude-validated export of one QGIS layer."""
+
+    layer_name: str
+    path: str
+    altitude: KmlAltitudeSummary
 
 
 def get_last_output_dir() -> str:
@@ -223,6 +239,7 @@ def write_layer_to_kml(layer, kml_path: str) -> Optional[str]:
     options.symbologyExport = SYMBOLOGY_NO_SYMBOLOGY
     options.actionOnExistingFile = FILE_ACTION_CREATE_OR_OVERWRITE
     options.fileEncoding = 'UTF-8'
+    options.datasourceOptions = ["AltitudeMode=absolute"]
     options.sourceCrs = layer.crs()
     options.destCrs = QgsCoordinateReferenceSystem("EPSG:4326")
 
@@ -231,26 +248,55 @@ def write_layer_to_kml(layer, kml_path: str) -> Optional[str]:
     return None if result == WRITER_NO_ERROR else err_msg
 
 
-def build_feature_metadata(layer_fields, features, label_field, color_info, mode) -> List[dict]:
+def _geometry_z_profile(feature, fallback_z: float) -> Tuple[bool, float, float]:
+    """Returns whether source Z exists and the expected exported Z range."""
+    z_values = []
+    has_geometry_z = False
+    for vertex in feature.geometry().vertices():
+        z_value = float(vertex.z())
+        if math.isfinite(z_value):
+            has_geometry_z = True
+            z_values.append(z_value)
+        else:
+            z_values.append(fallback_z)
+    if not z_values:
+        z_values.append(fallback_z)
+    return has_geometry_z, min(z_values), max(z_values)
+
+
+def _attribute_fallback_z(feature, has_elev_field: bool) -> float:
+    """Returns a finite ``elev_m`` fallback, otherwise sea level."""
+    if not has_elev_field or feature[ELEV_FIELD] is None:
+        return float(DEFAULT_Z)
+    try:
+        fallback_z = float(feature[ELEV_FIELD])
+    except (TypeError, ValueError):
+        return float(DEFAULT_Z)
+    return fallback_z if math.isfinite(fallback_z) else float(DEFAULT_Z)
+
+
+def build_feature_metadata(
+    layer_fields,
+    features,
+    label_field,
+    color_info,
+    mode,
+) -> List[FeatureMetadata]:
     """Builds the per-feature metadata list ``xml_mutate.postprocess_kml_tree`` expects.
 
-    ``elevation_z`` is an *optional* override (#153): a float only when the
-    layer carries an ``elev_m`` attribute with a usable value, otherwise
-    ``None`` — meaning "keep the geometry's real per-vertex Z". ``fallback_z``
-    is used by ``set_altitude_and_elevation`` only for 2-D coordinates that
-    have no Z to keep.
+    Finite per-vertex geometry Z has priority. A usable ``elev_m`` attribute is
+    retained only as the fallback for a genuinely 2-D feature; otherwise 0 m is
+    used. The expected range lets the finished KML be checked against the
+    densified source instead of assuming the writer preserved altitude.
     """
     field_names = [f.name() for f in layer_fields]
     has_elev_field = ELEV_FIELD in field_names
 
     metadata = []
     for feat in features:
-        override_z = None
-        if has_elev_field and feat[ELEV_FIELD] is not None:
-            try:
-                override_z = float(feat[ELEV_FIELD])
-            except (ValueError, TypeError):
-                override_z = None
+        fallback_z = _attribute_fallback_z(feat, has_elev_field)
+        has_geometry_z, expected_z_min, expected_z_max = _geometry_z_profile(
+            feat, fallback_z)
 
         fill_color = get_color_for_feature(feat, color_info, mode)
         rgb = (fill_color.red(), fill_color.green(), fill_color.blue())
@@ -268,8 +314,10 @@ def build_feature_metadata(layer_fields, features, label_field, color_info, mode
             "attributes": attributes,
             "fill_rgba": rgb + (FILL_ALPHA,),
             "outline_rgba": rgb + (OUTLINE_ALPHA,),
-            "elevation_z": override_z,
-            "fallback_z": DEFAULT_Z,
+            "has_geometry_z": has_geometry_z,
+            "fallback_z": fallback_z,
+            "expected_z_min": expected_z_min,
+            "expected_z_max": expected_z_max,
             "label": label,
         })
     return metadata
@@ -279,9 +327,14 @@ def _sanitize_layer_name(name: str) -> str:
     return "".join(c if c.isalnum() else "_" for c in name)
 
 
-def export_layer(iface, layer, options: KmlExportOptions) -> Optional[Tuple[str, str]]:
-    """Exports one layer to KML per *options*. Returns ``(layer_name, kml_path)``
-    on success, or None if skipped/failed (already logged/messaged)."""
+def _format_altitude_range(altitude: KmlAltitudeSummary) -> str:
+    if math.isclose(altitude.minimum_z, altitude.maximum_z, rel_tol=0.0, abs_tol=1e-6):
+        return f"{altitude.minimum_z:.2f} m AMSL"
+    return f"{altitude.minimum_z:.2f}–{altitude.maximum_z:.2f} m AMSL"
+
+
+def export_layer(iface, layer, options: KmlExportOptions) -> Optional[KmlExportResult]:
+    """Exports and validates one layer, returning its path and altitude range."""
     from .dialog import resolve_output_conflict
 
     target_name_field = resolve_label_field(layer, options.label_field)
@@ -306,30 +359,45 @@ def export_layer(iface, layer, options: KmlExportOptions) -> Optional[Tuple[str,
         logger.warning(f"Densification failed for '{layer.name()}': {e}. Using undensified layer.")
         export_source = layer
 
-    err_msg = write_layer_to_kml(export_source, kml_path)
-    if err_msg is not None:
-        logger.error(f"KML export failed for '{layer.name()}': {err_msg}")
-        return None
-
-    try:
-        tree = ET.parse(kml_path)  # nosec B314 - just written by write_layer_to_kml() above, not external XML
-    except ET.ParseError as e:
-        logger.error(f"KML XML parse failed for '{layer.name()}': {e}")
-        return None
-
     features = list(export_source.getFeatures())
     metadata = build_feature_metadata(export_source.fields(), features, target_name_field, color_info, mode)
 
+    temporary_path = ""
     try:
+        temporary_file = tempfile.NamedTemporaryFile(
+            prefix=".qols_kml_", suffix=".kml", dir=options.output_dir, delete=False)
+        temporary_path = temporary_file.name
+        temporary_file.close()
+
+        err_msg = write_layer_to_kml(export_source, temporary_path)
+        if err_msg is not None:
+            logger.error(f"KML export failed for '{layer.name()}': {err_msg}")
+            return None
+
+        tree = ET.parse(temporary_path)  # nosec B314 - self-generated KML, not external XML
         kml_ns = postprocess_kml_tree(
             tree, metadata, group_by_label=options.group_by_label, theme=options.theme)
         ET.register_namespace('', kml_ns)
-        tree.write(kml_path, encoding="utf-8", xml_declaration=True)
-    except Exception as e:
-        logger.error(f"KML post-processing failed for '{layer.name()}': {e}")
-        return None
+        tree.write(temporary_path, encoding="utf-8", xml_declaration=True)
 
-    return layer.name(), kml_path
+        written_tree = ET.parse(temporary_path)  # nosec B314 - validates self-generated KML
+        altitude = validate_kml_altitudes(written_tree, metadata)
+        os.replace(temporary_path, kml_path)
+        temporary_path = ""
+    except Exception as e:
+        logger.error(f"KML export validation failed for '{layer.name()}': {e}")
+        return None
+    finally:
+        if temporary_path and os.path.exists(temporary_path):
+            try:
+                os.remove(temporary_path)
+            except OSError as e:
+                logger.warning(f"Could not remove temporary KML '{temporary_path}': {e}")
+
+    logger.info(
+        f"KML exported and altitude-validated for '{layer.name()}': "
+        f"{kml_path} ({_format_altitude_range(altitude)})")
+    return KmlExportResult(layer.name(), kml_path, altitude)
 
 
 def run_kml_export(iface) -> None:
@@ -374,8 +442,9 @@ def run_kml_export(iface) -> None:
 
     if exported:
         links = [
-            f'<a href="{QUrl.fromLocalFile(os.path.dirname(path)).toString()}">{name}</a>'
-            for name, path in exported
+            f'<a href="{QUrl.fromLocalFile(os.path.dirname(result.path)).toString()}">'
+            f'{result.layer_name}</a> ({_format_altitude_range(result.altitude)})'
+            for result in exported
         ]
         message = "Exported layers: " + ", ".join(links)
         if failed:
