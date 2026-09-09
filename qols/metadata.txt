@@ -23,7 +23,9 @@ deprecated=False
 
 changelog=
      Version 0.2.2:
-	 - fixed Conical surface rendering as a solid disk instead of a ring on repeated calculations (#178) — newly generated Inner Horizontal / Conical layers are now identified directly instead of by name, so older same-named output layers no longer break the ring trim
+	 - preserved finite per-vertex geometry Z values during KML export, using elev_m only as a fallback for 2-D features (#153)
+	 - validated absolute altitude mode and exported Z ranges before atomically publishing each KML file
+	 - included the verified AMSL altitude range in the QGIS export result message
      Version 0.2.1:
 	 - fixed remaining Qt6 enum compatibility issues (compat.py extended, all raw enum access removed from qols_dockwidget.py, both dockwidgets, KML export, and New OLS scripts)
 	 - resolved Bandit security findings (self-generated KML XML parsing justified, silent except/pass blocks now log, bare except narrowed)
