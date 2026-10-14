@@ -118,6 +118,10 @@ class QOLS:
             self.iface.addPluginToMenu(self.menu, settings_action)
             self.actions.append(settings_action)
 
+            plugin_toolbar = self.iface.pluginToolBar()
+            if plugin_toolbar is not None:
+                plugin_toolbar.show()
+
         except Exception as e:
             logger.error(f"Error in initGui: {e}\n{traceback.format_exc()}")
 
