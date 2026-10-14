@@ -1,6 +1,6 @@
 """
 New OLS Concept — OES Transitional Surface
-One connected pentagon per side (approach wing + runway strip merged),
+One connected polygon per side (approach wing + runway strip merged),
 flanking the OFS Approach surface, per ICAO Figure 4-1. Layer/figure
 construction mirrors the legacy TransitionalSurface_UTM.py script: a single
 closed ring per side built from a list of shared points, one feature per
@@ -12,6 +12,8 @@ Geometry (plan view, one side):
   near_thr_inner — strip edge at the threshold itself, Z = start_elevation (#173);
                    near_thr_inner -> near_inner stays flat at THR over that gap
   near_outer     — near_inner + lateral_near outward, Z = cap_elevation
+  near_thr_outer — outer edge at the threshold, Z = cap_elevation (#185);
+                   near_outer -> near_thr_outer retains the near-end width
   far_outer      — runway-strip edge at the opposite threshold, offset by
                    lateral_far outward, Z = cap_elevation
   far_inner      — runway-strip edge at the opposite threshold, Z = opp_start_elevation
@@ -205,7 +207,7 @@ if has_opposite_threshold:
 print(f"QOLS New OLS OES: azimuth={azimuth:.2f}°, direction={direction}, lateral_far={lateral_far:.1f}m")
 
 # ---------------------------------------------------------------------------
-# Transitional surface geometry — one connected pentagon per side, merging
+# Transitional surface geometry — one connected polygon per side, merging
 # the approach wing with the runway strip (ICAO Figure 4-1). Vertex order
 # and single-ring-per-side construction mirror the legacy
 # TransitionalSurface_UTM.py SurfaceArea = [pt_08, pt_01T, pt_02T, pt_02, pt_01A]
@@ -228,6 +230,10 @@ print(f"QOLS New OLS OES: azimuth={azimuth:.2f}°, direction={direction}, latera
 # must instead stay flat at THR elevation (the approach surface's inner edge
 # is flat there too). The threshold -> far_inner sub-segment then carries the
 # runway-profile elevation change on its own.
+#
+# #185: near_thr_outer_* completes the matching fold on the outer edge.
+# near_outer -> near_thr_outer retains the near-end width at cap_elevation;
+# near_thr_outer -> far_outer carries the width change along the runway.
 #
 # At d_cap along the approach, the approach elevation = cap_elevation → wings
 # converge to a single point at approach-edge width from centreline, Z = cap_elevation.
@@ -254,6 +260,9 @@ near_thr_inner_l.setZ(start_elevation_m)
 near_outer_l = pt_start.project(half_inner + lateral_near, azimuth + 90)
 near_outer_l.setZ(cap_elevation)
 
+near_thr_outer_l = thr_point.project(half_inner + lateral_near, azimuth + 90)
+near_thr_outer_l.setZ(cap_elevation)
+
 far_l = pt_far_axis.project(far_half_width, azimuth + 90)
 far_l.setZ(cap_elevation)
 
@@ -266,6 +275,9 @@ near_thr_inner_r.setZ(start_elevation_m)
 
 near_outer_r = pt_start.project(half_inner + lateral_near, azimuth - 90)
 near_outer_r.setZ(cap_elevation)
+
+near_thr_outer_r = thr_point.project(half_inner + lateral_near, azimuth - 90)
+near_thr_outer_r.setZ(cap_elevation)
 
 far_r = pt_far_axis.project(far_half_width, azimuth - 90)
 far_r.setZ(cap_elevation)
@@ -289,8 +301,8 @@ if has_opposite_threshold:
     # near_thr_inner_* sits between far_inner_* and near_inner_* on the inner
     # edge: far_inner -> near_thr_inner carries the runway-profile Z change,
     # near_thr_inner -> near_inner stays flat at THR (#173).
-    left_ring = [far_l, near_outer_l, far_outer_l, far_inner_l, near_thr_inner_l, near_inner_l]
-    right_ring = [far_r, near_outer_r, far_outer_r, far_inner_r, near_thr_inner_r, near_inner_r]
+    left_ring = [far_l, near_outer_l, near_thr_outer_l, far_outer_l, far_inner_l, near_thr_inner_l, near_inner_l]
+    right_ring = [far_r, near_outer_r, near_thr_outer_r, far_outer_r, far_inner_r, near_thr_inner_r, near_inner_r]
 else:
     # No opposite threshold available — fall back to the wing-only triangle.
     left_ring = [near_inner_l, near_outer_l, far_l]
