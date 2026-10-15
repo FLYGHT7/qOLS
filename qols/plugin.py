@@ -447,6 +447,7 @@ class QOLS:
             'distance_from_threshold_m': ofs.get('distance_from_threshold_m', 60.0),
             'direction': ofs.get('direction', 0),
             'opp_start_elevation_m': ofs.get('end_elevation_m', 0.0),
+            'merge_transitional': ofs.get('merge_transitional', False),
         }
         self.execute_script(trans_path, trans_params)
 
