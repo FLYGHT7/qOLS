@@ -35,6 +35,8 @@ from qgis.core import *
 from qgis.PyQt.QtCore import *
 from qgis.PyQt.QtGui import *
 from math import sqrt, hypot
+from qols import logger
+from qols.geometry_merge import dissolve_geometries_preserving_z
 from qols.parameters_inspector import build_parameters_json, add_parameters_field, register_parameters_action
 
 _script_success = False
@@ -65,6 +67,103 @@ def _normalize_polyline_points(geometry):
     raise Exception("Line geometry cannot be converted to a polyline.")
 
 
+def _update_merged_transitional_layer(source_layer, params_json: str, rule_set) -> bool:
+    """Accumulate this run into the separate New OLS merged layer."""
+    layer_name = 'Merged New OLS Transitional Surface'
+    merged_layer = None
+    started_editing = False
+
+    def warn(message):
+        iface.messageBar().pushMessage('New OLS Transitional', message, level=MSG_WARNING, duration=8)
+        return False
+
+    try:
+        project = QgsProject.instance()
+        matches = project.mapLayersByName(layer_name)
+        if len(matches) > 1:
+            return warn(f"Keep only one '{layer_name}' layer before updating the merge.")
+        created = not matches
+        if matches:
+            merged_layer = matches[0]
+            required_fields = {'ID', 'SurfaceName', 'rule_set', 'parameters'}
+            if (
+                not isinstance(merged_layer, QgsVectorLayer)
+                or not merged_layer.isValid()
+                or merged_layer.geometryType() != GEOM_TYPE_POLYGON
+                or not QgsWkbTypes.isMultiType(merged_layer.wkbType())
+                or not QgsWkbTypes.hasZ(merged_layer.wkbType())
+                or merged_layer.crs() != source_layer.crs()
+                or not required_fields.issubset(merged_layer.fields().names())
+            ):
+                return warn('The merged layer is incompatible with this calculation. '
+                            'Remove or rename it to create a new one.')
+            if merged_layer.isEditable():
+                return warn('Finish editing the merged layer before recalculating.')
+
+        existing_features = list(merged_layer.getFeatures()) if merged_layer is not None else []
+        geometries = [feature.geometry() for feature in existing_features]
+        geometries.extend(feature.geometry() for feature in source_layer.getFeatures())
+        dissolved_parts = dissolve_geometries_preserving_z(geometries)
+        if not dissolved_parts:
+            return warn('Could not merge the transitional surfaces. Existing layers were left unchanged.')
+
+        if created:
+            merged_layer = QgsVectorLayer(
+                'MultiPolygonZ?crs=' + source_layer.crs().authid(), layer_name, 'memory')
+            if not merged_layer.isValid():
+                raise RuntimeError('Could not create the merged memory layer.')
+            if not merged_layer.dataProvider().addAttributes([
+                QgsField('ID', QVariant.Int),
+                QgsField('SurfaceName', QVariant.String),
+                QgsField('rule_set', QVariant.String),
+            ]):
+                raise RuntimeError('Could not create the merged layer fields.')
+            merged_layer.updateFields()
+            add_parameters_field(merged_layer)
+            register_parameters_action(merged_layer)
+
+        merged_features = []
+        for index, part in enumerate(dissolved_parts):
+            feature = QgsFeature(merged_layer.fields())
+            feature.setGeometry(part)
+            feature.setAttribute('ID', index + 1)
+            feature.setAttribute('SurfaceName', 'New OLS Transitional Surfaces')
+            feature.setAttribute('rule_set', rule_set)
+            feature.setAttribute('parameters', params_json)
+            merged_features.append(feature)
+
+        if not merged_layer.startEditing():
+            raise RuntimeError('Could not start editing the merged layer.')
+        started_editing = True
+        previous_ids = [feature.id() for feature in existing_features]
+        if previous_ids and not merged_layer.deleteFeatures(previous_ids):
+            raise RuntimeError('Could not replace the merged layer features.')
+        if not merged_layer.addFeatures(merged_features):
+            raise RuntimeError('Could not add the merged features.')
+        if not merged_layer.commitChanges():
+            raise RuntimeError('Could not save the merged layer: ' + '; '.join(merged_layer.commitErrors()))
+        started_editing = False
+
+        merged_layer.updateExtents()
+        merged_layer.renderer().symbol().setColor(QColor('#87CEEB'))
+        merged_layer.renderer().symbol().setOpacity(0.4)
+        merged_layer.triggerRepaint()
+        if created:
+            project.addMapLayers([merged_layer])
+            iface.messageBar().pushMessage(
+                layer_name,
+                'Layer created. Keep the merged transitional option checked on EVERY run you want included, '
+                'including the first one.',
+                level=MSG_INFO, duration=8,
+            )
+        return True
+    except Exception as error:
+        if started_editing:
+            merged_layer.rollBack()
+        logger.warning(f'New OLS transitional merge failed: {error}')
+        return warn('Could not update the merged layer. See the QGIS log for details.')
+
+
 # ---------------------------------------------------------------------------
 # Parameter extraction
 # ---------------------------------------------------------------------------
@@ -80,6 +179,7 @@ try:
     direction = globals().get('direction', 0)
     end_elevation_m = globals().get('end_elevation_m', 0.0)
     opp_start_elevation_m = globals().get('opp_start_elevation_m', 0.0)
+    merge_transitional = globals().get('merge_transitional', False)
     runway_layer = globals().get('runway_layer', None)
     threshold_layer = globals().get('threshold_layer', None)
     use_runway_selected = globals().get('use_runway_selected', True)
@@ -338,6 +438,7 @@ _params_json = build_parameters_json('New OLS OES Transitional', {
     'divergence_ratio': divergence_ratio,
     'distance_from_threshold_m': distance_from_threshold_m,
     'direction': direction,
+    'merge_transitional': merge_transitional,
     'rule_set': _active_rule_set,
 })
 add_parameters_field(oes_layer)
@@ -366,6 +467,9 @@ QgsProject.instance().addMapLayers([oes_layer])
 oes_layer.renderer().symbol().setColor(QColor("#87CEEB"))  # sky blue
 oes_layer.renderer().symbol().setOpacity(0.4)
 oes_layer.triggerRepaint()
+
+if merge_transitional:
+    _update_merged_transitional_layer(oes_layer, _params_json, _active_rule_set)
 
 oes_layer.selectAll()
 canvas = iface.mapCanvas()

@@ -17,7 +17,7 @@ from qgis.PyQt import uic
 from qgis.PyQt.QtCore import pyqtSignal, pyqtSlot, QRegularExpression
 from qgis.PyQt.QtGui import QColor, QRegularExpressionValidator
 from qgis.PyQt.QtWidgets import (
-    QApplication, QComboBox, QDialog, QDockWidget, QHBoxLayout, QStackedWidget, QTabBar,
+    QApplication, QCheckBox, QComboBox, QDialog, QDockWidget, QHBoxLayout, QStackedWidget, QTabBar,
     QLabel, QLineEdit, QMessageBox, QPushButton, QTextBrowser, QToolTip, QVBoxLayout,
 )
 from ..compat import (
@@ -121,6 +121,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
     spin_Z0_ofs: QLineEdit
     spin_ZE_ofs: QLineEdit
     spin_contour_interval_ofs: QLineEdit
+    check_merge_transitional_ofs: QCheckBox
     # Two-row OES tab bar (#164) — mirrors the classic panel's own #123
     # fix. PyQt6's uic can't construct a bare QTabBar from .ui XML (not
     # in its Designer-placeable widget table, unlike QTabWidget/
@@ -922,6 +923,7 @@ class NewOlsDockWidget(QDockWidget, FORM_CLASS):
                     'end_elevation_m': ze_calc,
                     'direction': s_value,
                     'contour_interval_m': int(round(self.get_numeric_value('spin_contour_interval_ofs'))),
+                    'merge_transitional': self.check_merge_transitional_ofs.isChecked(),
                 }
             else:
                 # #159 — OES subtabs are each calculated individually;

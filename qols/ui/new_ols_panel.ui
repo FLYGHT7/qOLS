@@ -400,13 +400,22 @@
         </item>
 
         <item row="11" column="0" colspan="2">
+         <widget class="QCheckBox" name="check_merge_transitional_ofs">
+          <property name="text"><string>Create/update merged transitional layer</string></property>
+          <property name="toolTip"><string>Create/update the separate 'Merged New OLS Transitional Surface' layer from this run and the runs already accumulated there, preserving elevation.
+Keep this checked on EVERY run you want included, including the first one. Individual transitional layers are always created separately. Unchecked runs are not added retroactively. Remove the merged layer to start again.</string></property>
+          <property name="checked"><bool>false</bool></property>
+         </widget>
+        </item>
+
+        <item row="12" column="0" colspan="2">
          <widget class="QPushButton" name="btn_adg_help">
           <property name="text"><string>ADG Reference Table</string></property>
           <property name="toolTip"><string>Show the Aeroplane Design Group (ADG) reference table (ICAO Table 1-2)</string></property>
          </widget>
         </item>
 
-        <item row="12" column="0" colspan="2">
+        <item row="13" column="0" colspan="2">
          <widget class="QLabel" name="label_approach_note_ofs">
           <property name="text">
            <string>Note: The OFS Approach surface establishes the airspace to be maintained free from obstacles during the visual approach phase.</string>
