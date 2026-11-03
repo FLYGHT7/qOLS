@@ -3,7 +3,7 @@ name=qOLS
 qgisMinimumVersion=3.34
 qgisMaximumVersion=4.99
 description=Obstacle Limitation Surfaces plugin for QGIS
-version=0.2.2
+version=0.2.1
 author=FLYGHT7
 email=info@flyght7.com
 
@@ -22,17 +22,21 @@ experimental=True
 deprecated=False
 
 changelog=
-     Version 0.2.2:
-	 - preserved finite per-vertex geometry Z values during KML export, using elev_m only as a fallback for 2-D features (#153)
-	 - validated absolute altitude mode and exported Z ranges before atomically publishing each KML file
-	 - included the verified AMSL altitude range in the QGIS export result message
      Version 0.2.1:
+     - fixed KML export failing with no success/failure message and no output file 
+     - QGIS min version bumped to 3.34
+     - derive Conical radius and distinguish Inner Horizontal styling- #192
+     - New OLS panel stops responding after being closed once
+     - New OLS fix Transitional surface flat-at-THR vertex on the strip inner edge
+     - validate and preserve KML geometry altitude
+     - conical inner horizontal ring
+     - show qOLS icons on the Plugins toolbar
+     - complete New OLS transitional threshold vertices
+     - add merged New OLS transitional output
 	 - fixed remaining Qt6 enum compatibility issues (compat.py extended, all raw enum access removed from qols_dockwidget.py, both dockwidgets, KML export, and New OLS scripts)
 	 - resolved Bandit security findings (self-generated KML XML parsing justified, silent except/pass blocks now log, bare except narrowed)
 	 - suppressed known Flake8 star-import findings in New OLS scripts with documented justification, fixed 2 real missing-import bugs in default-population code
 	 - fixed KML export failing with no success/failure message and no output file (#153 follow-up)
-	 - fixed KML export dialog crashing with "object has no attribute 'Accepted'" under Qt6/QGIS 4.x (#153 follow-up)
-	 - fixed setup.cfg (Flake8 suppressions) never shipping inside the uploaded plugin zip, causing the store scanner to see 300+ false Flake8 findings on the New OLS scripts
      Version 0.2.0:
 	 - bug squashing effort including selected features not working properly - gets stuck
 	 - optimization of script for qt6
