@@ -392,11 +392,11 @@ register_parameters_action(v_layer)
 # Add to map
 QgsProject.instance().addMapLayers([v_layer])
 
-# Style the central Inner Horizontal surface in the same orange as Conical.
+# Blue distinguishes Inner Horizontal from the orange Conical surface.
 symbol = QgsFillSymbol.createSimple({
-    'color': '255,165,0,100',  # Orange with transparency
+    'color': '0,114,178,100',  # Blue with transparency
     'style': 'solid',
-    'outline_color': '255,165,0,255',
+    'outline_color': '0,114,178,255',
     'outline_style': 'solid',
     'outline_width': '0.7'
 })

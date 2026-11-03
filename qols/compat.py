@@ -200,6 +200,11 @@ except AttributeError:
     DISTANCE_UNIT_DEGREES = QgsUnitTypes.DistanceDegrees  # type: ignore[attr-defined]
 
 try:
+    DISTANCE_UNIT_METERS = QgsUnitTypes.DistanceUnit.DistanceMeters
+except AttributeError:
+    DISTANCE_UNIT_METERS = QgsUnitTypes.DistanceMeters  # type: ignore[attr-defined]
+
+try:
     WRITER_NO_ERROR = QgsVectorFileWriter.WriterError.NoError
 except AttributeError:
     WRITER_NO_ERROR = QgsVectorFileWriter.NoError  # type: ignore[attr-defined]
@@ -227,6 +232,6 @@ __all__ = [
     "WKB_LINE_STRING", "WKB_MULTI_LINE_STRING",
     "FILTER_VECTOR_LAYER",
     "SYMBOLOGY_NO_SYMBOLOGY", "FILE_ACTION_CREATE_OR_OVERWRITE",
-    "DISTANCE_UNIT_DEGREES", "WRITER_NO_ERROR",
+    "DISTANCE_UNIT_DEGREES", "DISTANCE_UNIT_METERS", "WRITER_NO_ERROR",
     "ACTION_TYPE_GENERIC_PYTHON",
 ]

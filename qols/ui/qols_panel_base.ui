@@ -228,7 +228,7 @@
                <string>2548.00</string>
               </property>
               <property name="toolTip">
-               <string>Aerodrome Reference Point elevation, shared by every surface that needs a Z datum (Approach, OFZ, Transitional, Take-Off, Outer Horizontal).</string>
+               <string>Aerodrome Reference Point elevation, shared by every surface that needs a Z datum (Approach, OFZ, Transitional, Take-Off, Outer Horizontal and circular Inner Horizontal / Conical).</string>
               </property>
              </widget>
             </item>
@@ -739,8 +739,25 @@
          </widget>
         </item>
         
+        <!-- GEOMETRY SHAPE (#190) -->
+        <item row="3" column="0">
+         <widget class="QLabel" name="label_shape_inner_conical">
+          <property name="text"><string>Surface Shape:</string></property>
+         </widget>
+        </item>
+        <item row="3" column="1">
+         <widget class="QComboBox" name="combo_shape_inner_conical">
+          <property name="currentIndex"><number>0</number></property>
+          <property name="toolTip">
+           <string>Racetrack uses the runway and manual datum. Circle (ARP) uses one ARP point and the shared ARP Elevation; runway and threshold layers are not required.</string>
+          </property>
+          <item><property name="text"><string>Racetrack</string></property></item>
+          <item><property name="text"><string>Circle (ARP)</string></property></item>
+         </widget>
+        </item>
+
         <!-- INNER HORIZONTAL SURFACE SECTION HEADER -->
-        <item row="3" column="0" colspan="2">
+        <item row="4" column="0" colspan="2">
          <widget class="QLabel" name="label_section_inner_horizontal">
           <property name="text">
            <string>Inner Horizontal Surface</string>
@@ -752,14 +769,14 @@
         </item>
         
         <!-- INNER HORIZONTAL SURFACE CONTROLS -->
-        <item row="4" column="0">
+        <item row="5" column="0">
          <widget class="QLabel" name="label_height_inner">
           <property name="text">
            <string>Height (m):</string>
           </property>
          </widget>
         </item>
-        <item row="4" column="1">
+        <item row="5" column="1">
          <widget class="QLineEdit" name="spin_height_inner">
           <property name="text">
            <string>45.00</string>
@@ -769,14 +786,14 @@
           </property>
          </widget>
         </item>
-        <item row="5" column="0">
+        <item row="6" column="0">
          <widget class="QLabel" name="label_L_inner">
           <property name="text">
            <string>Radius (m):</string>
           </property>
          </widget>
         </item>
-        <item row="5" column="1">
+        <item row="6" column="1">
          <widget class="QLineEdit" name="spin_L_inner">
           <property name="text">
            <string>4000.00</string>
@@ -785,7 +802,7 @@
         </item>
         
         <!-- CONICAL SURFACE SECTION HEADER -->
-        <item row="6" column="0" colspan="2">
+        <item row="7" column="0" colspan="2">
          <widget class="QLabel" name="label_section_conical">
           <property name="text">
            <string>Conical Surface</string>
@@ -797,14 +814,14 @@
         </item>
         
         <!-- CONICAL SURFACE CONTROLS -->
-        <item row="7" column="0">
+        <item row="8" column="0">
          <widget class="QLabel" name="label_height_conical">
           <property name="text">
            <string>Height (m):</string>
           </property>
          </widget>
         </item>
-        <item row="7" column="1">
+        <item row="8" column="1">
          <widget class="QLineEdit" name="spin_height_conical">
           <property name="text">
            <string>60.00</string>
@@ -814,14 +831,14 @@
           </property>
          </widget>
         </item>
-                <item row="8" column="0">
+                <item row="9" column="0">
                  <widget class="QLabel" name="label_conical_slope">
                     <property name="text">
                      <string>Slope (%):</string>
                     </property>
                  </widget>
                 </item>
-        <item row="8" column="1">
+        <item row="9" column="1">
          <widget class="QLineEdit" name="spin_conical_slope">
           <property name="text">
            <string>5.00</string>
@@ -831,14 +848,14 @@
           </property>
          </widget>
         </item>
-        <item row="9" column="0">
+        <item row="10" column="0">
          <widget class="QLabel" name="label_L_conical">
           <property name="text">
            <string>Radius (m):</string>
           </property>
          </widget>
         </item>
-        <item row="9" column="1">
+        <item row="10" column="1">
          <widget class="QLineEdit" name="spin_L_conical">
           <property name="text">
            <string>6000.00</string>
@@ -853,14 +870,14 @@
         </item>
 
         <!-- CONTOUR INTERVAL (#126) -->
-        <item row="10" column="0">
+        <item row="11" column="0">
          <widget class="QLabel" name="label_contour_interval_conical">
           <property name="text">
            <string>Contour Interval (m):</string>
           </property>
          </widget>
         </item>
-        <item row="10" column="1">
+        <item row="11" column="1">
          <widget class="QLineEdit" name="spin_contour_interval_conical">
           <property name="text">
            <string>10</string>
@@ -872,7 +889,7 @@
         </item>
 
         <!-- WORKFLOW INFORMATION -->
-        <item row="11" column="0" colspan="2">
+        <item row="12" column="0" colspan="2">
          <widget class="QLabel" name="label_info_inner_conical">
           <property name="text">
            <string>Workflow: Configure Inner Horizontal first, then Conical (uses Inner Horizontal radius for calculation)

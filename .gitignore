@@ -9,6 +9,7 @@ pyproject.toml
 .agent/
 .agents/
 .claude/
+.codex/
 skills-lock.json
 CLAUDE.md
 graphify-out/

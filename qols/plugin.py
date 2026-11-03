@@ -27,6 +27,8 @@ from .ui.dockwidget import QolsDockWidget
 from .ui.new_ols_dockwidget import NewOlsDockWidget
 from .ui.settings_dialog import RulesSettingsDialog
 from .surface_types import SurfaceType
+from .surfaces.inner_conical_circle import build_circle_layers, resolve_arp_center
+from .parameters_inspector import register_parameters_action
 from .rules import manager as rule_mgr
 from . import logger  # CR-01
 
@@ -508,6 +510,10 @@ class QOLS:
         try:
             specific_params = params.get('specific_params', {})
 
+            if specific_params.get('shape', 'racetrack') == 'circle':
+                self._execute_combined_circle_surface(params)
+                return
+
             if specific_params.get('combined_execution', False):
                 inner_params = specific_params.get('inner_horizontal', {})
                 conical_params = specific_params.get('conical', {})
@@ -582,6 +588,44 @@ class QOLS:
         except Exception as e:
             logger.error(f"Error in combined Inner Horizontal & Conical execution: {e}\n{traceback.format_exc()}")
             raise
+
+    def _execute_combined_circle_surface(self, params: dict) -> None:
+        """Create one ARP-centered surface pair, validating before publication."""
+        params['_script_success'] = False
+        specific_params = params['specific_params']
+        inner_params = specific_params['inner_horizontal']
+        conical_params = specific_params['conical']
+        output_crs = self.iface.mapCanvas().mapSettings().destinationCrs()
+        center = resolve_arp_center(
+            params.get('arp_layer'), params.get('use_arp_selected', False), output_crs,
+        )
+        result = build_circle_layers(
+            center, inner_params, conical_params, output_crs,
+            active_rule_set=rule_mgr.get_active_rule_set_name(),
+        )
+        self._trim_conical_to_ring(result.inner_layer, result.conical_layer, conical_params)
+        features = list(result.conical_layer.getFeatures())
+        if len(features) != 1:
+            raise ValueError('Circular Conical surface must contain exactly one feature.')
+        ring = features[0].geometry()
+        if (ring.isEmpty() or ring.isMultipart() or not ring.isGeosValid()
+                or ring.constGet().numInteriorRings() != 1):
+            raise ValueError('Circular Conical surface could not be trimmed to a valid ring.')
+
+        layers = [result.inner_layer, result.conical_layer]
+        if result.contour_layer is not None:
+            layers.append(result.contour_layer)
+        for layer in layers:
+            register_parameters_action(layer)
+        project = QgsProject.instance()
+        try:
+            added = project.addMapLayers(layers)
+            if len(added) != len(layers):
+                raise RuntimeError('Could not add all circular surface layers to the project.')
+        except Exception:
+            project.removeMapLayers([layer.id() for layer in layers])
+            raise
+        params['_script_success'] = True
 
     def _trim_conical_to_ring(self, inner_layer, conical_layer, conical_params):
         """#124: subtract Inner Horizontal's footprint from Conical's so the
